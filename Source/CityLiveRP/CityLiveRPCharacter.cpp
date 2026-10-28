@@ -100,7 +100,8 @@ void ACityLiveRPCharacter::BeginPlay()
     FollowCamera->bUsePawnControlRotation = false;
     CameraBoom->AddTickPrerequisiteComponent(GetCharacterMovement());
     SetActorTickEnabled(true);
-    GetCharacterMovement()->AddTickPrerequisiteActor(this);
+    // Keep the engine's existing character/movement tick order. Adding the
+    // reverse dependency here creates a prerequisite cycle every frame.
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
     GetMesh()->SetOwnerNoSee(false);

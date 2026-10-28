@@ -247,7 +247,13 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
                 Points.Add(Center + (In * ((1-T)*(1-T)) + Point * (2*T*(1-T)) + Next * (T*T)) * Radius);
             }
         }
-        if (bClosed) Points.Add(Points[0]);
+        if (bClosed && !Points.IsEmpty())
+        {
+            // TArray rejects Add with a reference to one of its own elements.
+            // Copy first: growing the array must not invalidate the source.
+            const FVector2D ClosingPoint = Points[0];
+            Points.Add(ClosingPoint);
+        }
         const float Width = FMath::Max(2.f, Radius * Thickness);
         FSlateDrawElement::MakeLines(Out, Layer + 1, Geometry.ToPaintGeometry(), Points,
             ESlateDrawEffect::None, FLinearColor(.94f, .97f, 1.f, .95f), true, Width);
