@@ -19,5 +19,11 @@ int main()
     assert(Door(0.f) == 0.f && Hand(0.f) == 0.f && Sit(0.f) == 0.f);
     assert(Door(Duration) == 0.f && Hand(Duration) == 0.f && Sit(Duration) == 1.f);
     assert(Blend(.0001f, 0.f, 1.f) < .00001f);
-    std::cout << "PASS: hand reaches before door opens, seat entered with door open, door closes after sitting, smooth boundaries\n";
+    assert(Sit(2.85f) == 1.f && Leg(2.85f, false) == 0.f);
+    assert(Leg(3.4f, false) == 1.f && Leg(3.4f, true) < 1.f);
+    assert(Leg(4.f, false) == 1.f && Leg(4.f, true) == 1.f && Door(4.f) == 1.f);
+    // Exit runs the same phases backwards: feet outside before the torso stands up.
+    assert(Sit(3.f) == 1.f && Leg(3.f, true) == 0.f);
+    assert(Sit(1.99f) == 0.f && Door(1.99f) > .99f);
+    std::cout << "PASS: hand/door timing, torso before separate legs on entry, legs before torso on exit, smooth boundaries\n";
 }

@@ -10,12 +10,13 @@ inline float Blend(float Time, float Start, float End)
 }
 inline float Door(float Time)
 {
-    return Blend(Time, 1.3f, 1.95f) * (1.f - Blend(Time, 3.05f, 3.7f));
+    return Blend(Time, 1.3f, 1.95f) * (1.f - Blend(Time, 4.05f, 4.7f));
 }
 inline float Hand(float Time)
 {
     return Blend(Time, .85f, 1.3f) * (1.f - Blend(Time, 1.95f, 2.3f));
 }
-inline float Sit(float Time) { return Blend(Time, 2.f, 2.95f); }
-constexpr float Duration = 3.8f;
+inline float Sit(float Time) { return Blend(Time, 2.f, 2.8f); }
+inline float Leg(float Time, bool Second) { return Second ? Blend(Time, 3.35f, 3.9f) : Blend(Time, 2.85f, 3.35f); }
+constexpr float Duration = 4.8f;
 }

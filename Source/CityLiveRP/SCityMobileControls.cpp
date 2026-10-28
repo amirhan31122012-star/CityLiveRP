@@ -278,12 +278,18 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
     {
         const FVector2D CarCenter = DoorCenter - FVector2D(Radius * 2.2f, 0);
         Circle(CarCenter, Radius * 0.85f, FLinearColor::White);
-        Stroke(CarCenter, {{-.58f, .42f}, {-.58f, -.04f}, {-.35f, -.5f}, {.35f, -.5f}, {.58f, -.04f}, {.58f, .42f}, {-.58f, .42f}});
-        Stroke(CarCenter, {{-.48f, -.04f}, {.48f, -.04f}});
-        Stroke(CarCenter, {{-.4f, .42f}, {-.4f, .58f}});
-        Stroke(CarCenter, {{.4f, .42f}, {.4f, .58f}});
-        Stroke(CarCenter, {{-.43f, .18f}, {-.23f, .18f}});
-        Stroke(CarCenter, {{.23f, .18f}, {.43f, .18f}});
+        // Sedan front: curved hood, sloped windshield, mirrors, lamps, grille and tires.
+        Stroke(CarCenter, {{-.61f,.3f},{-.6f,-.02f},{-.46f,-.18f},{-.33f,-.51f},{-.22f,-.57f},
+            {.22f,-.57f},{.33f,-.51f},{.46f,-.18f},{.6f,-.02f},{.61f,.3f},{.5f,.4f},{-.5f,.4f},{-.61f,.3f}});
+        Stroke(CarCenter, {{-.4f,-.17f},{-.28f,-.44f},{.28f,-.44f},{.4f,-.17f},{-.4f,-.17f}});
+        Stroke(CarCenter, {{-.48f,-.1f},{-.65f,-.14f},{-.67f,-.02f},{-.57f,.02f}});
+        Stroke(CarCenter, {{.48f,-.1f},{.65f,-.14f},{.67f,-.02f},{.57f,.02f}});
+        Stroke(CarCenter, {{-.48f,.1f},{-.25f,.13f},{-.29f,.22f},{-.49f,.2f},{-.48f,.1f}});
+        Stroke(CarCenter, {{.48f,.1f},{.25f,.13f},{.29f,.22f},{.49f,.2f},{.48f,.1f}});
+        Stroke(CarCenter, {{-.18f,.17f},{.18f,.17f},{.14f,.28f},{-.14f,.28f},{-.18f,.17f}});
+        Stroke(CarCenter, {{-.52f,.4f},{-.52f,.53f},{-.35f,.53f},{-.35f,.4f}});
+        Stroke(CarCenter, {{.52f,.4f},{.52f,.53f},{.35f,.53f},{.35f,.4f}});
+        Stroke(CarCenter, {{-.48f,.32f},{.48f,.32f}}, .025f);
     }
     // A passenger sees only the exit door and cannot operate the pedals or steering.
     if (GetVehicle() && Controller.IsValid() && !Controller->IsSedanDriver()) return Layer + 1;

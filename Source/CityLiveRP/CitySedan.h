@@ -49,8 +49,15 @@ private:
     float EntryTime = 0.f;
     float EntryCameraBlend = 0.f;
     bool bEnteringPassenger = false;
+    bool bExiting = false;
+    TArray<FVector> EntryRoute;
+    float RouteLength = 0.f;
+    float RouteDuration = 0.f;
     void UpdateEntry(float DeltaTime);
     void CompleteEntry();
+    void CompleteExit();
+    bool BuildDoorRoute(ACityLiveRPCharacter* Occupant, bool bPassengerSeat);
+    void UpdateSeatedPose(ACityLiveRPCharacter* Occupant, bool bPassengerSeat);
     FVector HandleLocation() const;
     float Steering = 0.f;
     float SmoothedSteering = 0.f;

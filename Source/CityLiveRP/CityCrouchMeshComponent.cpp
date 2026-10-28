@@ -11,7 +11,7 @@ void UCityCrouchMeshComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
     const ACharacter* Character = Cast<ACharacter>(GetOwner());
     const float GroundCrouch = Character && Character->bIsCrouched &&
         !Character->GetCharacterMovement()->IsFalling() ? 1.f : 0.f;
-    const float Target = FMath::Max(GroundCrouch, EntrySit);
+    const float Target = GroundCrouch * (1.f - SeatLegAlpha);
     const float Blend = 1.f - FMath::Exp(-BlendSpeed * DeltaTime);
     CrouchAlpha = FMath::Lerp(CrouchAlpha, Target, Blend);
     Super::TickComponent(DeltaTime, TickType, TickFunction);
@@ -23,9 +23,60 @@ void UCityCrouchMeshComponent::FinalizeBoneTransform()
     if (bNeedToFlipSpaceBaseBuffers && !IsSimulatingPhysics())
     {
         if (CrouchAlpha > 0.001f) ApplyCrouch();
+        if (SeatLegAlpha > .001f) ApplySeatLegs();
         if (EntryReach > 0.001f) ApplyEntryHand();
     }
     Super::FinalizeBoneTransform();
+}
+
+void UCityCrouchMeshComponent::SetVehicleSeatLegs(float Alpha, FVector LeftFoot, FVector RightFoot)
+{
+    SeatLegAlpha = FMath::Clamp(Alpha, 0.f, 1.f);
+    SeatFootLeft = LeftFoot;
+    SeatFootRight = RightFoot;
+}
+
+void UCityCrouchMeshComponent::ApplySeatLegs()
+{
+    const USkeletalMesh* Asset = GetSkeletalMeshAsset();
+    if (!Asset || !GetOwner()) return;
+    const FReferenceSkeleton& Ref = Asset->GetRefSkeleton();
+    TArray<FTransform>& Pose = GetEditableComponentSpaceTransforms();
+    if (Pose.Num() > Ref.GetNum()) return;
+    auto RotateBranch = [&](int32 Root, const FQuat& Rotation)
+    {
+        const FVector Pivot = Pose[Root].GetLocation();
+        for (int32 Bone = Root; Bone < Pose.Num(); ++Bone)
+        {
+            int32 Parent = Bone;
+            while (Parent != INDEX_NONE && Parent != Root) Parent = Ref.GetParentIndex(Parent);
+            if (Parent != Root) continue;
+            Pose[Bone].SetLocation(Pivot + Rotation.RotateVector(Pose[Bone].GetLocation() - Pivot));
+            Pose[Bone].SetRotation((Rotation * Pose[Bone].GetRotation()).GetNormalized());
+        }
+    };
+    const FVector Forward = GetComponentTransform().InverseTransformVectorNoScale(GetOwner()->GetActorForwardVector());
+    for (int32 Side = 0; Side < 2; ++Side)
+    {
+        const int32 Hip = Ref.FindBoneIndex(Side ? TEXT("thigh_r") : TEXT("thigh_l"));
+        const int32 Knee = Ref.FindBoneIndex(Side ? TEXT("calf_r") : TEXT("calf_l"));
+        const int32 Foot = Ref.FindBoneIndex(Side ? TEXT("foot_r") : TEXT("foot_l"));
+        if (!Pose.IsValidIndex(Hip) || !Pose.IsValidIndex(Knee) || !Pose.IsValidIndex(Foot)) continue;
+        const FVector Start = Pose[Hip].GetLocation();
+        const FVector Target = FMath::Lerp(Pose[Foot].GetLocation(),
+            GetComponentTransform().InverseTransformPosition(Side ? SeatFootRight : SeatFootLeft), SeatLegAlpha);
+        const FVector Direction = (Target - Start).GetSafeNormal();
+        const FVector BendDirection = (Forward - Direction * FVector::DotProduct(Forward, Direction)).GetSafeNormal();
+        double Along, Bend;
+        if (BendDirection.IsNearlyZero() || !CityLiveCrouch::KneeOffset(FVector::Distance(Start, Pose[Knee].GetLocation()),
+            FVector::Distance(Pose[Knee].GetLocation(), Pose[Foot].GetLocation()), FVector::Distance(Start, Target), Along, Bend)) continue;
+        const FVector DesiredKnee = Start + Direction * Along + BendDirection * Bend;
+        const FQuat FootRotation = Pose[Foot].GetRotation();
+        RotateBranch(Hip, FQuat::FindBetweenNormals((Pose[Knee].GetLocation() - Start).GetSafeNormal(), (DesiredKnee - Start).GetSafeNormal()));
+        RotateBranch(Knee, FQuat::FindBetweenNormals((Pose[Foot].GetLocation() - Pose[Knee].GetLocation()).GetSafeNormal(),
+            (Target - Pose[Knee].GetLocation()).GetSafeNormal()));
+        RotateBranch(Foot, FootRotation * Pose[Foot].GetRotation().Inverse());
+    }
 }
 
 void UCityCrouchMeshComponent::SetVehicleEntryPose(float Sit, float Reach, FVector Handle, bool bRightHand)

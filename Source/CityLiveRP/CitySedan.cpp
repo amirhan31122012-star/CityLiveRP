@@ -38,8 +38,13 @@ ACitySedan::ACitySedan()
         Piece->SetRelativeScale3D(Scale);
         Piece->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     };
-    Part(TEXT("Body"), FVector::ZeroVector, FVector(4.2f, 1.8f, 0.55f));
-    Part(TEXT("Cabin"), FVector(-25.f, 0.f, 82.f), FVector(2.1f, 1.55f, 0.08f));
+    // Leave real space for occupants instead of intersecting them with a solid block.
+    Part(TEXT("Body"), FVector(0, 0, -35), FVector(4.2f, 1.8f, 0.15f));
+    Part(TEXT("LeftSill"), FVector(0, -86, -15), FVector(4.2f, .12f, .3f));
+    Part(TEXT("RightSill"), FVector(0, 86, -15), FVector(4.2f, .12f, .3f));
+    Part(TEXT("DriverSeat"), FVector(-25, -40, -15), FVector(.65f, .6f, .15f));
+    Part(TEXT("PassengerSeat"), FVector(-25, 40, -15), FVector(.65f, .6f, .15f));
+    Part(TEXT("Cabin"), FVector(-25.f, 0.f, 90.f), FVector(2.1f, 1.55f, 0.08f));
     Part(TEXT("FrontWindow"), FVector(77.f, 0.f, 51.f), FVector(.06f, 1.5f, .6f));
     Part(TEXT("RearWindow"), FVector(-127.f, 0.f, 51.f), FVector(.06f, 1.5f, .6f));
     Part(TEXT("Hood"), FVector(145.f, 0.f, 20.f), FVector(1.1f, 1.7f, 0.25f));
@@ -105,22 +110,18 @@ bool ACitySedan::TryEnter(APlayerController* Player, bool bPassengerSeat)
 {
     if (!CanEnter(Player, bPassengerSeat) || !HasAuthority()) return false;
     ACityLiveRPCharacter* Occupant = Cast<ACityLiveRPCharacter>(Player->GetPawn());
-    const FVector SidePosition = GetActorTransform().TransformPosition(FVector(-25.f, bPassengerSeat ? 165.f : -165.f, 0.f));
-    FCollisionQueryParams Params(SCENE_QUERY_STAT(CityEntryPosition), false, this);
-    Params.AddIgnoredActor(Occupant);
-    FHitResult Floor;
-    if (!GetWorld()->LineTraceSingleByChannel(Floor, SidePosition + FVector(0, 0, 160),
-        SidePosition - FVector(0, 0, 250), ECC_Visibility, Params)) return false;
-    const float HalfHeight = Occupant->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-    EntryApproach = FVector(SidePosition.X, SidePosition.Y, Floor.ImpactPoint.Z + HalfHeight + 2.f);
-    if (GetWorld()->SweepSingleByChannel(Floor, Occupant->GetActorLocation(), EntryApproach, FQuat::Identity,
-        ECC_Pawn, FCollisionShape::MakeCapsule(Occupant->GetCapsuleComponent()->GetScaledCapsuleRadius(), HalfHeight), Params)) return false;
+    if (!BuildDoorRoute(Occupant, bPassengerSeat))
+    {
+        Player->ClientMessage(TEXT("Не удалось подойти к двери: обойдите препятствие или подойдите ближе к нужной стороне."));
+        return false;
+    }
     EnteringCharacter = Occupant;
     EnteringPlayer = Player;
     bEnteringPassenger = bPassengerSeat;
     EntryStart = Occupant->GetActorLocation();
     EntryStartRotation = Occupant->GetActorRotation();
-    EntryTime = 0.f;
+    bExiting = false;
+    EntryTime = -RouteDuration;
     Occupant->ResetMobileSteering();
     Occupant->SetMobileSprint(false);
     Occupant->GetCharacterMovement()->StopMovementImmediately();
@@ -133,6 +134,47 @@ bool ACitySedan::TryEnter(APlayerController* Player, bool bPassengerSeat)
     Speed = 0.f;
     Player->SetViewTargetWithBlend(this, .4f);
     return true;
+}
+
+bool ACitySedan::BuildDoorRoute(ACityLiveRPCharacter* Occupant, bool bPassengerSeat)
+{
+    const float Side = bPassengerSeat ? 1.f : -1.f; // Left is -Y, driver.
+    const FVector LocalStart = GetActorTransform().InverseTransformPosition(Occupant->GetActorLocation());
+    const float HalfHeight = Occupant->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+    const float Radius = Occupant->GetCapsuleComponent()->GetScaledCapsuleRadius();
+    FCollisionQueryParams FloorParams(SCENE_QUERY_STAT(CityDoorFloor), false, this);
+    FloorParams.AddIgnoredActor(Occupant);
+    FCollisionQueryParams WalkParams(SCENE_QUERY_STAT(CityDoorWalk), false, Occupant);
+    TArray<TArray<FVector>> Candidates;
+    Candidates.Add({FVector(-25, Side * 150.f, 0)});
+    for (float End : {-300.f, 300.f})
+        Candidates.Add({FVector(End, LocalStart.Y, 0), FVector(End, Side * 150.f, 0), FVector(-25, Side * 150.f, 0)});
+    for (const TArray<FVector>& Candidate : Candidates)
+    {
+        TArray<FVector> Route;
+        FVector Previous = Occupant->GetActorLocation() + FVector(0, 0, 3);
+        Route.Add(Previous);
+        bool bFree = true;
+        for (const FVector& LocalPoint : Candidate)
+        {
+            FVector Point = GetActorTransform().TransformPosition(LocalPoint);
+            FHitResult Hit;
+            if (!GetWorld()->LineTraceSingleByChannel(Hit, Point + FVector(0, 0, 180), Point - FVector(0, 0, 300), ECC_Visibility, FloorParams)) { bFree = false; break; }
+            Point.Z = Hit.ImpactPoint.Z + HalfHeight + 4.f;
+            if (GetWorld()->SweepSingleByChannel(Hit, Previous, Point, FQuat::Identity,
+                ECC_Pawn, FCollisionShape::MakeCapsule(Radius, HalfHeight), WalkParams)) { bFree = false; break; }
+            Route.Add(Point);
+            Previous = Point;
+        }
+        if (!bFree) continue;
+        EntryRoute = MoveTemp(Route);
+        EntryApproach = EntryRoute.Last();
+        RouteLength = 0.f;
+        for (int32 I = 1; I < EntryRoute.Num(); ++I) RouteLength += FVector::Distance(EntryRoute[I-1], EntryRoute[I]);
+        RouteDuration = FMath::Max(.2f, RouteLength / 180.f);
+        return true;
+    }
+    return false;
 }
 
 bool ACitySedan::IsEntering(const APlayerController* Player) const
@@ -148,6 +190,13 @@ FVector ACitySedan::HandleLocation() const
 
 void ACitySedan::CancelEntry()
 {
+    if (bExiting && IsValid(EnteringCharacter) && EnteringPlayer.IsValid())
+    {
+        CompleteExit();
+        for (USceneComponent* Hinge : DoorPivots)
+            if (IsValid(Hinge)) Hinge->SetRelativeRotation(FRotator::ZeroRotator);
+        return;
+    }
     if (IsValid(EnteringCharacter))
     {
         EnteringCharacter->SetActorLocationAndRotation(EntryStart, EntryStartRotation);
@@ -159,13 +208,17 @@ void ACitySedan::CancelEntry()
         EnteringCharacter->GetCharacterMovement()->SetComponentTickEnabled(true);
         EnteringCharacter->GetMesh()->RemoveTickPrerequisiteActor(this);
         if (UCityCrouchMeshComponent* EntryMesh = Cast<UCityCrouchMeshComponent>(EnteringCharacter->GetMesh()))
+        {
             EntryMesh->SetVehicleEntryPose(0, 0, FVector::ZeroVector, false);
+            EntryMesh->SetVehicleSeatLegs(0, FVector::ZeroVector, FVector::ZeroVector);
+        }
         if (EnteringPlayer.IsValid()) EnteringPlayer->SetViewTarget(EnteringCharacter);
     }
     for (USceneComponent* Hinge : DoorPivots)
         if (IsValid(Hinge)) Hinge->SetRelativeRotation(FRotator::ZeroRotator);
     EnteringCharacter = nullptr;
     EnteringPlayer.Reset();
+    bExiting = false;
 }
 
 void ACitySedan::CompleteEntry()
@@ -178,13 +231,13 @@ void ACitySedan::CompleteEntry()
     EnteringPlayer.Reset();
     if (bPassengerSeat) Passenger = Occupant;
     else Driver = Occupant;
-    Occupant->GetMesh()->RemoveTickPrerequisiteActor(this);
     Occupant->GetCharacterMovement()->Velocity = FVector::ZeroVector;
     if (UCityCrouchMeshComponent* EntryMesh = Cast<UCityCrouchMeshComponent>(Occupant->GetMesh()))
         EntryMesh->SetVehicleEntryPose(0, 0, FVector::ZeroVector, false);
-    Occupant->SetActorHiddenInGame(true);
+    Occupant->SetActorHiddenInGame(false);
     Occupant->AttachToActor(this, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-    Occupant->SetActorRelativeLocation(FVector(-25.f, bPassengerSeat ? 40.f : -40.f, 30.f));
+    Occupant->SetActorRelativeLocation(FVector(-25.f, bPassengerSeat ? 40.f : -40.f, 10.f));
+    UpdateSeatedPose(Occupant, bPassengerSeat);
     if (!bPassengerSeat)
     {
         ResetInput();
@@ -203,30 +256,70 @@ bool ACitySedan::TryExit(APlayerController* Player)
     const float HalfHeight = Occupant->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
     FCollisionQueryParams Params(SCENE_QUERY_STAT(CitySedanExit), false, this);
     Params.AddIgnoredActor(Occupant);
-    for (const FVector& Offset : {GetActorRightVector() * 190.f, -GetActorRightVector() * 190.f, -GetActorForwardVector() * 320.f})
+    for (float DoorOffsetX : {-25.f, -65.f, 15.f})
     {
-        FVector ExitLocation = GetActorLocation() + Offset;
+        FVector ExitLocation = GetActorTransform().TransformPosition(FVector(DoorOffsetX, bPassengerExit ? 150.f : -150.f, 0.f));
         FHitResult Floor;
         if (!GetWorld()->LineTraceSingleByChannel(Floor, ExitLocation + FVector(0, 0, 150),
             ExitLocation - FVector(0, 0, 300), ECC_Visibility, Params)) continue;
         ExitLocation.Z = Floor.ImpactPoint.Z + HalfHeight + 3.f;
         if (GetWorld()->OverlapBlockingTestByChannel(ExitLocation, FQuat::Identity, ECC_Pawn,
             FCollisionShape::MakeCapsule(Radius, HalfHeight), Params)) continue;
-        ACityLiveRPCharacter* ExitingDriver = Occupant;
-        if (bPassengerExit) Passenger = nullptr;
-        else { Driver = nullptr; ResetInput(); }
-        ExitingDriver->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-        ExitingDriver->SetActorLocationAndRotation(ExitLocation, GetActorRotation());
-        ExitingDriver->SetActorHiddenInGame(false);
-        ExitingDriver->SetActorEnableCollision(true);
-        ExitingDriver->SetActorTickEnabled(true);
-        ExitingDriver->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-        ExitingDriver->GetCharacterMovement()->SetComponentTickEnabled(true);
-        if (!bPassengerExit) Player->Possess(ExitingDriver);
-        Player->SetViewTarget(ExitingDriver);
+        EnteringCharacter = Occupant;
+        EnteringPlayer = Player;
+        bEnteringPassenger = bPassengerExit;
+        bExiting = true;
+        EntryTime = 0.f;
+        EntryApproach = ExitLocation;
+        EntryStart = Occupant->GetActorLocation();
+        EntryStartRotation = GetActorRotation();
+        Occupant->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+        Occupant->GetMesh()->AddTickPrerequisiteActor(this);
+        ResetInput();
+        Speed = 0.f;
+        Player->SetViewTargetWithBlend(this, .3f);
         return true;
     }
     return false;
+}
+
+void ACitySedan::CompleteExit()
+{
+    ACityLiveRPCharacter* Occupant = EnteringCharacter;
+    APlayerController* Player = EnteringPlayer.Get();
+    if (!IsValid(Occupant) || !Player) { CancelEntry(); return; }
+    const bool bWasPassenger = bEnteringPassenger;
+    if (bWasPassenger) Passenger = nullptr;
+    else Driver = nullptr;
+    EnteringCharacter = nullptr;
+    EnteringPlayer.Reset();
+    bExiting = false;
+    Occupant->SetActorLocation(EntryApproach);
+    Occupant->GetMesh()->RemoveTickPrerequisiteActor(this);
+    if (UCityCrouchMeshComponent* EntryMesh = Cast<UCityCrouchMeshComponent>(Occupant->GetMesh()))
+    {
+        EntryMesh->SetVehicleEntryPose(0, 0, FVector::ZeroVector, false);
+        EntryMesh->SetVehicleSeatLegs(0, FVector::ZeroVector, FVector::ZeroVector);
+    }
+    Occupant->SetActorEnableCollision(true);
+    Occupant->SetActorTickEnabled(true);
+    Occupant->GetCharacterMovement()->Velocity = FVector::ZeroVector;
+    Occupant->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+    Occupant->GetCharacterMovement()->SetComponentTickEnabled(true);
+    if (!bWasPassenger) Player->Possess(Occupant);
+    Player->SetViewTargetWithBlend(Occupant, .4f);
+}
+
+void ACitySedan::UpdateSeatedPose(ACityLiveRPCharacter* Occupant, bool bPassengerSeat)
+{
+    if (!IsValid(Occupant)) return;
+    if (UCityCrouchMeshComponent* SeatMesh = Cast<UCityCrouchMeshComponent>(Occupant->GetMesh()))
+    {
+        const float SeatY = bPassengerSeat ? 40.f : -40.f;
+        SeatMesh->SetVehicleSeatLegs(1.f,
+            GetActorTransform().TransformPosition(FVector(35, SeatY - 13.f, -25)),
+            GetActorTransform().TransformPosition(FVector(35, SeatY + 13.f, -25)));
+    }
 }
 
 void ACitySedan::Tick(float DeltaTime)
@@ -235,6 +328,8 @@ void ACitySedan::Tick(float DeltaTime)
     EntryCameraBlend = FMath::FInterpTo(EntryCameraBlend, EnteringCharacter ? 1.f : 0.f, DeltaTime, 5.f);
     if (EnteringCharacter)
     {
+        UpdateSeatedPose(Driver, false);
+        UpdateSeatedPose(Passenger, true);
         UpdateEntry(DeltaTime);
         return;
     }
@@ -272,29 +367,62 @@ void ACitySedan::Tick(float DeltaTime)
     }
     for (UStaticMeshComponent* Wheel : Wheels)
         Wheel->AddLocalRotation(FRotator(0, -FMath::RadiansToDegrees(Speed * DeltaTime / 32.f), 0));
+    UpdateSeatedPose(Driver, false);
+    UpdateSeatedPose(Passenger, true);
 }
 
 void ACitySedan::UpdateEntry(float DeltaTime)
 {
     if (!IsValid(EnteringCharacter) || !EnteringPlayer.IsValid()) { CancelEntry(); return; }
     EntryTime += DeltaTime;
-    const float Approach = CityLiveEntry::Blend(EntryTime, 0.f, .9f);
-    const float Sit = CityLiveEntry::Sit(EntryTime);
-    const FVector Seat = GetActorTransform().TransformPosition(FVector(-25.f, bEnteringPassenger ? 40.f : -40.f, 30.f));
-    FVector Position = FMath::Lerp(EntryStart, EntryApproach, Approach);
-    Position = FMath::Lerp(Position, Seat, Sit);
+    const float Phase = bExiting ? CityLiveEntry::Duration - EntryTime : EntryTime;
+    const float Sit = CityLiveEntry::Sit(Phase);
+    const float SeatY = bEnteringPassenger ? 40.f : -40.f;
+    const FVector Seat = GetActorTransform().TransformPosition(FVector(-25.f, SeatY, 10.f));
+    FVector Position = FMath::Lerp(EntryApproach, Seat, Sit);
+    if (!bExiting && EntryTime < 0.f)
+    {
+        float Distance = FMath::Clamp((EntryTime + RouteDuration) / RouteDuration, 0.f, 1.f) * RouteLength;
+        for (int32 I = 1; I < EntryRoute.Num(); ++I)
+        {
+            const float Segment = FVector::Distance(EntryRoute[I-1], EntryRoute[I]);
+            if (Distance <= Segment || I == EntryRoute.Num()-1)
+            {
+                Position = FMath::Lerp(EntryRoute[I-1], EntryRoute[I], Segment > .001f ? FMath::Clamp(Distance / Segment, 0.f, 1.f) : 1.f);
+                break;
+            }
+            Distance -= Segment;
+        }
+    }
     const FRotator FacingDoor = (HandleLocation() - EntryApproach).Rotation();
     FRotator DesiredRotation = FRotator(0, FacingDoor.Yaw, 0);
     if (Sit > 0.f) DesiredRotation = FQuat::Slerp(DesiredRotation.Quaternion(), GetActorQuat(), Sit).Rotator();
     const FVector Previous = EnteringCharacter->GetActorLocation();
+    const FVector WalkDirection = Position - Previous;
+    if (Phase < 0.f && WalkDirection.SizeSquared2D() > .1f) DesiredRotation = FRotator(0, WalkDirection.Rotation().Yaw, 0);
     EnteringCharacter->SetActorLocationAndRotation(Position,
-        FQuat::Slerp(EntryStartRotation.Quaternion(), DesiredRotation.Quaternion(), Approach));
+        FMath::RInterpTo(EnteringCharacter->GetActorRotation(), DesiredRotation, DeltaTime, 7.f));
     EnteringCharacter->GetCharacterMovement()->Velocity = DeltaTime > 0.f && Sit <= 0.f ? (Position - Previous) / DeltaTime : FVector::ZeroVector;
     DoorPivots[bEnteringPassenger ? 1 : 0]->SetRelativeRotation(
-        FRotator(0, (bEnteringPassenger ? -70.f : 70.f) * CityLiveEntry::Door(EntryTime), 0));
+        FRotator(0, (bEnteringPassenger ? -70.f : 70.f) * CityLiveEntry::Door(Phase), 0));
     if (UCityCrouchMeshComponent* EntryMesh = Cast<UCityCrouchMeshComponent>(EnteringCharacter->GetMesh()))
-        EntryMesh->SetVehicleEntryPose(Sit, CityLiveEntry::Hand(EntryTime), HandleLocation(), !bEnteringPassenger);
-    if (EntryTime >= CityLiveEntry::Duration) CompleteEntry();
+    {
+        EntryMesh->SetVehicleEntryPose(0, CityLiveEntry::Hand(Phase), HandleLocation(), !bEnteringPassenger);
+        FVector Outside = GetActorTransform().TransformPosition(FVector(-25, bEnteringPassenger ? 112.f : -112.f, 0));
+        Outside.Z = EntryApproach.Z - EnteringCharacter->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + 3.f;
+        const FVector OutsideLeft = Outside - GetActorForwardVector() * 12.f;
+        const FVector OutsideRight = Outside + GetActorForwardVector() * 12.f;
+        const FVector InsideLeft = GetActorTransform().TransformPosition(FVector(35, SeatY-13.f, -25));
+        const FVector InsideRight = GetActorTransform().TransformPosition(FVector(35, SeatY+13.f, -25));
+        EntryMesh->SetVehicleSeatLegs(Sit,
+            FMath::Lerp(OutsideLeft, InsideLeft, CityLiveEntry::Leg(Phase, bEnteringPassenger)),
+            FMath::Lerp(OutsideRight, InsideRight, CityLiveEntry::Leg(Phase, !bEnteringPassenger)));
+    }
+    if (EntryTime >= CityLiveEntry::Duration)
+    {
+        if (bExiting) CompleteExit();
+        else CompleteEntry();
+    }
 }
 
 void ACitySedan::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)

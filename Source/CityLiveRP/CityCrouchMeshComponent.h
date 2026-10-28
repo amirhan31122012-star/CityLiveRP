@@ -15,6 +15,7 @@ public:
     virtual void FinalizeBoneTransform() override;
     float GetCrouchAlpha() const { return CrouchAlpha; }
     void SetVehicleEntryPose(float Sit, float Reach, FVector Handle, bool bRightHand);
+    void SetVehicleSeatLegs(float Alpha, FVector LeftFoot, FVector RightFoot);
 
     UPROPERTY(EditAnywhere, Category="CityLive|Crouch", meta=(ClampMin="0", ClampMax="60"))
     float PelvisDrop = 52.f;
@@ -28,6 +29,10 @@ private:
     float EntryReach = 0.f;
     FVector EntryHandle = FVector::ZeroVector;
     bool bEntryRightHand = false;
+    float SeatLegAlpha = 0.f;
+    FVector SeatFootLeft = FVector::ZeroVector;
+    FVector SeatFootRight = FVector::ZeroVector;
     void ApplyCrouch();
     void ApplyEntryHand();
+    void ApplySeatLegs();
 };
