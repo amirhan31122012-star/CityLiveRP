@@ -40,7 +40,7 @@ ACityLiveRPCharacter::ACityLiveRPCharacter(const FObjectInitializer& ObjectIniti
     GetCharacterMovement()->MaxWalkSpeed = MobileWalkSpeed;
     GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
     GetCharacterMovement()->MaxWalkSpeedCrouched = 160.f;
-    GetCharacterMovement()->SetCrouchedHalfHeight(64.f);
+    GetCharacterMovement()->SetCrouchedHalfHeight(48.f);
     GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
     GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
     GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
@@ -77,7 +77,7 @@ void ACityLiveRPCharacter::BeginPlay()
     StandingCapsuleHalfHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
     // Apply at runtime too: existing Blueprint instances may store template defaults.
     GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
-    GetCharacterMovement()->SetCrouchedHalfHeight(64.f);
+    GetCharacterMovement()->SetCrouchedHalfHeight(48.f);
     GetCharacterMovement()->MaxWalkSpeed = MobileWalkSpeed;
     GetCharacterMovement()->MaxWalkSpeedCrouched = 160.f;
     CameraBoom->SetAbsolute(false, false, false);

@@ -7,7 +7,7 @@ int main()
     // A lowering pelvis must bend the knee without stretching either leg segment.
     for (double Upper : {40., 45., 50.})
     for (double Lower : {40., 45., 50.})
-    for (double Distance : {45., 55., 65., 75.})
+    for (double Distance : {25., 35., 45., 55., 65., 75.})
     {
         double X, Y;
         assert(CityLiveCrouch::KneeOffset(Upper, Lower, Distance, X, Y));
@@ -15,7 +15,7 @@ int main()
         assert(std::abs(std::hypot(Distance - X, Y) - Lower) < 1e-8);
         assert(Y > 0.);
     }
-    std::cout << "PASS: 36 crouch poses preserve both leg lengths and ankle target\n";
+    std::cout << "PASS: 54 shallow and deep crouch poses preserve leg lengths and ankle target\n";
     double LastBend = 0.;
     for (double Distance = 88.; Distance >= 55.; Distance -= 1.)
     {

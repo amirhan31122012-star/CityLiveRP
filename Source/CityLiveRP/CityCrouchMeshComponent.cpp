@@ -71,7 +71,7 @@ void UCityCrouchMeshComponent::ApplyCrouch()
 
     // Lean the upper body forward, keeping the original arm animation.
     const FVector LeanAxis = FVector::CrossProduct(Up, Forward).GetSafeNormal();
-    RotateBranch(Spine, FQuat(LeanAxis, FMath::DegreesToRadians(12.f * CrouchAlpha)));
+    RotateBranch(Spine, FQuat(LeanAxis, FMath::DegreesToRadians(20.f * CrouchAlpha)));
     for (int32 Side = 0; Side < 2; ++Side)
     {
         const int32 HipBone = Thighs[Side], KneeBone = Calves[Side], FootBone = Feet[Side];
