@@ -17,6 +17,12 @@ if not errorlevel 1 (
 if not defined UE_ROOT (
     for /f "tokens=2,*" %%A in ('reg query "HKLM\SOFTWARE\EpicGames\Unreal Engine\5.8" /v InstalledDirectory 2^>nul') do set "UE_ROOT=%%B"
 )
+rem Epic Launcher may not register the engine. Also check its default install path.
+if "%~1"=="" (
+    if not exist "%UE_ROOT%\Engine\Build\BatchFiles\Build.bat" (
+        if exist "%ProgramFiles%\Epic Games\UE_5.8\Engine\Build\BatchFiles\Build.bat" set "UE_ROOT=%ProgramFiles%\Epic Games\UE_5.8"
+    )
+)
 if not exist "%UE_ROOT%\Engine\Build\BatchFiles\Build.bat" (
     echo Unreal Engine 5.8 не найден в реестре.
     echo Запустите этот файл из командной строки, указав папку движка:
