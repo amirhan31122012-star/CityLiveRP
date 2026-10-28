@@ -17,6 +17,10 @@
 	],
 	"Plugins": [
 		{
+			"Name": "Fab",
+			"Enabled": false
+		},
+		{
 			"Name": "PythonScriptPlugin",
 			"Enabled": true,
 			"TargetAllowList": ["Editor"]
