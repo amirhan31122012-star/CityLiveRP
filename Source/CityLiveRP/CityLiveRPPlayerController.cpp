@@ -2,6 +2,9 @@
 
 
 #include "CityLiveRPPlayerController.h"
+#include "SCityMobileControls.h"
+#include "Engine/GameViewportClient.h"
+#include "Engine/World.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
@@ -16,19 +19,13 @@ void ACityLiveRPPlayerController::BeginPlay()
 	// only spawn touch controls on local player controllers
 	if (IsLocalPlayerController() && ShouldUseTouchControls())
 	{
-		// spawn the mobile controls widget
-		MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
-
-		if (MobileControlsWidget)
-		{
-			// add the controls to the player screen
-			MobileControlsWidget->AddToPlayerScreen(0);
-
-		} else {
-
-			UE_LOG(LogCityLiveRP, Error, TEXT("Could not spawn mobile controls widget."));
-
-		}
+        // Replace both the default two-stick interface and template mobile HUD.
+        ActivateTouchInterface(nullptr);
+        if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
+        {
+            SAssignNew(CityMobileControls, SCityMobileControls).Controller(this);
+            Viewport->AddViewportWidgetForPlayer(GetLocalPlayer(), CityMobileControls.ToSharedRef(), 20);
+        }
 
 	}
 }
@@ -64,4 +61,18 @@ bool ACityLiveRPPlayerController::ShouldUseTouchControls() const
 {
 	// are we on a mobile platform? Should we force touch?
 	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
+}
+
+void ACityLiveRPPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (CityMobileControls.IsValid())
+    {
+        CityMobileControls->ResetControls();
+        if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
+        {
+            Viewport->RemoveViewportWidgetForPlayer(GetLocalPlayer(), CityMobileControls.ToSharedRef());
+        }
+        CityMobileControls.Reset();
+    }
+    Super::EndPlay(EndPlayReason);
 }

@@ -8,6 +8,7 @@
 
 class UInputMappingContext;
 class UUserWidget;
+class SCityMobileControls;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -39,6 +40,10 @@ protected:
 	/** If true, the player will use UMG touch controls even if not playing on mobile platforms */
 	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")
 	bool bForceTouchControls = false;
+
+	TSharedPtr<SCityMobileControls> CityMobileControls;
+
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;

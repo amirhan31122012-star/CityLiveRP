@@ -28,7 +28,9 @@ ACityLiveRPCharacter::ACityLiveRPCharacter()
 
     GetCharacterMovement()->JumpZVelocity = 500.f;
     GetCharacterMovement()->AirControl = 0.35f;
-    GetCharacterMovement()->MaxWalkSpeed = 500.f;
+    GetCharacterMovement()->MaxWalkSpeed = MobileWalkSpeed;
+    GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
+    GetCharacterMovement()->MaxWalkSpeedCrouched = 160.f;
     GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
     GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
     GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
@@ -42,10 +44,36 @@ ACityLiveRPCharacter::ACityLiveRPCharacter()
     CameraBoom->bInheritYaw = true;
     CameraBoom->bInheritRoll = false;
 
+    CameraBoom->SetRelativeRotation(FRotator(-15.f, 0.f, 0.f));
+    CameraBoom->bEnableCameraLag = true;
+    CameraBoom->CameraLagSpeed = 10.f;
+    CameraBoom->bEnableCameraRotationLag = true;
+    CameraBoom->CameraRotationLagSpeed = 5.f;
+    CameraBoom->bUseCameraLagSubstepping = true;
+
     // Камера
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
     FollowCamera->bUsePawnControlRotation = false;
+}
+
+void ACityLiveRPCharacter::BeginPlay()
+{
+    Super::BeginPlay();
+    // Apply at runtime too: existing Blueprint instances may store template defaults.
+    GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
+    GetCharacterMovement()->MaxWalkSpeed = MobileWalkSpeed;
+    GetCharacterMovement()->MaxWalkSpeedCrouched = 160.f;
+    CameraBoom->bUsePawnControlRotation = false;
+    CameraBoom->bInheritPitch = false;
+    CameraBoom->bInheritYaw = true;
+    CameraBoom->bInheritRoll = false;
+    CameraBoom->SetRelativeRotation(FRotator(-15.f, 0.f, 0.f));
+    CameraBoom->bEnableCameraLag = true;
+    CameraBoom->CameraLagSpeed = 10.f;
+    CameraBoom->bEnableCameraRotationLag = true;
+    CameraBoom->CameraRotationLagSpeed = 5.f;
+    CameraBoom->bUseCameraLagSubstepping = true;
 }
 
 void ACityLiveRPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -114,4 +142,23 @@ void ACityLiveRPCharacter::DoJumpStart()
 void ACityLiveRPCharacter::DoJumpEnd()
 {
     StopJumping();
+}
+
+void ACityLiveRPCharacter::SetMobileSprint(bool bEnabled)
+{
+    if (bEnabled) UnCrouch();
+    GetCharacterMovement()->MaxWalkSpeed = bEnabled ? MobileSprintSpeed : MobileWalkSpeed;
+}
+
+void ACityLiveRPCharacter::ToggleMobileCrouch()
+{
+    if (bIsCrouched || GetCharacterMovement()->bWantsToCrouch)
+    {
+        UnCrouch();
+    }
+    else
+    {
+        SetMobileSprint(false);
+        Crouch();
+    }
 }

@@ -56,6 +56,8 @@ public:
 
 protected:
 
+	virtual void BeginPlay() override;
+
 	/** Initialize input action bindings */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -87,7 +89,17 @@ public:
 
 public:
 
-	/** Returns CameraBoom subobject **/
+    /** Mobile controls: sprint is held, crouch is toggled. */
+    void SetMobileSprint(bool bEnabled);
+    void ToggleMobileCrouch();
+
+    UPROPERTY(EditAnywhere, Category="Mobile Movement", meta=(ClampMin="0"))
+    float MobileWalkSpeed = 350.f;
+
+    UPROPERTY(EditAnywhere, Category="Mobile Movement", meta=(ClampMin="0"))
+    float MobileSprintSpeed = 650.f;
+
+    /** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
 	/** Returns FollowCamera subobject **/
