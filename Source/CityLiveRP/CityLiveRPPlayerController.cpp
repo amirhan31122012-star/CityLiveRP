@@ -2,6 +2,7 @@
 
 
 #include "CityLiveRPPlayerController.h"
+#include "CityLiveRPCharacter.h"
 #include "SCityMobileControls.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
@@ -15,6 +16,9 @@
 void ACityLiveRPPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+    UE_LOG(LogCityLiveRP, Display, TEXT("CityLive RP controls v3: runner icon and pawn-follow camera. Pawn: %s"),
+        *GetNameSafe(GetPawn()));
 
 	// only spawn touch controls on local player controllers
 	if (IsLocalPlayerController() && ShouldUseTouchControls())
@@ -61,6 +65,24 @@ bool ACityLiveRPPlayerController::ShouldUseTouchControls() const
 {
 	// are we on a mobile platform? Should we force touch?
 	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
+}
+
+void ACityLiveRPPlayerController::OnPossess(APawn* InPawn)
+{
+    Super::OnPossess(InPawn);
+    if (IsLocalController() && Cast<ACityLiveRPCharacter>(InPawn))
+    {
+        SetViewTarget(InPawn);
+    }
+}
+
+void ACityLiveRPPlayerController::OnRep_Pawn()
+{
+    Super::OnRep_Pawn();
+    if (IsLocalController() && Cast<ACityLiveRPCharacter>(GetPawn()))
+    {
+        SetViewTarget(GetPawn());
+    }
 }
 
 void ACityLiveRPPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)

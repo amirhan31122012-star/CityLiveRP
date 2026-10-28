@@ -5,6 +5,11 @@
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Camera/CameraTypes.h"
+#include "Engine/World.h"
+#include "CollisionQueryParams.h"
+#include "CollisionShape.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
@@ -87,6 +92,32 @@ void ACityLiveRPCharacter::BeginPlay()
     FollowCamera->SetRelativeTransform(FTransform::Identity);
     FollowCamera->bUsePawnControlRotation = false;
     CameraBoom->AddTickPrerequisiteComponent(GetCharacterMovement());
+    bUseControllerRotationYaw = false;
+    GetCharacterMovement()->bOrientRotationToMovement = true;
+    GetMesh()->SetOwnerNoSee(false);
+    GetMesh()->SetOnlyOwnerSee(false);
+    GetMesh()->SetVisibility(true);
+}
+
+void ACityLiveRPCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
+{
+    // Calculate the final player view from the pawn, not from a possibly
+    // overridden Blueprint camera, control rotation, or spring-arm transform.
+    FollowCamera->GetCameraView(DeltaTime, OutResult);
+    const FVector Focus = GetActorLocation() + FVector(0.f, 0.f, 35.f);
+    const FVector Forward = FRotator(0.f, GetActorRotation().Yaw, 0.f).Vector();
+    const FVector Desired = Focus - Forward * 420.f + FVector(0.f, 0.f, 140.f);
+    FVector CameraLocation = Desired;
+    FHitResult Hit;
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(CityFollowCamera), false, this);
+    if (GetWorld()->SweepSingleByChannel(Hit, Focus, Desired, FQuat::Identity,
+        ECC_Camera, FCollisionShape::MakeSphere(12.f), Params))
+    {
+        CameraLocation = Hit.Location;
+    }
+    OutResult.Location = CameraLocation;
+    OutResult.Rotation = (Focus - CameraLocation).Rotation();
+    OutResult.FOV = 80.f;
 }
 
 void ACityLiveRPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

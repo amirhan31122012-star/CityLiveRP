@@ -193,7 +193,7 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
         TArray<FVector2D> Points;
         for (const FVector2D& Joint : Joints) Points.Add(Right + Joint * Radius);
         FSlateDrawElement::MakeLines(Out, Layer + 1, Geometry.ToPaintGeometry(),
-            Points, ESlateDrawEffect::None, IconColor, true, Radius * 0.09f);
+            Points, ESlateDrawEffect::None, IconColor, true, Radius * 0.115f);
     };
     const FVector2D Head = Right + FVector2D(0.16f, -0.48f) * Radius;
     const float HeadRadius = Radius * 0.115f;

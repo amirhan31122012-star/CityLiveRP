@@ -54,6 +54,8 @@ public:
 	/** Constructor */
 	ACityLiveRPCharacter();	
 
+    virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
+
 protected:
 
 	virtual void BeginPlay() override;

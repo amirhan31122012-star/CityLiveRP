@@ -44,6 +44,8 @@ protected:
 	TSharedPtr<SCityMobileControls> CityMobileControls;
 
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+    virtual void OnPossess(APawn* InPawn) override;
+    virtual void OnRep_Pawn() override;
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;

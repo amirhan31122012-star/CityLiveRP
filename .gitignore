@@ -1,0 +1,10 @@
+# Generated Unreal/Visual Studio files, not game source or assets.
+/Binaries/
+/Binaries_backup/
+/Intermediate/
+/DerivedDataCache/
+/Saved/
+/.vs/
+/*.sln
+/*.slnx
+/*.VC.db
