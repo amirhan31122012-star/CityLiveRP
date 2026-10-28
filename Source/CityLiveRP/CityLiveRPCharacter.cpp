@@ -116,12 +116,12 @@ void ACityLiveRPCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResu
     // overridden Blueprint camera, control rotation, or spring-arm transform.
     FollowCamera->GetCameraView(DeltaTime, OutResult);
     float CrouchCameraOffset = 0.f;
-    if (const UCityCrouchMeshComponent* Mesh = Cast<UCityCrouchMeshComponent>(GetMesh()))
+    if (const UCityCrouchMeshComponent* CrouchMesh = Cast<UCityCrouchMeshComponent>(GetMesh()))
     {
         // The capsule changes height immediately; follow the visual blend instead.
         const float HeightDrop = StandingCapsuleHalfHeight - GetCharacterMovement()->GetCrouchedHalfHeight();
         CrouchCameraOffset = (StandingCapsuleHalfHeight - GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()
-            - HeightDrop * Mesh->GetCrouchAlpha()) * GetCapsuleComponent()->GetShapeScale();
+            - HeightDrop * CrouchMesh->GetCrouchAlpha()) * GetCapsuleComponent()->GetShapeScale();
     }
     const FVector Focus = GetActorLocation() + FVector(0.f, 0.f, 35.f + CrouchCameraOffset);
     const FVector Forward = FRotator(0.f, GetActorRotation().Yaw, 0.f).Vector();
