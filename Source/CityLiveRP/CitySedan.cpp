@@ -495,6 +495,7 @@ void ACitySedan::Tick(float DeltaTime)
 
 void ACitySedan::SetEntryPhysicsPaused(bool bPaused)
 {
+    RestTimer = 0.f;
     if (bPaused)
     {
         CollisionBox->SetPhysicsLinearVelocity(FVector::ZeroVector);
@@ -506,6 +507,11 @@ void ACitySedan::SetEntryPhysicsPaused(bool bPaused)
 void ACitySedan::TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake)
 {
     if (DeltaTime <= 0.f || !CollisionBox->IsSimulatingPhysics()) return;
+    if (!CollisionBox->IsAnyRigidBodyAwake())
+    {
+        if (!Gas && !Brake) { Speed = 0.f; return; }
+        CollisionBox->WakeAllRigidBodies();
+    }
     const float Mass = CollisionBox->GetMass();
     const FVector Up = GetActorUpVector();
     const FVector Velocity = CollisionBox->GetPhysicsLinearVelocity();
@@ -515,6 +521,8 @@ void ACitySedan::TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake)
     for (ACityLiveRPCharacter* Occupant : Passengers) if (Occupant) Params.AddIgnoredActor(Occupant);
     int32 Contacts = 0;
     FVector GroundNormal = FVector::ZeroVector;
+    TArray<FVector> ForcePoints;
+    TArray<FVector> SpringForces;
     for (int32 Wheel = 0; Wheel < SuspensionAnchors.Num(); ++Wheel)
     {
         const FVector Anchor = GetActorTransform().TransformPosition(SuspensionAnchors[Wheel]);
@@ -522,24 +530,43 @@ void ACitySedan::TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake)
         const bool bHit = GetWorld()->SweepSingleByChannel(Hit, Anchor,
             Anchor - Up * (CitySuspension::RestLength + CitySuspension::Travel), FQuat::Identity,
             ECC_Visibility, FCollisionShape::MakeSphere(CitySuspension::WheelRadius), Params);
-        WheelSuspensionOffsets[Wheel] = -CitySuspension::Travel;
-        if (!bHit || Hit.ImpactNormal.Z < .3f) continue;
+        if (!bHit || Hit.ImpactNormal.Z < .65f)
+        {
+            WheelSuspensionOffsets[Wheel] = FMath::FInterpTo(WheelSuspensionOffsets[Wheel], -CitySuspension::Travel, DeltaTime, 8.f);
+            continue;
+        }
         const float Compression = CitySuspension::RestLength - Hit.Distance;
-        WheelSuspensionOffsets[Wheel] = FMath::Clamp(Compression, -CitySuspension::Travel, CitySuspension::Travel);
+        WheelSuspensionOffsets[Wheel] = FMath::FInterpTo(WheelSuspensionOffsets[Wheel],
+            FMath::Clamp(Compression, -CitySuspension::Travel, CitySuspension::Travel), DeltaTime, 12.f);
         const float VerticalSpeed = FVector::DotProduct(CollisionBox->GetPhysicsLinearVelocityAtPoint(Anchor), Up);
-        const float LiftForce = CitySuspension::Force(Compression, VerticalSpeed, Mass);
-        CollisionBox->AddForceAtLocation(Up * LiftForce, Anchor);
-        if (LiftForce > 0.f) { ++Contacts; GroundNormal += Hit.ImpactNormal; }
+        const float LiftForce = CitySuspension::Force(Compression, VerticalSpeed, Mass, DeltaTime);
+        ForcePoints.Add(Anchor);
+        SpringForces.Add(Up * LiftForce);
+        if (LiftForce > 0.f) { ++Contacts; GroundNormal += Hit.ImpactNormal * LiftForce; }
     }
     DriveLogTimer += DeltaTime;
     if (Driver && (Gas || Brake) && DriveLogTimer >= 2.f)
     {
-        UE_LOG(LogTemp, Display, TEXT("CityLiveDrive: speed=%.1f km/h contacts=%d/4 mass=%.0f kg gas=%d brake=%d"),
-            Speed * .036f, Contacts, Mass, Gas ? 1 : 0, Brake ? 1 : 0);
+        UE_LOG(LogTemp, Display, TEXT("CityLiveDrive: speed=%.1f km/h contacts=%d/4 mass=%.0f kg gas=%d brake=%d fps=%.1f vz=%.1f angular=%.2f"),
+            Speed * .036f, Contacts, Mass, Gas ? 1 : 0, Brake ? 1 : 0, 1.f / DeltaTime,
+            Velocity.Z, CollisionBox->GetPhysicsAngularVelocityInRadians().Size());
         DriveLogTimer = 0.f;
     }
     if (Contacts == 0) return;
     GroundNormal.Normalize();
+    const bool bSettled = !Gas && !Brake && Contacts == 4 && GroundNormal.Z > .985f &&
+        Velocity.SizeSquared() < 9.f && CollisionBox->GetPhysicsAngularVelocityInRadians().SizeSquared() < .0025f;
+    RestTimer = bSettled ? RestTimer + DeltaTime : 0.f;
+    if (RestTimer > .75f)
+    {
+        CollisionBox->SetPhysicsLinearVelocity(FVector::ZeroVector);
+        CollisionBox->SetPhysicsAngularVelocityInRadians(FVector::ZeroVector);
+        CollisionBox->PutAllRigidBodiesToSleep();
+        Speed = 0.f;
+        return;
+    }
+    for (int32 ForceIndex = 0; ForceIndex < SpringForces.Num(); ++ForceIndex)
+        CollisionBox->AddForceAtLocation(SpringForces[ForceIndex], ForcePoints[ForceIndex]);
     const FVector Forward = FVector::VectorPlaneProject(GetActorForwardVector(), GroundNormal).GetSafeNormal();
     const FVector Right = FVector::CrossProduct(GroundNormal, Forward).GetSafeNormal();
     const float Desired = CityLiveDriving::AdvanceSpeed(Speed, Driver != nullptr, Gas, Brake, DeltaTime);

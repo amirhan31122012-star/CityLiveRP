@@ -56,6 +56,7 @@ private:
     TArray<FVector> SuspensionAnchors;
     TArray<float> WheelSuspensionOffsets;
     float DriveLogTimer = 0.f;
+    float RestTimer = 0.f;
     UPROPERTY() TObjectPtr<ACityLiveRPCharacter> Driver;
     UPROPERTY() TArray<TObjectPtr<ACityLiveRPCharacter>> Passengers;
     UPROPERTY() TArray<TObjectPtr<USceneComponent>> DoorPivots;
