@@ -52,7 +52,7 @@ protected:
 public:
 
 	/** Constructor */
-	ACityLiveRPCharacter();	
+	ACityLiveRPCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
     virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
     virtual void Tick(float DeltaTime) override;
@@ -117,6 +117,7 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 private:
+    float StandingCapsuleHalfHeight = 96.f;
     float MobileSteering = 0.f;
     float MobileForward = 0.f;
     float MobileYawRate = 0.f;

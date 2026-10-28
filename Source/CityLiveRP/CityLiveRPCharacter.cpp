@@ -2,6 +2,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "CityLiveRPCharacter.h"
+#include "CityCrouchMeshComponent.h"
 #include "MobileSteering.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
@@ -19,7 +20,8 @@
 #include "InputActionValue.h"
 #include "CityLiveRP.h"
 
-ACityLiveRPCharacter::ACityLiveRPCharacter()
+ACityLiveRPCharacter::ACityLiveRPCharacter(const FObjectInitializer& ObjectInitializer)
+    : Super(ObjectInitializer.SetDefaultSubobjectClass<UCityCrouchMeshComponent>(ACharacter::MeshComponentName))
 {
     PrimaryActorTick.bCanEverTick = true;
     GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -38,6 +40,7 @@ ACityLiveRPCharacter::ACityLiveRPCharacter()
     GetCharacterMovement()->MaxWalkSpeed = MobileWalkSpeed;
     GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
     GetCharacterMovement()->MaxWalkSpeedCrouched = 160.f;
+    GetCharacterMovement()->SetCrouchedHalfHeight(64.f);
     GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
     GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
     GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
@@ -71,8 +74,10 @@ ACityLiveRPCharacter::ACityLiveRPCharacter()
 void ACityLiveRPCharacter::BeginPlay()
 {
     Super::BeginPlay();
+    StandingCapsuleHalfHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
     // Apply at runtime too: existing Blueprint instances may store template defaults.
     GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
+    GetCharacterMovement()->SetCrouchedHalfHeight(64.f);
     GetCharacterMovement()->MaxWalkSpeed = MobileWalkSpeed;
     GetCharacterMovement()->MaxWalkSpeedCrouched = 160.f;
     CameraBoom->SetAbsolute(false, false, false);
@@ -101,6 +106,8 @@ void ACityLiveRPCharacter::BeginPlay()
     GetMesh()->SetOwnerNoSee(false);
     GetMesh()->SetOnlyOwnerSee(false);
     GetMesh()->SetVisibility(true);
+    // Do not interpolate a cached, already-deformed pose back into this overlay.
+    GetMesh()->bEnableUpdateRateOptimizations = false;
 }
 
 void ACityLiveRPCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
@@ -108,7 +115,15 @@ void ACityLiveRPCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResu
     // Calculate the final player view from the pawn, not from a possibly
     // overridden Blueprint camera, control rotation, or spring-arm transform.
     FollowCamera->GetCameraView(DeltaTime, OutResult);
-    const FVector Focus = GetActorLocation() + FVector(0.f, 0.f, 35.f);
+    float CrouchCameraOffset = 0.f;
+    if (const UCityCrouchMeshComponent* Mesh = Cast<UCityCrouchMeshComponent>(GetMesh()))
+    {
+        // The capsule changes height immediately; follow the visual blend instead.
+        const float HeightDrop = StandingCapsuleHalfHeight - GetCharacterMovement()->GetCrouchedHalfHeight();
+        CrouchCameraOffset = (StandingCapsuleHalfHeight - GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()
+            - HeightDrop * Mesh->GetCrouchAlpha()) * GetCapsuleComponent()->GetShapeScale();
+    }
+    const FVector Focus = GetActorLocation() + FVector(0.f, 0.f, 35.f + CrouchCameraOffset);
     const FVector Forward = FRotator(0.f, GetActorRotation().Yaw, 0.f).Vector();
     const FVector Desired = Focus - Forward * 420.f + FVector(0.f, 0.f, 140.f);
     FVector CameraLocation = Desired;
