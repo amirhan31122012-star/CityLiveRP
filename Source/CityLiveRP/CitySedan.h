@@ -40,6 +40,8 @@ public:
 
     UPROPERTY(EditDefaultsOnly, Category="CityLive|Vehicle Model")
     TSoftObjectPtr<USkeletalMesh> SedanMeshAsset;
+    UPROPERTY(EditDefaultsOnly, Category="CityLive|Vehicle Model")
+    TSoftObjectPtr<USkeletalMesh> FourDoorMeshAsset;
 
 private:
     UPROPERTY() TObjectPtr<UBoxComponent> CollisionBox;

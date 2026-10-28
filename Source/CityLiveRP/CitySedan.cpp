@@ -37,6 +37,7 @@ ACitySedan::ACitySedan()
         SuspensionAnchors.Add(FVector(Wheel < 2 ? 135.f : -135.f, Wheel % 2 ? 95.f : -95.f, 0));
     WheelSuspensionOffsets.Init(0.f, 4);
     SedanMeshAsset = TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(TEXT("/Game/VehicleVarietyVol2/Skeletons/SK_Sedan_01a.SK_Sedan_01a")));
+    FourDoorMeshAsset = TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(TEXT("/Game/CityLiveVehicles/Sedan/SK_CitySedan_4Doors.SK_CitySedan_4Doors")));
     ImportedSedan = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("ImportedSedan"));
     ImportedSedan->SetupAttachment(CollisionBox);
     ImportedSedan->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -116,7 +117,8 @@ void ACitySedan::BeginPlay()
     CollisionBox->SetAngularDamping(2.f);
     CollisionBox->SetUseCCD(true);
     CollisionBox->SetSimulatePhysics(true);
-    USkeletalMesh* SedanAsset = SedanMeshAsset.LoadSynchronous();
+    USkeletalMesh* SedanAsset = FourDoorMeshAsset.LoadSynchronous();
+    if (!SedanAsset) SedanAsset = SedanMeshAsset.LoadSynchronous();
     if (!SedanAsset)
     {
         UE_LOG(LogTemp, Warning, TEXT("CityLive sedan asset missing at %s; keeping prototype model."), *SedanMeshAsset.ToString());
@@ -148,6 +150,11 @@ void ACitySedan::BeginPlay()
     }
     const bool bHasDoorRig = RestVehicleBones.Contains(FName(TEXT("Door_Front_Left"))) && RestVehicleBones.Contains(FName(TEXT("Door_Front_Right"))) &&
         RestVehicleBones.Contains(FName(TEXT("Door_Rear_Left"))) && RestVehicleBones.Contains(FName(TEXT("Door_Rear_Right")));
+    const FName DoorBones[] = {FName(TEXT("Door_Front_Left")), FName(TEXT("Door_Front_Right")),
+        FName(TEXT("Door_Rear_Left")), FName(TEXT("Door_Rear_Right"))};
+    for (int32 Door = 0; Door < 4; ++Door)
+        if (const FTransform* Hinge = RestVehicleBones.Find(DoorBones[Door]))
+            DoorPivots[Door]->SetRelativeLocation(ImportedSedan->GetRelativeTransform().TransformPosition(Hinge->GetLocation()));
     UE_LOG(LogTemp, Display, TEXT("CityLive sedan: imported model active (%s). Four-door rig: %s."), *SedanAsset->GetName(), bHasDoorRig ? TEXT("present") : TEXT("missing"));
 }
 
