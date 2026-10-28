@@ -90,9 +90,9 @@ void ACityLiveRPPlayerController::OnPossess(APawn* InPawn)
                 {
                     const float Yaw = InPawn->GetActorRotation().Yaw;
                     const FVector Candidate = InPawn->GetActorLocation() + FRotator(0, Yaw + Direction * 30.f, 0).Vector() * Distance;
-                    FVector SpawnLocation;
-                    if (!ACitySedan::FindFlatSpawn(GetWorld(), Candidate, Yaw, InPawn, SpawnLocation)) continue;
-                    TestSedan = GetWorld()->SpawnActor<ACitySedan>(ACitySedan::StaticClass(), SpawnLocation, FRotator(0, Yaw, 0), Params);
+                    FVector SedanSpawnPosition;
+                    if (!ACitySedan::FindFlatSpawn(GetWorld(), Candidate, Yaw, InPawn, SedanSpawnPosition)) continue;
+                    TestSedan = GetWorld()->SpawnActor<ACitySedan>(ACitySedan::StaticClass(), SedanSpawnPosition, FRotator(0, Yaw, 0), Params);
                     if (TestSedan) break;
                 }
                 if (TestSedan) break;
