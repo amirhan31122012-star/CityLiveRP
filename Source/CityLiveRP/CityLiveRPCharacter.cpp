@@ -1,0 +1,117 @@
+
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+#include "CityLiveRPCharacter.h"
+#include "Engine/LocalPlayer.h"
+#include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/Controller.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputActionValue.h"
+#include "CityLiveRP.h"
+
+ACityLiveRPCharacter::ACityLiveRPCharacter()
+{
+    GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+
+    // Поворот персонажа
+    bUseControllerRotationPitch = false;
+    bUseControllerRotationYaw = false;
+    bUseControllerRotationRoll = false;
+
+    GetCharacterMovement()->bOrientRotationToMovement = true;
+    GetCharacterMovement()->bUseControllerDesiredRotation = false;
+    GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
+
+    GetCharacterMovement()->JumpZVelocity = 500.f;
+    GetCharacterMovement()->AirControl = 0.35f;
+    GetCharacterMovement()->MaxWalkSpeed = 500.f;
+    GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
+    GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
+    GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
+
+    // Камера следует за горизонтальным поворотом персонажа
+    CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+    CameraBoom->SetupAttachment(RootComponent);
+    CameraBoom->TargetArmLength = 400.0f;
+    CameraBoom->bUsePawnControlRotation = false;
+    CameraBoom->bInheritPitch = false;
+    CameraBoom->bInheritYaw = true;
+    CameraBoom->bInheritRoll = false;
+
+    // Камера
+    FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
+    FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+    FollowCamera->bUsePawnControlRotation = false;
+}
+
+void ACityLiveRPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+    if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+    {
+        EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+        EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+
+        EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ACityLiveRPCharacter::Move);
+        EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ACityLiveRPCharacter::Look);
+        EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ACityLiveRPCharacter::Look);
+    }
+    else
+    {
+        UE_LOG(LogCityLiveRP, Error,
+            TEXT("'%s' Failed to find an Enhanced Input component!"),
+            *GetNameSafe(this));
+    }
+}
+
+void ACityLiveRPCharacter::Move(const FInputActionValue& Value)
+{
+    FVector2D MovementVector = Value.Get<FVector2D>();
+    DoMove(MovementVector.X, MovementVector.Y);
+}
+
+void ACityLiveRPCharacter::Look(const FInputActionValue& Value)
+{
+    FVector2D LookAxisVector = Value.Get<FVector2D>();
+    DoLook(LookAxisVector.X, LookAxisVector.Y);
+}
+
+void ACityLiveRPCharacter::DoMove(float Right, float Forward)
+{
+    if (GetController() != nullptr)
+    {
+        const FRotator Rotation = GetController()->GetControlRotation();
+        const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
+
+        const FVector ForwardDirection =
+            FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+
+        const FVector RightDirection =
+            FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+        AddMovementInput(ForwardDirection, Forward);
+        AddMovementInput(RightDirection, Right);
+    }
+}
+
+void ACityLiveRPCharacter::DoLook(float Yaw, float Pitch)
+{
+    if (GetController() != nullptr)
+    {
+        AddControllerYawInput(Yaw);
+        AddControllerPitchInput(Pitch);
+    }
+}
+
+void ACityLiveRPCharacter::DoJumpStart()
+{
+    Jump();
+}
+
+void ACityLiveRPCharacter::DoJumpEnd()
+{
+    StopJumping();
+}
