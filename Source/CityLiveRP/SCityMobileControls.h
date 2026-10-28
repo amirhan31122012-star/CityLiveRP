@@ -7,6 +7,7 @@
 
 class ACityLiveRPPlayerController;
 class ACityLiveRPCharacter;
+class ACitySedan;
 
 /** One movement stick and one hold-to-run / double-tap-to-jump button. */
 class SCityMobileControls : public SLeafWidget
@@ -30,9 +31,11 @@ public:
 private:
     TWeakObjectPtr<ACityLiveRPPlayerController> Controller;
     TWeakObjectPtr<ACityLiveRPCharacter> ControlledCharacter;
+    TWeakObjectPtr<ACitySedan> ControlledVehicle;
     FVector2D Stick = FVector2D::ZeroVector;
     int32 StickPointer = INDEX_NONE;
     int32 RunPointer = INDEX_NONE;
+    int32 BrakePointer = INDEX_NONE;
     double LastStickTap = -100.0;
     double LastRunTap = -100.0;
     bool bRunHeld = false;
@@ -40,6 +43,7 @@ private:
     static constexpr double DoubleTapSeconds = 0.3;
 
     ACityLiveRPCharacter* GetCharacter() const;
+    ACitySedan* GetVehicle() const;
     static void Layout(const FGeometry&, FVector2D& Left, FVector2D& Right, float& Radius);
     void UpdateStick(const FGeometry&, const FPointerEvent&);
 };

@@ -1,6 +1,8 @@
 #include "SCityMobileControls.h"
 #include <initializer_list>
 #include "CityLiveRPCharacter.h"
+#include "CitySedan.h"
+#include "Styling/CoreStyle.h"
 #include "CityLiveRPPlayerController.h"
 #include "Rendering/DrawElements.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
@@ -20,6 +22,11 @@ ACityLiveRPCharacter* SCityMobileControls::GetCharacter() const
     return Controller.IsValid() ? Cast<ACityLiveRPCharacter>(Controller->GetPawn()) : nullptr;
 }
 
+ACitySedan* SCityMobileControls::GetVehicle() const
+{
+    return Controller.IsValid() ? Cast<ACitySedan>(Controller->GetPawn()) : nullptr;
+}
+
 void SCityMobileControls::Layout(const FGeometry& Geometry, FVector2D& Left, FVector2D& Right, float& Radius)
 {
     const FVector2D Size = Geometry.GetLocalSize();
@@ -36,6 +43,7 @@ void SCityMobileControls::UpdateStick(const FGeometry& Geometry, const FPointerE
     Stick = (Geometry.AbsoluteToLocal(Event.GetScreenSpacePosition()) - Left) / FMath::Max(Radius, 1.f);
     Stick = Stick.GetClampedToMaxSize(1.f);
     if (Stick.Size() < 0.12f) Stick = FVector2D::ZeroVector;
+    if (ACitySedan* Vehicle = GetVehicle()) Vehicle->SetSteering(Stick.X);
     if (ACityLiveRPCharacter* Character = GetCharacter())
     {
         const float Steering = FMath::Abs(Stick.X) < 0.12f ? 0.f : Stick.X;
@@ -47,21 +55,37 @@ void SCityMobileControls::UpdateStick(const FGeometry& Geometry, const FPointerE
 FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPointerEvent& Event)
 {
     ACityLiveRPCharacter* Character = GetCharacter();
-    if (!Character) return FReply::Unhandled();
-    if (ControlledCharacter.Get() != Character)
+    ACitySedan* Vehicle = GetVehicle();
+    if (!Character && !Vehicle) return FReply::Unhandled();
+    if (ControlledCharacter.Get() != Character || ControlledVehicle.Get() != Vehicle)
     {
         ResetControls();
         ControlledCharacter = Character;
+        ControlledVehicle = Vehicle;
     }
     FVector2D Left, Right;
     float Radius;
     Layout(Geometry, Left, Right, Radius);
     const FVector2D Position = Geometry.AbsoluteToLocal(Event.GetScreenSpacePosition());
+    const FVector2D Interaction(Right.X, Right.Y - Radius * 2.4f);
+    if (Controller.IsValid() && Controller->CanInteractWithSedan() &&
+        FVector2D::Distance(Position, Interaction) <= Radius)
+    {
+        Controller->InteractWithSedan();
+        return FReply::Handled();
+    }
+    if (Vehicle && BrakePointer == INDEX_NONE &&
+        FVector2D::Distance(Position, Right - FVector2D(Radius * 2.2f, 0)) <= Radius)
+    {
+        BrakePointer = Event.GetPointerIndex();
+        Vehicle->SetBrake(true);
+        return FReply::Handled().CaptureMouse(SharedThis(this));
+    }
     const double Now = FPlatformTime::Seconds();
     if (StickPointer == INDEX_NONE && FVector2D::Distance(Position, Left) <= Radius * 1.3f)
     {
         StickPointer = Event.GetPointerIndex();
-        if (Now - LastStickTap <= DoubleTapSeconds)
+        if (Character && Now - LastStickTap <= DoubleTapSeconds)
         {
             Character->ToggleMobileCrouch();
             LastStickTap = -100.0;
@@ -74,8 +98,9 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
     {
         RunPointer = Event.GetPointerIndex();
         bRunHeld = true;
-        Character->SetMobileSprint(true);
-        if (Now - LastRunTap <= DoubleTapSeconds)
+        if (Vehicle) Vehicle->SetThrottle(true);
+        if (Character) Character->SetMobileSprint(true);
+        if (Character && Now - LastRunTap <= DoubleTapSeconds)
         {
             Character->DoJumpStart();
             LastRunTap = -100.0;
@@ -93,15 +118,22 @@ FReply SCityMobileControls::OnTouchMoved(const FGeometry& Geometry, const FPoint
         UpdateStick(Geometry, Event);
         return FReply::Handled();
     }
-    return Event.GetPointerIndex() == RunPointer ? FReply::Handled() : FReply::Unhandled();
+    return Event.GetPointerIndex() == RunPointer || Event.GetPointerIndex() == BrakePointer ? FReply::Handled() : FReply::Unhandled();
 }
 
 FReply SCityMobileControls::OnTouchEnded(const FGeometry&, const FPointerEvent& Event)
 {
+    if (Event.GetPointerIndex() == BrakePointer)
+    {
+        BrakePointer = INDEX_NONE;
+        if (ACitySedan* Vehicle = GetVehicle()) Vehicle->SetBrake(false);
+        return FReply::Handled().ReleaseMouseCapture();
+    }
     if (Event.GetPointerIndex() == StickPointer)
     {
         StickPointer = INDEX_NONE;
         Stick = FVector2D::ZeroVector;
+        if (ACitySedan* Vehicle = GetVehicle()) Vehicle->SetSteering(0.f);
         if (ACityLiveRPCharacter* Character = GetCharacter()) Character->SetMobileSteering(0.f, 0.f);
         return FReply::Handled().ReleaseMouseCapture();
     }
@@ -109,6 +141,7 @@ FReply SCityMobileControls::OnTouchEnded(const FGeometry&, const FPointerEvent& 
     {
         RunPointer = INDEX_NONE;
         bRunHeld = false;
+        if (ACitySedan* Vehicle = GetVehicle()) Vehicle->SetThrottle(false);
         if (ACityLiveRPCharacter* Character = GetCharacter())
         {
             Character->SetMobileSprint(false);
@@ -121,6 +154,7 @@ FReply SCityMobileControls::OnTouchEnded(const FGeometry&, const FPointerEvent& 
 
 void SCityMobileControls::ResetControls()
 {
+    if (ACitySedan* Vehicle = ControlledVehicle.Get()) Vehicle->ResetInput();
     if (ACityLiveRPCharacter* Character = ControlledCharacter.Get())
     {
         Character->SetMobileSprint(false);
@@ -128,7 +162,7 @@ void SCityMobileControls::ResetControls()
         Character->ResetMobileSteering();
     }
     Stick = FVector2D::ZeroVector;
-    StickPointer = RunPointer = INDEX_NONE;
+    StickPointer = RunPointer = BrakePointer = INDEX_NONE;
     bRunHeld = false;
     RunHighlight = 0.f;
     LastStickTap = LastRunTap = -100.0;
@@ -144,10 +178,12 @@ void SCityMobileControls::Tick(const FGeometry& Geometry, double Time, float Del
 {
     SLeafWidget::Tick(Geometry, Time, DeltaTime);
     ACityLiveRPCharacter* Character = GetCharacter();
-    if (ControlledCharacter.Get() != Character)
+    ACitySedan* Vehicle = GetVehicle();
+    if (ControlledCharacter.Get() != Character || ControlledVehicle.Get() != Vehicle)
     {
         ResetControls();
         ControlledCharacter = Character;
+        ControlledVehicle = Vehicle;
     }
     RunHighlight = FMath::FInterpTo(RunHighlight, bRunHeld ? 1.f : 0.f, DeltaTime, 14.f);
 }
@@ -183,6 +219,31 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
     Circle(Right, Radius * 0.85f,
         FMath::Lerp(FLinearColor(1.f, 1.f, 1.f, 0.65f),
             FLinearColor(0.55f, 0.9f, 0.65f, 0.7f), RunHighlight));
+
+    auto Label = [&](FVector2D Center, const TCHAR* Text)
+    {
+        const FString Caption(Text);
+        const int32 FontSize = FMath::Max(10, FMath::RoundToInt(Radius * 0.25f));
+        const FVector2D Position = Center - FVector2D(Caption.Len() * FontSize * 0.28f, FontSize * 0.65f);
+        FSlateDrawElement::MakeText(Out, Layer + 1,
+            Geometry.ToPaintGeometry(FVector2D(Radius * 2.f, Radius), FSlateLayoutTransform(Position)),
+            Caption, FCoreStyle::GetDefaultFontStyle("Bold", FontSize),
+            ESlateDrawEffect::None, FLinearColor::White);
+    };
+    if (Controller.IsValid() && Controller->CanInteractWithSedan())
+    {
+        const FVector2D Interaction(Right.X, Right.Y - Radius * 2.4f);
+        Circle(Interaction, Radius * 0.85f, FLinearColor::White);
+        Label(Interaction, GetVehicle() ? TEXT("ВЫЙТИ") : TEXT("СЕСТЬ"));
+    }
+    if (GetVehicle())
+    {
+        const FVector2D Brake = Right - FVector2D(Radius * 2.2f, 0);
+        Circle(Brake, Radius * 0.85f, BrakePointer != INDEX_NONE ? FLinearColor(1.f, 0.4f, 0.3f) : FLinearColor::White);
+        Label(Right, TEXT("ГАЗ"));
+        Label(Brake, TEXT("ТОРМОЗ"));
+        return Layer + 1;
+    }
 
     // Draw a resolution-independent running figure instead of a text label.
     const FLinearColor IconColor(0.95f, 0.98f, 0.95f, 0.95f);

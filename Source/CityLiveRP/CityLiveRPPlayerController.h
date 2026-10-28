@@ -9,6 +9,7 @@
 class UInputMappingContext;
 class UUserWidget;
 class SCityMobileControls;
+class ACitySedan;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -18,6 +19,10 @@ UCLASS(abstract)
 class ACityLiveRPPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+public:
+    bool CanInteractWithSedan() const;
+    void InteractWithSedan();
 	
 protected:
 
@@ -42,6 +47,7 @@ protected:
 	bool bForceTouchControls = false;
 
 	TSharedPtr<SCityMobileControls> CityMobileControls;
+    UPROPERTY() TObjectPtr<ACitySedan> TestSedan;
 
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void OnPossess(APawn* InPawn) override;
