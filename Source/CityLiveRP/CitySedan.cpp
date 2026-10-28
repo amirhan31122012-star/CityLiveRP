@@ -542,7 +542,10 @@ void ACitySedan::TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake)
         const float LiftForce = CitySuspension::Force(Compression, VerticalSpeed, Mass, DeltaTime);
         ForcePoints.Add(Anchor);
         SpringForces.Add(Up * LiftForce);
-        if (LiftForce > 0.f) { ++Contacts; GroundNormal += Hit.ImpactNormal * LiftForce; }
+        // A hit is still ground contact when the damper momentarily unloads it.
+        // Treating zero spring force as airborne intermittently cut motor input.
+        ++Contacts;
+        GroundNormal += Hit.ImpactNormal * FMath::Max(LiftForce, Mass * 980.f * .025f);
     }
     DriveLogTimer += DeltaTime;
     if (Driver && (Gas || Brake) && DriveLogTimer >= 2.f)

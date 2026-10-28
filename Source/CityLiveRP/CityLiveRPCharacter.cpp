@@ -74,6 +74,16 @@ ACityLiveRPCharacter::ACityLiveRPCharacter(const FObjectInitializer& ObjectIniti
 void ACityLiveRPCharacter::BeginPlay()
 {
     Super::BeginPlay();
+    // Default CharacterMovement push forces are far too strong for a 1200 kg car.
+    GetCharacterMovement()->bEnablePhysicsInteraction = true;
+    GetCharacterMovement()->bPushForceScaledToMass = false;
+    GetCharacterMovement()->InitialPushForceFactor = 50.f;
+    GetCharacterMovement()->PushForceFactor = 12000.f;
+    GetCharacterMovement()->bTouchForceScaledToMass = false;
+    GetCharacterMovement()->TouchForceFactor = .1f;
+    GetCharacterMovement()->MaxTouchForce = 100.f;
+    GetCharacterMovement()->bPushForceUsingZOffset = true;
+    GetCharacterMovement()->PushForcePointZOffsetFactor = 0.f;
     StandingCapsuleHalfHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
     // Apply at runtime too: existing Blueprint instances may store template defaults.
     GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
