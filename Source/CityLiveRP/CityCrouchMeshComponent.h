@@ -16,6 +16,7 @@ public:
     float GetCrouchAlpha() const { return CrouchAlpha; }
     void SetVehicleEntryPose(float Sit, float Reach, FVector Handle, bool bRightHand);
     void SetVehicleSeatLegs(float Alpha, FVector LeftFoot, FVector RightFoot);
+    void SetVehicleFit(float Alpha);
 
     UPROPERTY(EditAnywhere, Category="CityLive|Crouch", meta=(ClampMin="0", ClampMax="60"))
     float PelvisDrop = 52.f;
@@ -32,6 +33,8 @@ private:
     float SeatLegAlpha = 0.f;
     FVector SeatFootLeft = FVector::ZeroVector;
     FVector SeatFootRight = FVector::ZeroVector;
+    bool bVehicleFitActive = false;
+    FTransform OriginalVehicleMeshTransform;
     void ApplyCrouch();
     void ApplyEntryHand();
     void ApplySeatLegs();

@@ -36,6 +36,28 @@ void UCityCrouchMeshComponent::SetVehicleSeatLegs(float Alpha, FVector LeftFoot,
     SeatFootRight = RightFoot;
 }
 
+void UCityCrouchMeshComponent::SetVehicleFit(float Alpha)
+{
+    Alpha = FMath::Clamp(Alpha, 0.f, 1.f);
+    if (!bVehicleFitActive && Alpha <= 0.f) return;
+    if (!bVehicleFitActive)
+    {
+        OriginalVehicleMeshTransform = GetRelativeTransform();
+        bVehicleFitActive = true;
+    }
+    if (Alpha <= 0.f)
+    {
+        SetRelativeTransform(OriginalVehicleMeshTransform);
+        bVehicleFitActive = false;
+        return;
+    }
+    const float Scale = FMath::Lerp(1.f, .78f, Alpha);
+    SetRelativeScale3D(OriginalVehicleMeshTransform.GetScale3D() * Scale);
+    // Preserve pelvis height while giving head and shoulders clearance below the roof.
+    SetRelativeLocation(OriginalVehicleMeshTransform.GetLocation() +
+        FVector(0, 0, (1.f - Scale) * 90.f * OriginalVehicleMeshTransform.GetScale3D().Z));
+}
+
 void UCityCrouchMeshComponent::ApplySeatLegs()
 {
     const USkeletalMesh* Asset = GetSkeletalMeshAsset();

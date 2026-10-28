@@ -83,21 +83,21 @@ void ACityLiveRPPlayerController::OnPossess(APawn* InPawn)
         if (HasAuthority() && !TestSedan)
         {
             FActorSpawnParameters Params;
-            Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-            FCollisionQueryParams FloorParams(SCENE_QUERY_STAT(CitySedanSpawn), false, InPawn);
-            for (const FVector& Offset : {InPawn->GetActorForwardVector() * 650.f,
-                InPawn->GetActorRightVector() * 650.f, -InPawn->GetActorRightVector() * 650.f,
-                -InPawn->GetActorForwardVector() * 650.f})
+            Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::DontSpawnIfColliding;
+            for (float Distance : {650.f, 1000.f, 1500.f})
             {
-                const FVector Candidate = InPawn->GetActorLocation() + Offset;
-                FHitResult FloorHit;
-                if (!GetWorld()->LineTraceSingleByChannel(FloorHit, Candidate + FVector(0, 0, 200),
-                    Candidate - FVector(0, 0, 500), ECC_Visibility, FloorParams)) continue;
-                TestSedan = GetWorld()->SpawnActor<ACitySedan>(ACitySedan::StaticClass(),
-                    FloorHit.ImpactPoint + FVector(0, 0, 65), InPawn->GetActorRotation(), Params);
+                for (int32 Direction = 0; Direction < 12; ++Direction)
+                {
+                    const float Yaw = InPawn->GetActorRotation().Yaw;
+                    const FVector Candidate = InPawn->GetActorLocation() + FRotator(0, Yaw + Direction * 30.f, 0).Vector() * Distance;
+                    FVector SpawnLocation;
+                    if (!ACitySedan::FindFlatSpawn(GetWorld(), Candidate, Yaw, InPawn, SpawnLocation)) continue;
+                    TestSedan = GetWorld()->SpawnActor<ACitySedan>(ACitySedan::StaticClass(), SpawnLocation, FRotator(0, Yaw, 0), Params);
+                    if (TestSedan) break;
+                }
                 if (TestSedan) break;
             }
-            if (!TestSedan) UE_LOG(LogCityLiveRP, Warning, TEXT("No free floor location for test sedan near PlayerStart."));
+            if (!TestSedan) UE_LOG(LogCityLiveRP, Warning, TEXT("No free flat parking footprint for test sedan within 15 metres of PlayerStart."));
         }
     }
 }

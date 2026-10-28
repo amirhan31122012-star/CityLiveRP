@@ -19,6 +19,7 @@ class ACitySedan : public APawn
     GENERATED_BODY()
 public:
     ACitySedan();
+    static bool FindFlatSpawn(UWorld* World, const FVector& Candidate, float Yaw, AActor* Ignore, FVector& OutLocation);
     virtual void Tick(float DeltaTime) override;
     virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -39,7 +40,7 @@ private:
     UPROPERTY() TObjectPtr<UCameraComponent> VehicleCamera;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Wheels;
     UPROPERTY() TObjectPtr<ACityLiveRPCharacter> Driver;
-    UPROPERTY() TObjectPtr<ACityLiveRPCharacter> Passenger;
+    UPROPERTY() TArray<TObjectPtr<ACityLiveRPCharacter>> Passengers;
     UPROPERTY() TArray<TObjectPtr<USceneComponent>> DoorPivots;
     UPROPERTY() TObjectPtr<ACityLiveRPCharacter> EnteringCharacter;
     TWeakObjectPtr<APlayerController> EnteringPlayer;
@@ -49,6 +50,7 @@ private:
     float EntryTime = 0.f;
     float EntryCameraBlend = 0.f;
     bool bEnteringPassenger = false;
+    int32 EntrySeat = -1;
     bool bExiting = false;
     TArray<FVector> EntryRoute;
     float RouteLength = 0.f;
@@ -56,8 +58,10 @@ private:
     void UpdateEntry(float DeltaTime);
     void CompleteEntry();
     void CompleteExit();
-    bool BuildDoorRoute(ACityLiveRPCharacter* Occupant, bool bPassengerSeat);
-    void UpdateSeatedPose(ACityLiveRPCharacter* Occupant, bool bPassengerSeat);
+    bool BuildDoorRoute(ACityLiveRPCharacter* Occupant);
+    void UpdateSeatedPose(ACityLiveRPCharacter* Occupant, int32 Seat);
+    int32 FindPassengerSeat(const APlayerController* Player) const;
+    int32 GetPassengerSeat(const APlayerController* Player) const;
     FVector HandleLocation() const;
     float Steering = 0.f;
     float SmoothedSteering = 0.f;
