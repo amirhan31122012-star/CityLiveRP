@@ -23,6 +23,10 @@ class ACityLiveRPPlayerController : public APlayerController
 public:
     bool CanInteractWithSedan() const;
     void InteractWithSedan();
+    bool CanUsePassengerDoor() const;
+    void UsePassengerDoor();
+    ACitySedan* GetSeatedSedan() const;
+    bool IsSedanDriver() const;
 	
 protected:
 

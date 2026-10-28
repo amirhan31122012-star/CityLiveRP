@@ -19,8 +19,9 @@ class ACitySedan : public APawn
 public:
     ACitySedan();
     virtual void Tick(float DeltaTime) override;
-    bool CanEnter(const APlayerController* Player) const;
-    bool TryEnter(APlayerController* Player);
+    bool CanEnter(const APlayerController* Player, bool bPassengerSeat = false) const;
+    bool TryEnter(APlayerController* Player, bool bPassengerSeat = false);
+    bool IsPassenger(const APlayerController* Player) const;
     bool TryExit(APlayerController* Player);
     void SetSteering(float Value) { Steering = FMath::Clamp(Value, -1.f, 1.f); }
     void SetThrottle(bool bHeld) { bThrottle = bHeld; }
@@ -33,6 +34,7 @@ private:
     UPROPERTY() TObjectPtr<UCameraComponent> VehicleCamera;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Wheels;
     UPROPERTY() TObjectPtr<ACityLiveRPCharacter> Driver;
+    UPROPERTY() TObjectPtr<ACityLiveRPCharacter> Passenger;
     float Steering = 0.f;
     float SmoothedSteering = 0.f;
     float Speed = 0.f;

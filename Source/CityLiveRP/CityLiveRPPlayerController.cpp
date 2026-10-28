@@ -43,6 +43,7 @@ void ACityLiveRPPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
     InputComponent->BindKey(EKeys::E, IE_Pressed, this, &ACityLiveRPPlayerController::InteractWithSedan);
+    InputComponent->BindKey(EKeys::F, IE_Pressed, this, &ACityLiveRPPlayerController::UsePassengerDoor);
 
 	// only add IMCs for local player controllers
 	if (IsLocalPlayerController())
@@ -103,13 +104,39 @@ void ACityLiveRPPlayerController::OnPossess(APawn* InPawn)
 
 bool ACityLiveRPPlayerController::CanInteractWithSedan() const
 {
-    return Cast<ACitySedan>(GetPawn()) || (IsValid(TestSedan) && TestSedan->CanEnter(this));
+    return GetSeatedSedan() || (IsValid(TestSedan) && TestSedan->CanEnter(this));
+}
+
+ACitySedan* ACityLiveRPPlayerController::GetSeatedSedan() const
+{
+    if (ACitySedan* Vehicle = Cast<ACitySedan>(GetPawn())) return Vehicle;
+    if (GetPawn())
+        if (ACitySedan* Vehicle = Cast<ACitySedan>(GetPawn()->GetAttachParentActor()))
+            if (Vehicle->IsPassenger(this)) return Vehicle;
+    return nullptr;
+}
+
+bool ACityLiveRPPlayerController::IsSedanDriver() const
+{
+    return Cast<ACitySedan>(GetPawn()) != nullptr;
+}
+
+bool ACityLiveRPPlayerController::CanUsePassengerDoor() const
+{
+    return GetSeatedSedan() || (IsValid(TestSedan) && TestSedan->CanEnter(this, true));
+}
+
+void ACityLiveRPPlayerController::UsePassengerDoor()
+{
+    if (GetSeatedSedan()) { InteractWithSedan(); return; }
+    if (CityMobileControls.IsValid()) CityMobileControls->ResetControls();
+    if (IsValid(TestSedan)) TestSedan->TryEnter(this, true);
 }
 
 void ACityLiveRPPlayerController::InteractWithSedan()
 {
     if (CityMobileControls.IsValid()) CityMobileControls->ResetControls();
-    if (ACitySedan* Vehicle = Cast<ACitySedan>(GetPawn()))
+    if (ACitySedan* Vehicle = GetSeatedSedan())
     {
         if (!Vehicle->TryExit(this)) ClientMessage(TEXT("Остановите машину. Для выхода нужно свободное место рядом."));
     }

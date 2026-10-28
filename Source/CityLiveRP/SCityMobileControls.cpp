@@ -2,7 +2,6 @@
 #include <initializer_list>
 #include "CityLiveRPCharacter.h"
 #include "CitySedan.h"
-#include "Styling/CoreStyle.h"
 #include "CityLiveRPPlayerController.h"
 #include "Rendering/DrawElements.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
@@ -19,12 +18,12 @@ void SCityMobileControls::Construct(const FArguments& Args)
 
 ACityLiveRPCharacter* SCityMobileControls::GetCharacter() const
 {
-    return Controller.IsValid() ? Cast<ACityLiveRPCharacter>(Controller->GetPawn()) : nullptr;
+    return Controller.IsValid() && !Controller->GetSeatedSedan() ? Cast<ACityLiveRPCharacter>(Controller->GetPawn()) : nullptr;
 }
 
 ACitySedan* SCityMobileControls::GetVehicle() const
 {
-    return Controller.IsValid() ? Cast<ACitySedan>(Controller->GetPawn()) : nullptr;
+    return Controller.IsValid() ? Controller->GetSeatedSedan() : nullptr;
 }
 
 void SCityMobileControls::Layout(const FGeometry& Geometry, FVector2D& Left, FVector2D& Right, float& Radius)
@@ -68,12 +67,19 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
     Layout(Geometry, Left, Right, Radius);
     const FVector2D Position = Geometry.AbsoluteToLocal(Event.GetScreenSpacePosition());
     const FVector2D Interaction(Right.X, Right.Y - Radius * 2.4f);
-    if (Controller.IsValid() && Controller->CanInteractWithSedan() &&
+    if (Controller.IsValid() && Controller->CanUsePassengerDoor() &&
         FVector2D::Distance(Position, Interaction) <= Radius)
+    {
+        Controller->UsePassengerDoor();
+        return FReply::Handled();
+    }
+    if (Controller.IsValid() && !Vehicle && Controller->CanInteractWithSedan() &&
+        FVector2D::Distance(Position, Interaction - FVector2D(Radius * 2.2f, 0)) <= Radius)
     {
         Controller->InteractWithSedan();
         return FReply::Handled();
     }
+    if (Vehicle && !Controller->IsSedanDriver()) return FReply::Unhandled();
     if (Vehicle && BrakePointer == INDEX_NONE &&
         FVector2D::Distance(Position, Right - FVector2D(Radius * 2.2f, 0)) <= Radius)
     {
@@ -154,7 +160,8 @@ FReply SCityMobileControls::OnTouchEnded(const FGeometry&, const FPointerEvent& 
 
 void SCityMobileControls::ResetControls()
 {
-    if (ACitySedan* Vehicle = ControlledVehicle.Get()) Vehicle->ResetInput();
+    if (Controller.IsValid() && Controller->IsSedanDriver())
+        if (ACitySedan* Vehicle = ControlledVehicle.Get()) Vehicle->ResetInput();
     if (ACityLiveRPCharacter* Character = ControlledCharacter.Get())
     {
         Character->SetMobileSprint(false);
@@ -206,6 +213,34 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
         FSlateDrawElement::MakeLines(Out, Layer, Geometry.ToPaintGeometry(), Points,
             ESlateDrawEffect::None, Color, true, 3.f);
     };
+    auto Stroke = [&](FVector2D Center, std::initializer_list<FVector2D> Shape)
+    {
+        TArray<FVector2D> Points;
+        for (const FVector2D& Point : Shape) Points.Add(Center + Point * Radius);
+        FSlateDrawElement::MakeLines(Out, Layer + 1, Geometry.ToPaintGeometry(), Points,
+            ESlateDrawEffect::None, FLinearColor::White, true, FMath::Max(2.f, Radius * 0.045f));
+    };
+    const FVector2D DoorCenter(Right.X, Right.Y - Radius * 2.4f);
+    if (Controller.IsValid() && Controller->CanUsePassengerDoor())
+    {
+        Circle(DoorCenter, Radius * 0.85f, FLinearColor::White);
+        Stroke(DoorCenter, {{-.45f, .5f}, {-.45f, -.5f}, {.4f, -.32f}, {.4f, .5f}, {-.45f, .5f}});
+        Stroke(DoorCenter, {{-.32f, -.34f}, {.26f, -.22f}, {.26f, .02f}, {-.32f, .02f}, {-.32f, -.34f}});
+        Stroke(DoorCenter, {{.12f, .2f}, {.27f, .2f}});
+    }
+    if (Controller.IsValid() && !GetVehicle() && Controller->CanInteractWithSedan())
+    {
+        const FVector2D CarCenter = DoorCenter - FVector2D(Radius * 2.2f, 0);
+        Circle(CarCenter, Radius * 0.85f, FLinearColor::White);
+        Stroke(CarCenter, {{-.58f, .42f}, {-.58f, -.04f}, {-.35f, -.5f}, {.35f, -.5f}, {.58f, -.04f}, {.58f, .42f}, {-.58f, .42f}});
+        Stroke(CarCenter, {{-.48f, -.04f}, {.48f, -.04f}});
+        Stroke(CarCenter, {{-.4f, .42f}, {-.4f, .58f}});
+        Stroke(CarCenter, {{.4f, .42f}, {.4f, .58f}});
+        Stroke(CarCenter, {{-.43f, .18f}, {-.23f, .18f}});
+        Stroke(CarCenter, {{.23f, .18f}, {.43f, .18f}});
+    }
+    // A passenger sees only the exit door and cannot operate the pedals or steering.
+    if (GetVehicle() && Controller.IsValid() && !Controller->IsSedanDriver()) return Layer + 1;
     Circle(Left, Radius, FLinearColor(1, 1, 1, 0.6f));
     Circle(Left + Stick * Radius * 0.65f, Radius * 0.32f, FLinearColor::White);
     // A low-opacity green fill gives feedback without obscuring the game.
@@ -220,28 +255,25 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
         FMath::Lerp(FLinearColor(1.f, 1.f, 1.f, 0.65f),
             FLinearColor(0.55f, 0.9f, 0.65f, 0.7f), RunHighlight));
 
-    auto Label = [&](FVector2D Center, const TCHAR* Text)
-    {
-        const FString Caption(Text);
-        const int32 FontSize = FMath::Max(10, FMath::RoundToInt(Radius * 0.25f));
-        const FVector2D Position = Center - FVector2D(Caption.Len() * FontSize * 0.28f, FontSize * 0.65f);
-        FSlateDrawElement::MakeText(Out, Layer + 1,
-            Geometry.ToPaintGeometry(FVector2D(Radius * 2.f, Radius), FSlateLayoutTransform(Position)),
-            Caption, FCoreStyle::GetDefaultFontStyle("Bold", FontSize),
-            ESlateDrawEffect::None, FLinearColor::White);
-    };
-    if (Controller.IsValid() && Controller->CanInteractWithSedan())
-    {
-        const FVector2D Interaction(Right.X, Right.Y - Radius * 2.4f);
-        Circle(Interaction, Radius * 0.85f, FLinearColor::White);
-        Label(Interaction, GetVehicle() ? TEXT("ВЫЙТИ") : TEXT("СЕСТЬ"));
-    }
     if (GetVehicle())
     {
         const FVector2D Brake = Right - FVector2D(Radius * 2.2f, 0);
-        Circle(Brake, Radius * 0.85f, BrakePointer != INDEX_NONE ? FLinearColor(1.f, 0.4f, 0.3f) : FLinearColor::White);
-        Label(Right, TEXT("ГАЗ"));
-        Label(Brake, TEXT("ТОРМОЗ"));
+        Circle(Brake, Radius * 0.85f, BrakePointer != INDEX_NONE ? FLinearColor(.55f, .9f, .65f, .7f) : FLinearColor::White);
+        // Accelerator: tall narrow pedal, brake: short wide pedal, each with rubber grooves.
+        Stroke(Right, {{-.23f, -.6f}, {.32f, -.6f}, {.22f, .6f}, {-.33f, .6f}, {-.23f, -.6f}});
+        for (int32 Groove = 0; Groove < 5; ++Groove)
+        {
+            const float Y = -.4f + Groove * .2f;
+            const float X = -.02f - Groove * .016f;
+            Stroke(Right, {{X - .14f, Y}, {X + .18f, Y}});
+        }
+        Stroke(Brake, {{-.58f, -.28f}, {.58f, -.28f}, {.58f, .3f}, {-.58f, .3f}, {-.58f, -.28f}});
+        Stroke(Brake, {{0.f, .3f}, {0.f, .6f}, {.3f, .6f}});
+        for (int32 Groove = 0; Groove < 4; ++Groove)
+        {
+            const float X = -.36f + Groove * .24f;
+            Stroke(Brake, {{X, -.16f}, {X, .17f}});
+        }
         return Layer + 1;
     }
 

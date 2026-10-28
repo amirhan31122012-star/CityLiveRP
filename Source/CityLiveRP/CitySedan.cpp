@@ -64,36 +64,52 @@ void ACitySedan::ResetInput()
     bThrottle = bBrake = false;
 }
 
-bool ACitySedan::CanEnter(const APlayerController* Player) const
+bool ACitySedan::CanEnter(const APlayerController* Player, bool bPassengerSeat) const
 {
-    return !Driver && Player && Cast<ACityLiveRPCharacter>(Player->GetPawn()) &&
+    return !(bPassengerSeat ? Passenger : Driver) && FMath::Abs(Speed) <= 30.f &&
+        Player && Cast<ACityLiveRPCharacter>(Player->GetPawn()) && Player->GetPawn() != Passenger.Get() &&
         FVector::DistSquared(GetActorLocation(), Player->GetPawn()->GetActorLocation()) <= FMath::Square(400.f);
 }
 
-bool ACitySedan::TryEnter(APlayerController* Player)
+bool ACitySedan::IsPassenger(const APlayerController* Player) const
 {
-    if (!CanEnter(Player) || !HasAuthority()) return false;
-    Driver = Cast<ACityLiveRPCharacter>(Player->GetPawn());
-    Driver->ResetMobileSteering();
-    Driver->SetMobileSprint(false);
-    Driver->GetCharacterMovement()->StopMovementImmediately();
-    Driver->SetActorEnableCollision(false);
-    Driver->SetActorHiddenInGame(true);
-    Driver->SetActorTickEnabled(false);
-    Driver->AttachToActor(this, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-    ResetInput();
-    Player->Possess(this);
+    return Player && Passenger && Player->GetPawn() == Passenger;
+}
+
+bool ACitySedan::TryEnter(APlayerController* Player, bool bPassengerSeat)
+{
+    if (!CanEnter(Player, bPassengerSeat) || !HasAuthority()) return false;
+    ACityLiveRPCharacter* Occupant = Cast<ACityLiveRPCharacter>(Player->GetPawn());
+    if (bPassengerSeat) Passenger = Occupant;
+    else Driver = Occupant;
+    Occupant->ResetMobileSteering();
+    Occupant->SetMobileSprint(false);
+    Occupant->GetCharacterMovement()->StopMovementImmediately();
+    Occupant->GetCharacterMovement()->DisableMovement();
+    Occupant->SetActorEnableCollision(false);
+    Occupant->SetActorHiddenInGame(true);
+    Occupant->SetActorTickEnabled(false);
+    Occupant->AttachToActor(this, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+    Occupant->SetActorRelativeLocation(FVector(-25.f, bPassengerSeat ? 40.f : -40.f, 30.f));
+    if (!bPassengerSeat)
+    {
+        ResetInput();
+        Player->Possess(this);
+    }
     Player->SetViewTarget(this);
     return true;
 }
 
 bool ACitySedan::TryExit(APlayerController* Player)
 {
-    if (!Driver || !Player || Player->GetPawn() != this || FMath::Abs(Speed) > 30.f) return false;
-    const float Radius = Driver->GetCapsuleComponent()->GetScaledCapsuleRadius();
-    const float HalfHeight = Driver->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+    if (!Player || FMath::Abs(Speed) > 30.f) return false;
+    const bool bPassengerExit = IsPassenger(Player);
+    ACityLiveRPCharacter* Occupant = bPassengerExit ? Passenger.Get() : Driver.Get();
+    if (!Occupant || (!bPassengerExit && Player->GetPawn() != this)) return false;
+    const float Radius = Occupant->GetCapsuleComponent()->GetScaledCapsuleRadius();
+    const float HalfHeight = Occupant->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
     FCollisionQueryParams Params(SCENE_QUERY_STAT(CitySedanExit), false, this);
-    Params.AddIgnoredActor(Driver);
+    Params.AddIgnoredActor(Occupant);
     for (const FVector& Offset : {GetActorRightVector() * 190.f, -GetActorRightVector() * 190.f, -GetActorForwardVector() * 320.f})
     {
         FVector ExitLocation = GetActorLocation() + Offset;
@@ -103,15 +119,16 @@ bool ACitySedan::TryExit(APlayerController* Player)
         ExitLocation.Z = Floor.ImpactPoint.Z + HalfHeight + 3.f;
         if (GetWorld()->OverlapBlockingTestByChannel(ExitLocation, FQuat::Identity, ECC_Pawn,
             FCollisionShape::MakeCapsule(Radius, HalfHeight), Params)) continue;
-        ACityLiveRPCharacter* ExitingDriver = Driver;
-        Driver = nullptr;
-        ResetInput();
+        ACityLiveRPCharacter* ExitingDriver = Occupant;
+        if (bPassengerExit) Passenger = nullptr;
+        else { Driver = nullptr; ResetInput(); }
         ExitingDriver->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
         ExitingDriver->SetActorLocationAndRotation(ExitLocation, GetActorRotation());
         ExitingDriver->SetActorHiddenInGame(false);
         ExitingDriver->SetActorEnableCollision(true);
         ExitingDriver->SetActorTickEnabled(true);
-        Player->Possess(ExitingDriver);
+        ExitingDriver->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+        if (!bPassengerExit) Player->Possess(ExitingDriver);
         Player->SetViewTarget(ExitingDriver);
         return true;
     }
@@ -139,6 +156,7 @@ void ACitySedan::Tick(float DeltaTime)
     if (MovementHit.IsValidBlockingHit()) Speed = 0.f;
     FCollisionQueryParams Params(SCENE_QUERY_STAT(CitySedanFloor), false, this);
     if (Driver) Params.AddIgnoredActor(Driver);
+    if (Passenger) Params.AddIgnoredActor(Passenger);
     FHitResult Floor;
     const FVector Position = GetActorLocation();
     if (GetWorld()->LineTraceSingleByChannel(Floor, Position, Position - FVector(0, 0, 100), ECC_Visibility, Params))
