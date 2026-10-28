@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "UObject/SoftObjectPtr.h"
 #include "CitySedan.generated.h"
 
 class UBoxComponent;
@@ -11,6 +12,8 @@ class UCameraComponent;
 class ACityLiveRPCharacter;
 class APlayerController;
 class USceneComponent;
+class USkeletalMesh;
+class UPoseableMeshComponent;
 
 /** Local arcade prototype. No external model or vehicle plugin required. */
 UCLASS()
@@ -21,6 +24,7 @@ public:
     ACitySedan();
     static bool FindFlatSpawn(UWorld* World, const FVector& Candidate, float Yaw, AActor* Ignore, FVector& OutLocation);
     virtual void Tick(float DeltaTime) override;
+    virtual void BeginPlay() override;
     virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     bool CanEnter(const APlayerController* Player, bool bPassengerSeat = false) const;
@@ -34,11 +38,19 @@ public:
     bool IsEntering(const APlayerController* Player) const;
     void CancelEntry();
 
+    UPROPERTY(EditDefaultsOnly, Category="CityLive|Vehicle Model")
+    TSoftObjectPtr<USkeletalMesh> SedanMeshAsset;
+
 private:
     UPROPERTY() TObjectPtr<UBoxComponent> CollisionBox;
     UPROPERTY() TObjectPtr<USpringArmComponent> CameraArm;
     UPROPERTY() TObjectPtr<UCameraComponent> VehicleCamera;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Wheels;
+    UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> PrototypeParts;
+    UPROPERTY() TObjectPtr<UPoseableMeshComponent> ImportedSedan;
+    TMap<FName, FTransform> RestVehicleBones;
+    float WheelRollDegrees = 0.f;
+    void UpdateImportedWheels(float DeltaTime);
     UPROPERTY() TObjectPtr<ACityLiveRPCharacter> Driver;
     UPROPERTY() TArray<TObjectPtr<ACityLiveRPCharacter>> Passengers;
     UPROPERTY() TArray<TObjectPtr<USceneComponent>> DoorPivots;

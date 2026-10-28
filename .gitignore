@@ -8,3 +8,5 @@
 /*.sln
 /*.slnx
 /*.VC.db
+# Licensed Fab content is installed locally, not redistributed in this repository.
+/Content/VehicleVarietyVol2/

@@ -11,6 +11,8 @@
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/PoseableMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -27,8 +29,13 @@ ACitySedan::ACitySedan()
     Passengers.SetNum(3);
     CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("VehicleCollision"));
     SetRootComponent(CollisionBox);
-    CollisionBox->SetBoxExtent(FVector(215.f, 92.f, 60.f));
+    CollisionBox->SetBoxExtent(FVector(250.f, 120.f, 60.f));
     CollisionBox->SetCollisionProfileName(TEXT("Pawn"));
+    SedanMeshAsset = TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(TEXT("/Game/VehicleVarietyVol2/Skeletons/SK_Sedan_01a.SK_Sedan_01a")));
+    ImportedSedan = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("ImportedSedan"));
+    ImportedSedan->SetupAttachment(CollisionBox);
+    ImportedSedan->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    ImportedSedan->SetVisibility(false);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
     auto Part = [&](const TCHAR* Name, FVector Position, FVector Scale)
@@ -39,6 +46,7 @@ ACitySedan::ACitySedan()
         Piece->SetRelativeLocation(Position);
         Piece->SetRelativeScale3D(Scale);
         Piece->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        PrototypeParts.Add(Piece);
     };
     // Leave real space for occupants instead of intersecting them with a solid block.
     Part(TEXT("Body"), FVector(0, 0, -35), FVector(4.2f, 1.8f, 0.15f));
@@ -63,12 +71,14 @@ ACitySedan::ACitySedan()
         Door->SetRelativeLocation(FVector(-55.f, 0.f, 0.f));
         Door->SetRelativeScale3D(FVector(1.1f, .05f, .7f));
         Door->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        PrototypeParts.Add(Door);
         UStaticMeshComponent* Handle = CreateDefaultSubobject<UStaticMeshComponent>(*FString::Printf(TEXT("DoorHandle%d"), Side));
         Handle->SetupAttachment(Hinge);
         Handle->SetStaticMesh(Cube.Object);
         Handle->SetRelativeLocation(FVector(-90.f, Side % 2 ? 5.f : -5.f, 22.f));
         Handle->SetRelativeScale3D(FVector(.18f, .07f, .04f));
         Handle->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        PrototypeParts.Add(Handle);
         DoorPivots.Add(Hinge);
     }
     for (int32 Index = 0; Index < 4; ++Index)
@@ -81,6 +91,7 @@ ACitySedan::ACitySedan()
         Wheel->SetRelativeScale3D(FVector(0.64f, 0.64f, 0.22f));
         Wheel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         Wheels.Add(Wheel);
+        PrototypeParts.Add(Wheel);
     }
     CameraArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("VehicleCameraArm"));
     CameraArm->SetupAttachment(CollisionBox);
@@ -92,14 +103,60 @@ ACitySedan::ACitySedan()
     VehicleCamera->SetupAttachment(CameraArm, USpringArmComponent::SocketName);
 }
 
+void ACitySedan::BeginPlay()
+{
+    Super::BeginPlay();
+    USkeletalMesh* SedanAsset = SedanMeshAsset.LoadSynchronous();
+    if (!SedanAsset)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("CityLive sedan asset missing at %s; keeping prototype model."), *SedanMeshAsset.ToString());
+        return;
+    }
+    ImportedSedan->SetSkinnedAssetAndUpdate(SedanAsset);
+    const FBoxSphereBounds AssetBounds = SedanAsset->GetBounds();
+    // Native centimetre dimensions; center XY and place tires at the root's bottom.
+    ImportedSedan->SetRelativeLocation(FVector(-AssetBounds.Origin.X, -AssetBounds.Origin.Y,
+        -60.f - (AssetBounds.Origin.Z - AssetBounds.BoxExtent.Z)));
+    ImportedSedan->SetVisibility(true);
+    for (UStaticMeshComponent* Part : PrototypeParts) Part->SetVisibility(false);
+    for (const FName Bone : {FName(TEXT("Wheel_Front_Left")), FName(TEXT("Wheel_Front_Right")),
+        FName(TEXT("Wheel_Rear_Left")), FName(TEXT("Wheel_Rear_Right")), FName(TEXT("SteeringWheel"))})
+    {
+        if (ImportedSedan->GetBoneIndex(Bone) != INDEX_NONE)
+            RestVehicleBones.Add(Bone, ImportedSedan->GetBoneTransformByName(Bone, EBoneSpaces::ComponentSpace));
+    }
+    UE_LOG(LogTemp, Display, TEXT("CityLive sedan: imported model active (%s). Door rig is not included in this asset."), *SedanAsset->GetName());
+}
+
+void ACitySedan::UpdateImportedWheels(float DeltaTime)
+{
+    if (RestVehicleBones.IsEmpty()) return;
+    WheelRollDegrees = FMath::Fmod(WheelRollDegrees - FMath::RadiansToDegrees(Speed * DeltaTime / 32.f), 360.f);
+    for (const auto& Bone : RestVehicleBones)
+    {
+        FTransform BonePose = Bone.Value;
+        FQuat Rotation;
+        if (Bone.Key == FName(TEXT("SteeringWheel")))
+            Rotation = FQuat(Bone.Value.GetRotation().GetAxisX(), FMath::DegreesToRadians(-SmoothedSteering * 150.f));
+        else
+        {
+            const bool bFront = Bone.Key == FName(TEXT("Wheel_Front_Left")) || Bone.Key == FName(TEXT("Wheel_Front_Right"));
+            Rotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(bFront ? SmoothedSteering * 28.f : 0.f)) *
+                FQuat(FVector::RightVector, FMath::DegreesToRadians(WheelRollDegrees));
+        }
+        BonePose.SetRotation((Rotation * Bone.Value.GetRotation()).GetNormalized());
+        ImportedSedan->SetBoneTransformByName(Bone.Key, BonePose, EBoneSpaces::ComponentSpace);
+    }
+}
+
 bool ACitySedan::FindFlatSpawn(UWorld* World, const FVector& Candidate, float Yaw, AActor* Ignore, FVector& OutLocation)
 {
     if (!World) return false;
     FCollisionQueryParams Params(SCENE_QUERY_STAT(CityFlatParking), false, Ignore);
     const FQuat Rotation = FRotator(0, Yaw, 0).Quaternion();
     float Minimum = TNumericLimits<float>::Max(), Maximum = TNumericLimits<float>::Lowest();
-    for (float X : {-220.f, 0.f, 220.f})
-    for (float Y : {-115.f, 0.f, 115.f})
+    for (float X : {-260.f, 0.f, 260.f})
+    for (float Y : {-135.f, 0.f, 135.f})
     {
         const FVector Point = Candidate + Rotation.RotateVector(FVector(X, Y, 0));
         FHitResult Hit;
@@ -188,9 +245,9 @@ bool ACitySedan::BuildDoorRoute(ACityLiveRPCharacter* Occupant)
     FloorParams.AddIgnoredActor(Occupant);
     FCollisionQueryParams WalkParams(SCENE_QUERY_STAT(CityDoorWalk), false, Occupant);
     TArray<TArray<FVector>> Candidates;
-    Candidates.Add({FVector(DoorX, Side * 150.f, 0)});
+    Candidates.Add({FVector(DoorX, Side * 190.f, 0)});
     for (float End : {-300.f, 300.f})
-        Candidates.Add({FVector(End, LocalStart.Y, 0), FVector(End, Side * 150.f, 0), FVector(DoorX, Side * 150.f, 0)});
+        Candidates.Add({FVector(End, LocalStart.Y, 0), FVector(End, Side * 190.f, 0), FVector(DoorX, Side * 190.f, 0)});
     for (const TArray<FVector>& Candidate : Candidates)
     {
         TArray<FVector> Route;
@@ -303,7 +360,7 @@ bool ACitySedan::TryExit(APlayerController* Player)
     for (float DoorOffsetX : {-25.f, -65.f, 15.f})
     {
         FVector ExitLocation = GetActorTransform().TransformPosition(FVector(CityVehicleLayout::X(EntrySeat) + DoorOffsetX + 25.f,
-            CityVehicleLayout::Side(EntrySeat) * 150.f, 0.f));
+            CityVehicleLayout::Side(EntrySeat) * 190.f, 0.f));
         FHitResult Floor;
         if (!GetWorld()->LineTraceSingleByChannel(Floor, ExitLocation + FVector(0, 0, 150),
             ExitLocation - FVector(0, 0, 300), ECC_Visibility, Params)) continue;
@@ -414,6 +471,7 @@ void ACitySedan::Tick(float DeltaTime)
     }
     for (UStaticMeshComponent* Wheel : Wheels)
         Wheel->AddLocalRotation(FRotator(0, -FMath::RadiansToDegrees(Speed * DeltaTime / 32.f), 0));
+    UpdateImportedWheels(DeltaTime);
     UpdateSeatedPose(Driver, -1);
     for (int32 Seat = 0; Seat < Passengers.Num(); ++Seat) UpdateSeatedPose(Passengers[Seat], Seat);
 }
