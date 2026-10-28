@@ -16,7 +16,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 /**
  *  A simple player-controllable third person character
- *  Implements a controllable orbiting camera
+ *  Keeps the camera behind the character throughout turns
  */
 UCLASS(abstract)
 class ACityLiveRPCharacter : public ACharacter

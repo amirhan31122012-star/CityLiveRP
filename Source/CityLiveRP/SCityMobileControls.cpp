@@ -1,8 +1,9 @@
 #include "SCityMobileControls.h"
+#include <initializer_list>
 #include "CityLiveRPCharacter.h"
 #include "CityLiveRPPlayerController.h"
 #include "Rendering/DrawElements.h"
-#include "Styling/CoreStyle.h"
+#include "Brushes/SlateRoundedBoxBrush.h"
 #include "HAL/PlatformTime.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Misc/CoreDelegates.h"
@@ -125,6 +126,7 @@ void SCityMobileControls::ResetControls()
     Stick = FVector2D::ZeroVector;
     StickPointer = RunPointer = INDEX_NONE;
     bRunHeld = false;
+    RunHighlight = 0.f;
     LastStickTap = LastRunTap = -100.0;
 }
 
@@ -143,6 +145,7 @@ void SCityMobileControls::Tick(const FGeometry& Geometry, double Time, float Del
         ResetControls();
         ControlledCharacter = Character;
     }
+    RunHighlight = FMath::FInterpTo(RunHighlight, bRunHeld ? 1.f : 0.f, DeltaTime, 14.f);
     if (Character && !Stick.IsNearlyZero())
     {
         const FRotationMatrix Basis(FRotator(0, MovementYaw, 0));
@@ -171,10 +174,38 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
     };
     Circle(Left, Radius, FLinearColor(1, 1, 1, 0.6f));
     Circle(Left + Stick * Radius * 0.65f, Radius * 0.32f, FLinearColor::White);
-    Circle(Right, Radius * 0.85f, bRunHeld ? FLinearColor(0.2f, 1.f, 0.4f) : FLinearColor::White);
-    const FSlateFontInfo Font = FCoreStyle::GetDefaultFontStyle("Bold", FMath::Max(12, FMath::RoundToInt(Radius * 0.28f)));
-    FSlateDrawElement::MakeText(Out, Layer + 1,
-        Geometry.ToPaintGeometry(FVector2D(Radius * 1.4f, Radius * 0.5f), FSlateLayoutTransform(Right - FVector2D(Radius * 0.36f, Radius * 0.2f))),
-        FText::FromString(TEXT("БЕГ")), Font, ESlateDrawEffect::None, FLinearColor::White);
+    // A low-opacity green fill gives feedback without obscuring the game.
+    const FSlateRoundedBoxBrush Background(FLinearColor::White, Radius * 0.85f);
+    FSlateDrawElement::MakeBox(Out, Layer,
+        Geometry.ToPaintGeometry(FVector2D(Radius * 1.7f, Radius * 1.7f),
+            FSlateLayoutTransform(Right - FVector2D(Radius * 0.85f, Radius * 0.85f))),
+        &Background, ESlateDrawEffect::None,
+        FMath::Lerp(FLinearColor(0.08f, 0.08f, 0.08f, 0.18f),
+            FLinearColor(0.25f, 0.85f, 0.4f, 0.18f), RunHighlight));
+    Circle(Right, Radius * 0.85f,
+        FMath::Lerp(FLinearColor(1.f, 1.f, 1.f, 0.65f),
+            FLinearColor(0.55f, 0.9f, 0.65f, 0.7f), RunHighlight));
+
+    // Draw a resolution-independent running figure instead of a text label.
+    const FLinearColor IconColor(0.95f, 0.98f, 0.95f, 0.95f);
+    auto Limb = [&](std::initializer_list<FVector2D> Joints)
+    {
+        TArray<FVector2D> Points;
+        for (const FVector2D& Joint : Joints) Points.Add(Right + Joint * Radius);
+        FSlateDrawElement::MakeLines(Out, Layer + 1, Geometry.ToPaintGeometry(),
+            Points, ESlateDrawEffect::None, IconColor, true, Radius * 0.09f);
+    };
+    const FVector2D Head = Right + FVector2D(0.16f, -0.48f) * Radius;
+    const float HeadRadius = Radius * 0.115f;
+    const FSlateRoundedBoxBrush HeadBrush(FLinearColor::White, HeadRadius);
+    FSlateDrawElement::MakeBox(Out, Layer + 1,
+        Geometry.ToPaintGeometry(FVector2D(HeadRadius * 2.f, HeadRadius * 2.f),
+            FSlateLayoutTransform(Head - FVector2D(HeadRadius, HeadRadius))),
+        &HeadBrush, ESlateDrawEffect::None, IconColor);
+    Limb({FVector2D(0.09f, -0.29f), FVector2D(-0.12f, 0.14f)});
+    Limb({FVector2D(0.04f, -0.19f), FVector2D(0.30f, -0.04f), FVector2D(0.46f, -0.20f)});
+    Limb({FVector2D(0.02f, -0.17f), FVector2D(-0.28f, -0.25f), FVector2D(-0.45f, -0.02f)});
+    Limb({FVector2D(-0.12f, 0.14f), FVector2D(0.16f, 0.30f), FVector2D(0.23f, 0.56f)});
+    Limb({FVector2D(-0.12f, 0.14f), FVector2D(-0.35f, 0.39f), FVector2D(-0.55f, 0.35f)});
     return Layer + 1;
 }

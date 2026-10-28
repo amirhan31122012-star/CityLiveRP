@@ -38,18 +38,22 @@ ACityLiveRPCharacter::ACityLiveRPCharacter()
     // Камера следует за горизонтальным поворотом персонажа
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
-    CameraBoom->TargetArmLength = 400.0f;
+    CameraBoom->SetAbsolute(false, false, false);
+    CameraBoom->SetRelativeLocation(FVector::ZeroVector);
+    CameraBoom->TargetArmLength = 400.f;
+    CameraBoom->SocketOffset = FVector::ZeroVector;
+    CameraBoom->TargetOffset = FVector::ZeroVector;
     CameraBoom->bUsePawnControlRotation = false;
     CameraBoom->bInheritPitch = false;
     CameraBoom->bInheritYaw = true;
     CameraBoom->bInheritRoll = false;
 
     CameraBoom->SetRelativeRotation(FRotator(-15.f, 0.f, 0.f));
-    CameraBoom->bEnableCameraLag = true;
-    CameraBoom->CameraLagSpeed = 10.f;
-    CameraBoom->bEnableCameraRotationLag = true;
-    CameraBoom->CameraRotationLagSpeed = 5.f;
-    CameraBoom->bUseCameraLagSubstepping = true;
+    // The character already turns smoothly. Lagging the camera separately
+    // lets it swing beside/in front of the character during sharp turns.
+    CameraBoom->bEnableCameraLag = false;
+    CameraBoom->bEnableCameraRotationLag = false;
+    CameraBoom->bDoCollisionTest = true;
 
     // Камера
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -64,16 +68,25 @@ void ACityLiveRPCharacter::BeginPlay()
     GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
     GetCharacterMovement()->MaxWalkSpeed = MobileWalkSpeed;
     GetCharacterMovement()->MaxWalkSpeedCrouched = 160.f;
+    CameraBoom->SetAbsolute(false, false, false);
+    CameraBoom->SetRelativeLocation(FVector::ZeroVector);
+    CameraBoom->TargetArmLength = 400.f;
+    CameraBoom->SocketOffset = FVector::ZeroVector;
+    CameraBoom->TargetOffset = FVector::ZeroVector;
     CameraBoom->bUsePawnControlRotation = false;
     CameraBoom->bInheritPitch = false;
     CameraBoom->bInheritYaw = true;
     CameraBoom->bInheritRoll = false;
     CameraBoom->SetRelativeRotation(FRotator(-15.f, 0.f, 0.f));
-    CameraBoom->bEnableCameraLag = true;
-    CameraBoom->CameraLagSpeed = 10.f;
-    CameraBoom->bEnableCameraRotationLag = true;
-    CameraBoom->CameraRotationLagSpeed = 5.f;
-    CameraBoom->bUseCameraLagSubstepping = true;
+    // The character already turns smoothly. Lagging the camera separately
+    // lets it swing beside/in front of the character during sharp turns.
+    CameraBoom->bEnableCameraLag = false;
+    CameraBoom->bEnableCameraRotationLag = false;
+    CameraBoom->bDoCollisionTest = true;
+    FollowCamera->SetAbsolute(false, false, false);
+    FollowCamera->SetRelativeTransform(FTransform::Identity);
+    FollowCamera->bUsePawnControlRotation = false;
+    CameraBoom->AddTickPrerequisiteComponent(GetCharacterMovement());
 }
 
 void ACityLiveRPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

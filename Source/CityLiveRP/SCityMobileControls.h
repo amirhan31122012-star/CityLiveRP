@@ -37,6 +37,7 @@ private:
     double LastRunTap = -100.0;
     float MovementYaw = 0.f;
     bool bRunHeld = false;
+    float RunHighlight = 0.f;
     static constexpr double DoubleTapSeconds = 0.3;
 
     ACityLiveRPCharacter* GetCharacter() const;
