@@ -35,7 +35,6 @@ private:
     int32 RunPointer = INDEX_NONE;
     double LastStickTap = -100.0;
     double LastRunTap = -100.0;
-    float MovementYaw = 0.f;
     bool bRunHeld = false;
     float RunHighlight = 0.f;
     static constexpr double DoubleTapSeconds = 0.3;

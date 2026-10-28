@@ -2,6 +2,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "CityLiveRPCharacter.h"
+#include "MobileSteering.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -20,6 +21,7 @@
 
 ACityLiveRPCharacter::ACityLiveRPCharacter()
 {
+    PrimaryActorTick.bCanEverTick = true;
     GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
     // Поворот персонажа
@@ -29,7 +31,7 @@ ACityLiveRPCharacter::ACityLiveRPCharacter()
 
     GetCharacterMovement()->bOrientRotationToMovement = true;
     GetCharacterMovement()->bUseControllerDesiredRotation = false;
-    GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
+    GetCharacterMovement()->RotationRate = FRotator(0.0f, 75.0f, 0.0f);
 
     GetCharacterMovement()->JumpZVelocity = 500.f;
     GetCharacterMovement()->AirControl = 0.35f;
@@ -92,6 +94,8 @@ void ACityLiveRPCharacter::BeginPlay()
     FollowCamera->SetRelativeTransform(FTransform::Identity);
     FollowCamera->bUsePawnControlRotation = false;
     CameraBoom->AddTickPrerequisiteComponent(GetCharacterMovement());
+    SetActorTickEnabled(true);
+    GetCharacterMovement()->AddTickPrerequisiteActor(this);
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
     GetMesh()->SetOwnerNoSee(false);
@@ -118,6 +122,32 @@ void ACityLiveRPCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResu
     OutResult.Location = CameraLocation;
     OutResult.Rotation = (Focus - CameraLocation).Rotation();
     OutResult.FOV = 80.f;
+}
+
+void ACityLiveRPCharacter::SetMobileSteering(float Steering, float Forward)
+{
+    bMobileSteeringActive = true;
+    MobileSteering = FMath::Clamp(Steering, -1.f, 1.f);
+    MobileForward = FMath::Clamp(Forward, -1.f, 1.f);
+    // Horizontal input is angular velocity, not a destination heading.
+    GetCharacterMovement()->bOrientRotationToMovement = false;
+    GetCharacterMovement()->bUseControllerDesiredRotation = false;
+}
+
+void ACityLiveRPCharacter::ResetMobileSteering()
+{
+    MobileSteering = MobileForward = MobileYawRate = 0.f;
+}
+
+void ACityLiveRPCharacter::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+    if (!bMobileSteeringActive || !IsLocallyControlled()) return;
+    const float Angle = CityLiveMobile::AdvanceTurn(MobileYawRate, MobileSteering,
+        DeltaTime, MobileTurnSpeed, MobileTurnResponse);
+    AddActorWorldRotation(FRotator(0.f, Angle, 0.f));
+    // Forward/back input follows the new heading; holding left/right keeps turning.
+    AddMovementInput(GetActorForwardVector(), MobileForward);
 }
 
 void ACityLiveRPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

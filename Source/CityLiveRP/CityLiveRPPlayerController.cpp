@@ -17,7 +17,7 @@ void ACityLiveRPPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-    UE_LOG(LogCityLiveRP, Display, TEXT("CityLive RP controls v3: runner icon and pawn-follow camera. Pawn: %s"),
+    UE_LOG(LogCityLiveRP, Display, TEXT("CityLive RP controls v4: smooth continuous steering, runner icon and pawn-follow camera. Pawn: %s"),
         *GetNameSafe(GetPawn()));
 
 	// only spawn touch controls on local player controllers

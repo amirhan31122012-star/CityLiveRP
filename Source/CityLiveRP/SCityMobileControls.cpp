@@ -5,7 +5,6 @@
 #include "Rendering/DrawElements.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "HAL/PlatformTime.h"
-#include "Camera/PlayerCameraManager.h"
 #include "Misc/CoreDelegates.h"
 
 void SCityMobileControls::Construct(const FArguments& Args)
@@ -37,6 +36,12 @@ void SCityMobileControls::UpdateStick(const FGeometry& Geometry, const FPointerE
     Stick = (Geometry.AbsoluteToLocal(Event.GetScreenSpacePosition()) - Left) / FMath::Max(Radius, 1.f);
     Stick = Stick.GetClampedToMaxSize(1.f);
     if (Stick.Size() < 0.12f) Stick = FVector2D::ZeroVector;
+    if (ACityLiveRPCharacter* Character = GetCharacter())
+    {
+        const float Steering = FMath::Abs(Stick.X) < 0.12f ? 0.f : Stick.X;
+        const float Forward = FMath::Abs(Stick.Y) < 0.12f ? 0.f : -Stick.Y;
+        Character->SetMobileSteering(Steering, Forward);
+    }
 }
 
 FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPointerEvent& Event)
@@ -56,9 +61,6 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
     if (StickPointer == INDEX_NONE && FVector2D::Distance(Position, Left) <= Radius * 1.3f)
     {
         StickPointer = Event.GetPointerIndex();
-        // Lock the movement reference for this gesture: the trailing camera must
-        // not rotate the movement vector again each frame (which causes circling).
-        MovementYaw = Controller->PlayerCameraManager->GetCameraRotation().Yaw;
         if (Now - LastStickTap <= DoubleTapSeconds)
         {
             Character->ToggleMobileCrouch();
@@ -100,6 +102,7 @@ FReply SCityMobileControls::OnTouchEnded(const FGeometry&, const FPointerEvent& 
     {
         StickPointer = INDEX_NONE;
         Stick = FVector2D::ZeroVector;
+        if (ACityLiveRPCharacter* Character = GetCharacter()) Character->SetMobileSteering(0.f, 0.f);
         return FReply::Handled().ReleaseMouseCapture();
     }
     if (Event.GetPointerIndex() == RunPointer)
@@ -122,6 +125,7 @@ void SCityMobileControls::ResetControls()
     {
         Character->SetMobileSprint(false);
         Character->DoJumpEnd();
+        Character->ResetMobileSteering();
     }
     Stick = FVector2D::ZeroVector;
     StickPointer = RunPointer = INDEX_NONE;
@@ -146,12 +150,6 @@ void SCityMobileControls::Tick(const FGeometry& Geometry, double Time, float Del
         ControlledCharacter = Character;
     }
     RunHighlight = FMath::FInterpTo(RunHighlight, bRunHeld ? 1.f : 0.f, DeltaTime, 14.f);
-    if (Character && !Stick.IsNearlyZero())
-    {
-        const FRotationMatrix Basis(FRotator(0, MovementYaw, 0));
-        Character->AddMovementInput(Basis.GetUnitAxis(EAxis::X), -Stick.Y);
-        Character->AddMovementInput(Basis.GetUnitAxis(EAxis::Y), Stick.X);
-    }
 }
 
 int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,

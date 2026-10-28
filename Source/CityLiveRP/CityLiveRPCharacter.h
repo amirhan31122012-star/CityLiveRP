@@ -55,6 +55,7 @@ public:
 	ACityLiveRPCharacter();	
 
     virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
+    virtual void Tick(float DeltaTime) override;
 
 protected:
 
@@ -94,6 +95,14 @@ public:
     /** Mobile controls: sprint is held, crouch is toggled. */
     void SetMobileSprint(bool bEnabled);
     void ToggleMobileCrouch();
+    void SetMobileSteering(float Steering, float Forward);
+    void ResetMobileSteering();
+
+    UPROPERTY(EditAnywhere, Category="Mobile Movement", meta=(ClampMin="1", ClampMax="180"))
+    float MobileTurnSpeed = 75.f;
+
+    UPROPERTY(EditAnywhere, Category="Mobile Movement", meta=(ClampMin="0.1"))
+    float MobileTurnResponse = 8.f;
 
     UPROPERTY(EditAnywhere, Category="Mobile Movement", meta=(ClampMin="0"))
     float MobileWalkSpeed = 350.f;
@@ -106,5 +115,11 @@ public:
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+private:
+    float MobileSteering = 0.f;
+    float MobileForward = 0.f;
+    float MobileYawRate = 0.f;
+    bool bMobileSteeringActive = false;
 };
 
