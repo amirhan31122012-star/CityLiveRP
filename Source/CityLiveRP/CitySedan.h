@@ -51,6 +51,10 @@ private:
     TMap<FName, FTransform> RestVehicleBones;
     float WheelRollDegrees = 0.f;
     void UpdateImportedWheels(float DeltaTime);
+    void TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake);
+    void SetEntryPhysicsPaused(bool bPaused);
+    TArray<FVector> SuspensionAnchors;
+    TArray<float> WheelSuspensionOffsets;
     UPROPERTY() TObjectPtr<ACityLiveRPCharacter> Driver;
     UPROPERTY() TArray<TObjectPtr<ACityLiveRPCharacter>> Passengers;
     UPROPERTY() TArray<TObjectPtr<USceneComponent>> DoorPivots;
@@ -78,7 +82,6 @@ private:
     float Steering = 0.f;
     float SmoothedSteering = 0.f;
     float Speed = 0.f;
-    float FallSpeed = 0.f;
     bool bThrottle = false;
     bool bBrake = false;
 };

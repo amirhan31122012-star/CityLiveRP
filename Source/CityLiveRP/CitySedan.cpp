@@ -3,6 +3,7 @@
 #include "CitySedanDynamics.h"
 #include "CityEntryMotion.h"
 #include "CityVehicleLayout.h"
+#include "CitySuspension.h"
 #include "CityCrouchMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "CityLiveRPCharacter.h"
@@ -26,11 +27,15 @@
 ACitySedan::ACitySedan()
 {
     PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.TickGroup = TG_PrePhysics;
     Passengers.SetNum(3);
     CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("VehicleCollision"));
     SetRootComponent(CollisionBox);
-    CollisionBox->SetBoxExtent(FVector(250.f, 120.f, 60.f));
-    CollisionBox->SetCollisionProfileName(TEXT("Pawn"));
+    CollisionBox->SetBoxExtent(FVector(210.f, 85.f, 28.f));
+    CollisionBox->SetCollisionProfileName(TEXT("PhysicsActor"));
+    for (int32 Wheel = 0; Wheel < 4; ++Wheel)
+        SuspensionAnchors.Add(FVector(Wheel < 2 ? 135.f : -135.f, Wheel % 2 ? 95.f : -95.f, 0));
+    WheelSuspensionOffsets.Init(0.f, 4);
     SedanMeshAsset = TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(TEXT("/Game/VehicleVarietyVol2/Skeletons/SK_Sedan_01a.SK_Sedan_01a")));
     ImportedSedan = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("ImportedSedan"));
     ImportedSedan->SetupAttachment(CollisionBox);
@@ -106,6 +111,11 @@ ACitySedan::ACitySedan()
 void ACitySedan::BeginPlay()
 {
     Super::BeginPlay();
+    CollisionBox->SetMassOverrideInKg(NAME_None, 1200.f);
+    CollisionBox->SetLinearDamping(.12f);
+    CollisionBox->SetAngularDamping(2.f);
+    CollisionBox->SetUseCCD(true);
+    CollisionBox->SetSimulatePhysics(true);
     USkeletalMesh* SedanAsset = SedanMeshAsset.LoadSynchronous();
     if (!SedanAsset)
     {
@@ -120,12 +130,25 @@ void ACitySedan::BeginPlay()
     ImportedSedan->SetVisibility(true);
     for (UStaticMeshComponent* Part : PrototypeParts) Part->SetVisibility(false);
     for (const FName Bone : {FName(TEXT("Wheel_Front_Left")), FName(TEXT("Wheel_Front_Right")),
-        FName(TEXT("Wheel_Rear_Left")), FName(TEXT("Wheel_Rear_Right")), FName(TEXT("SteeringWheel"))})
+        FName(TEXT("Wheel_Rear_Left")), FName(TEXT("Wheel_Rear_Right")), FName(TEXT("SteeringWheel")),
+        FName(TEXT("Door_Front_Left")), FName(TEXT("Door_Front_Right")),
+        FName(TEXT("Door_Rear_Left")), FName(TEXT("Door_Rear_Right"))})
     {
         if (ImportedSedan->GetBoneIndex(Bone) != INDEX_NONE)
+        {
             RestVehicleBones.Add(Bone, ImportedSedan->GetBoneTransformByName(Bone, EBoneSpaces::ComponentSpace));
+            const int32 Wheel = Bone == FName(TEXT("Wheel_Front_Left")) ? 0 : Bone == FName(TEXT("Wheel_Front_Right")) ? 1 :
+                Bone == FName(TEXT("Wheel_Rear_Left")) ? 2 : Bone == FName(TEXT("Wheel_Rear_Right")) ? 3 : INDEX_NONE;
+            if (Wheel != INDEX_NONE)
+            {
+                const FVector WheelPosition = ImportedSedan->GetRelativeTransform().TransformPosition(RestVehicleBones[Bone].GetLocation());
+                SuspensionAnchors[Wheel] = FVector(WheelPosition.X, WheelPosition.Y, 0);
+            }
+        }
     }
-    UE_LOG(LogTemp, Display, TEXT("CityLive sedan: imported model active (%s). Door rig is not included in this asset."), *SedanAsset->GetName());
+    const bool bHasDoorRig = RestVehicleBones.Contains(FName(TEXT("Door_Front_Left"))) && RestVehicleBones.Contains(FName(TEXT("Door_Front_Right"))) &&
+        RestVehicleBones.Contains(FName(TEXT("Door_Rear_Left"))) && RestVehicleBones.Contains(FName(TEXT("Door_Rear_Right")));
+    UE_LOG(LogTemp, Display, TEXT("CityLive sedan: imported model active (%s). Four-door rig: %s."), *SedanAsset->GetName(), bHasDoorRig ? TEXT("present") : TEXT("missing"));
 }
 
 void ACitySedan::UpdateImportedWheels(float DeltaTime)
@@ -136,7 +159,11 @@ void ACitySedan::UpdateImportedWheels(float DeltaTime)
     {
         FTransform BonePose = Bone.Value;
         FQuat Rotation;
-        if (Bone.Key == FName(TEXT("SteeringWheel")))
+        const int32 Door = Bone.Key == FName(TEXT("Door_Front_Left")) ? 0 : Bone.Key == FName(TEXT("Door_Front_Right")) ? 1 :
+            Bone.Key == FName(TEXT("Door_Rear_Left")) ? 2 : Bone.Key == FName(TEXT("Door_Rear_Right")) ? 3 : INDEX_NONE;
+        if (Door != INDEX_NONE)
+            Rotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(DoorPivots[Door]->GetRelativeRotation().Yaw));
+        else if (Bone.Key == FName(TEXT("SteeringWheel")))
             Rotation = FQuat(Bone.Value.GetRotation().GetAxisX(), FMath::DegreesToRadians(-SmoothedSteering * 150.f));
         else
         {
@@ -145,6 +172,9 @@ void ACitySedan::UpdateImportedWheels(float DeltaTime)
                 FQuat(FVector::RightVector, FMath::DegreesToRadians(WheelRollDegrees));
         }
         BonePose.SetRotation((Rotation * Bone.Value.GetRotation()).GetNormalized());
+        const int32 Wheel = Bone.Key == FName(TEXT("Wheel_Front_Left")) ? 0 : Bone.Key == FName(TEXT("Wheel_Front_Right")) ? 1 :
+            Bone.Key == FName(TEXT("Wheel_Rear_Left")) ? 2 : Bone.Key == FName(TEXT("Wheel_Rear_Right")) ? 3 : INDEX_NONE;
+        if (Wheel != INDEX_NONE) BonePose.AddToTranslation(FVector(0, 0, WheelSuspensionOffsets[Wheel]));
         ImportedSedan->SetBoneTransformByName(Bone.Key, BonePose, EBoneSpaces::ComponentSpace);
     }
 }
@@ -179,6 +209,7 @@ void ACitySedan::ResetInput()
 bool ACitySedan::CanEnter(const APlayerController* Player, bool bPassengerSeat) const
 {
     return !EnteringCharacter && (bPassengerSeat ? FindPassengerSeat(Player) >= 0 : !Driver) && FMath::Abs(Speed) <= 30.f &&
+        CollisionBox->GetPhysicsLinearVelocity().SizeSquared() <= FMath::Square(45.f) &&
         Player && Cast<ACityLiveRPCharacter>(Player->GetPawn()) && !IsPassenger(Player) &&
         FVector::DistSquared(GetActorLocation(), Player->GetPawn()->GetActorLocation()) <= FMath::Square(400.f);
 }
@@ -230,6 +261,7 @@ bool ACitySedan::TryEnter(APlayerController* Player, bool bPassengerSeat)
     Occupant->GetMesh()->AddTickPrerequisiteActor(this);
     ResetInput();
     Speed = 0.f;
+    SetEntryPhysicsPaused(true);
     Player->SetViewTargetWithBlend(this, .4f);
     return true;
 }
@@ -289,6 +321,7 @@ FVector ACitySedan::HandleLocation() const
 
 void ACitySedan::CancelEntry()
 {
+    const bool bHadEntry = IsValid(EnteringCharacter) || EnteringPlayer.IsValid();
     if (bExiting && IsValid(EnteringCharacter) && EnteringPlayer.IsValid())
     {
         CompleteExit();
@@ -319,6 +352,7 @@ void ACitySedan::CancelEntry()
     EnteringCharacter = nullptr;
     EnteringPlayer.Reset();
     bExiting = false;
+    if (bHadEntry) SetEntryPhysicsPaused(false);
 }
 
 void ACitySedan::CompleteEntry()
@@ -344,11 +378,12 @@ void ACitySedan::CompleteEntry()
         Player->Possess(this);
     }
     Player->SetViewTarget(this);
+    SetEntryPhysicsPaused(false);
 }
 
 bool ACitySedan::TryExit(APlayerController* Player)
 {
-    if (EnteringCharacter || !Player || FMath::Abs(Speed) > 30.f) return false;
+    if (EnteringCharacter || !Player || FMath::Abs(Speed) > 30.f || CollisionBox->GetPhysicsLinearVelocity().SizeSquared() > FMath::Square(45.f)) return false;
     const bool bPassengerExit = IsPassenger(Player);
     EntrySeat = bPassengerExit ? GetPassengerSeat(Player) : -1;
     ACityLiveRPCharacter* Occupant = bPassengerExit ? Passengers[EntrySeat].Get() : Driver.Get();
@@ -379,6 +414,7 @@ bool ACitySedan::TryExit(APlayerController* Player)
         Occupant->GetMesh()->AddTickPrerequisiteActor(this);
         ResetInput();
         Speed = 0.f;
+        SetEntryPhysicsPaused(true);
         Player->SetViewTargetWithBlend(this, .3f);
         return true;
     }
@@ -411,6 +447,7 @@ void ACitySedan::CompleteExit()
     Occupant->GetCharacterMovement()->SetComponentTickEnabled(true);
     if (!bWasPassenger) Player->Possess(Occupant);
     Player->SetViewTargetWithBlend(Occupant, .4f);
+    SetEntryPhysicsPaused(false);
 }
 
 void ACitySedan::UpdateSeatedPose(ACityLiveRPCharacter* Occupant, int32 Seat)
@@ -435,6 +472,7 @@ void ACitySedan::Tick(float DeltaTime)
         UpdateSeatedPose(Driver, -1);
         for (int32 Seat = 0; Seat < Passengers.Num(); ++Seat) UpdateSeatedPose(Passengers[Seat], Seat);
         UpdateEntry(DeltaTime);
+        UpdateImportedWheels(0.f);
         return;
     }
     const APlayerController* DrivingPlayer = Cast<APlayerController>(GetController());
@@ -446,34 +484,67 @@ void ACitySedan::Tick(float DeltaTime)
         KeyboardSteering += DrivingPlayer->IsInputKeyDown(EKeys::D) ? 1.f : 0.f;
         KeyboardSteering -= DrivingPlayer->IsInputKeyDown(EKeys::A) ? 1.f : 0.f;
     }
-    Speed = CityLiveDriving::AdvanceSpeed(Speed, Driver != nullptr, bThrottle || KeyboardGas, bBrake || KeyboardBrake, DeltaTime);
     SmoothedSteering = FMath::FInterpTo(SmoothedSteering, FMath::Clamp(Steering + KeyboardSteering, -1.f, 1.f), DeltaTime, 5.f);
-    if (Driver && FMath::Abs(Speed) > 5.f)
-        AddActorWorldRotation(FRotator(0, SmoothedSteering * 55.f * FMath::Clamp(Speed / 350.f, -1.f, 1.f) * DeltaTime, 0));
-    FHitResult MovementHit;
-    AddActorWorldOffset(GetActorForwardVector() * Speed * DeltaTime, true, &MovementHit);
-    if (MovementHit.IsValidBlockingHit()) Speed = 0.f;
-    FCollisionQueryParams Params(SCENE_QUERY_STAT(CitySedanFloor), false, this);
-    if (Driver) Params.AddIgnoredActor(Driver);
-    for (ACityLiveRPCharacter* Occupant : Passengers) if (Occupant) Params.AddIgnoredActor(Occupant);
-    FHitResult Floor;
-    const FVector Position = GetActorLocation();
-    if (GetWorld()->LineTraceSingleByChannel(Floor, Position, Position - FVector(0, 0, 100), ECC_Visibility, Params))
-    {
-        FallSpeed = 0.f;
-        const float DesiredZ = Floor.ImpactPoint.Z + 61.f;
-        AddActorWorldOffset(FVector(0, 0, DesiredZ - Position.Z), true);
-    }
-    else
-    {
-        FallSpeed -= 980.f * DeltaTime;
-        AddActorWorldOffset(FVector(0, 0, FallSpeed * DeltaTime), true);
-    }
+    TickVehiclePhysics(DeltaTime, bThrottle || KeyboardGas, bBrake || KeyboardBrake);
     for (UStaticMeshComponent* Wheel : Wheels)
         Wheel->AddLocalRotation(FRotator(0, -FMath::RadiansToDegrees(Speed * DeltaTime / 32.f), 0));
     UpdateImportedWheels(DeltaTime);
     UpdateSeatedPose(Driver, -1);
     for (int32 Seat = 0; Seat < Passengers.Num(); ++Seat) UpdateSeatedPose(Passengers[Seat], Seat);
+}
+
+void ACitySedan::SetEntryPhysicsPaused(bool bPaused)
+{
+    if (bPaused)
+    {
+        CollisionBox->SetPhysicsLinearVelocity(FVector::ZeroVector);
+        CollisionBox->SetPhysicsAngularVelocityInRadians(FVector::ZeroVector);
+    }
+    CollisionBox->SetSimulatePhysics(!bPaused);
+}
+
+void ACitySedan::TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake)
+{
+    if (DeltaTime <= 0.f || !CollisionBox->IsSimulatingPhysics()) return;
+    const float Mass = CollisionBox->GetMass();
+    const FVector Up = GetActorUpVector();
+    const FVector Velocity = CollisionBox->GetPhysicsLinearVelocity();
+    Speed = FVector::DotProduct(Velocity, GetActorForwardVector());
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(CityWheelSuspension), false, this);
+    if (Driver) Params.AddIgnoredActor(Driver);
+    for (ACityLiveRPCharacter* Occupant : Passengers) if (Occupant) Params.AddIgnoredActor(Occupant);
+    int32 Contacts = 0;
+    FVector GroundNormal = FVector::ZeroVector;
+    for (int32 Wheel = 0; Wheel < SuspensionAnchors.Num(); ++Wheel)
+    {
+        const FVector Anchor = GetActorTransform().TransformPosition(SuspensionAnchors[Wheel]);
+        FHitResult Hit;
+        const bool bHit = GetWorld()->SweepSingleByChannel(Hit, Anchor,
+            Anchor - Up * (CitySuspension::RestLength + CitySuspension::Travel), FQuat::Identity,
+            ECC_Visibility, FCollisionShape::MakeSphere(CitySuspension::WheelRadius), Params);
+        WheelSuspensionOffsets[Wheel] = -CitySuspension::Travel;
+        if (!bHit || Hit.ImpactNormal.Z < .3f) continue;
+        const float Compression = CitySuspension::RestLength - Hit.Distance;
+        WheelSuspensionOffsets[Wheel] = FMath::Clamp(Compression, -CitySuspension::Travel, CitySuspension::Travel);
+        const float VerticalSpeed = FVector::DotProduct(CollisionBox->GetPhysicsLinearVelocityAtPoint(Anchor), Up);
+        const float LiftForce = CitySuspension::Force(Compression, VerticalSpeed, Mass);
+        CollisionBox->AddForceAtLocation(Up * LiftForce, Anchor);
+        if (LiftForce > 0.f) { ++Contacts; GroundNormal += Hit.ImpactNormal; }
+    }
+    if (Contacts == 0) return;
+    GroundNormal.Normalize();
+    const FVector Forward = FVector::VectorPlaneProject(GetActorForwardVector(), GroundNormal).GetSafeNormal();
+    const FVector Right = FVector::CrossProduct(GroundNormal, Forward).GetSafeNormal();
+    const float Desired = CityLiveDriving::AdvanceSpeed(Speed, Driver != nullptr, Gas, Brake, DeltaTime);
+    const float Acceleration = FMath::Clamp((Desired - Speed) / DeltaTime, -900.f, 900.f);
+    const float Grip = Contacts / 4.f;
+    CollisionBox->AddForce((Forward * Acceleration - Right * FVector::DotProduct(Velocity, Right) * 6.f) * Mass * Grip);
+    const FVector AngularVelocity = CollisionBox->GetPhysicsAngularVelocityInRadians();
+    const float TargetYaw = Driver ? FMath::DegreesToRadians(SmoothedSteering * 55.f * FMath::Clamp(Speed / 350.f, -1.f, 1.f)) : 0.f;
+    const FVector YawTorque = GroundNormal * (TargetYaw - FVector::DotProduct(AngularVelocity, GroundNormal)) * 4.f;
+    // Suspension supplies most of the body roll; light damping avoids endless rocking.
+    const FVector TiltDamping = FVector::VectorPlaneProject(AngularVelocity, GroundNormal) * -1.5f;
+    CollisionBox->AddTorqueInRadians((YawTorque + TiltDamping) * Grip, NAME_None, true);
 }
 
 void ACitySedan::UpdateEntry(float DeltaTime)
