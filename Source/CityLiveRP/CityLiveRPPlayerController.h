@@ -27,6 +27,7 @@ public:
     void UsePassengerDoor();
     ACitySedan* GetSeatedSedan() const;
     bool IsSedanDriver() const;
+    bool IsVehicleEntryActive() const;
 	
 protected:
 

@@ -10,6 +10,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class ACityLiveRPCharacter;
 class APlayerController;
+class USceneComponent;
 
 /** Local arcade prototype. No external model or vehicle plugin required. */
 UCLASS()
@@ -19,6 +20,8 @@ class ACitySedan : public APawn
 public:
     ACitySedan();
     virtual void Tick(float DeltaTime) override;
+    virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     bool CanEnter(const APlayerController* Player, bool bPassengerSeat = false) const;
     bool TryEnter(APlayerController* Player, bool bPassengerSeat = false);
     bool IsPassenger(const APlayerController* Player) const;
@@ -27,6 +30,8 @@ public:
     void SetThrottle(bool bHeld) { bThrottle = bHeld; }
     void SetBrake(bool bHeld) { bBrake = bHeld; }
     void ResetInput();
+    bool IsEntering(const APlayerController* Player) const;
+    void CancelEntry();
 
 private:
     UPROPERTY() TObjectPtr<UBoxComponent> CollisionBox;
@@ -35,6 +40,18 @@ private:
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Wheels;
     UPROPERTY() TObjectPtr<ACityLiveRPCharacter> Driver;
     UPROPERTY() TObjectPtr<ACityLiveRPCharacter> Passenger;
+    UPROPERTY() TArray<TObjectPtr<USceneComponent>> DoorPivots;
+    UPROPERTY() TObjectPtr<ACityLiveRPCharacter> EnteringCharacter;
+    TWeakObjectPtr<APlayerController> EnteringPlayer;
+    FVector EntryStart = FVector::ZeroVector;
+    FVector EntryApproach = FVector::ZeroVector;
+    FRotator EntryStartRotation = FRotator::ZeroRotator;
+    float EntryTime = 0.f;
+    float EntryCameraBlend = 0.f;
+    bool bEnteringPassenger = false;
+    void UpdateEntry(float DeltaTime);
+    void CompleteEntry();
+    FVector HandleLocation() const;
     float Steering = 0.f;
     float SmoothedSteering = 0.f;
     float Speed = 0.f;

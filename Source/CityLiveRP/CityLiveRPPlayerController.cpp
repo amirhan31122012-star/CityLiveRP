@@ -121,6 +121,11 @@ bool ACityLiveRPPlayerController::IsSedanDriver() const
     return Cast<ACitySedan>(GetPawn()) != nullptr;
 }
 
+bool ACityLiveRPPlayerController::IsVehicleEntryActive() const
+{
+    return IsValid(TestSedan) && TestSedan->IsEntering(this);
+}
+
 bool ACityLiveRPPlayerController::CanUsePassengerDoor() const
 {
     return GetSeatedSedan() || (IsValid(TestSedan) && TestSedan->CanEnter(this, true));
@@ -128,6 +133,7 @@ bool ACityLiveRPPlayerController::CanUsePassengerDoor() const
 
 void ACityLiveRPPlayerController::UsePassengerDoor()
 {
+    if (IsVehicleEntryActive()) return;
     if (GetSeatedSedan()) { InteractWithSedan(); return; }
     if (CityMobileControls.IsValid()) CityMobileControls->ResetControls();
     if (IsValid(TestSedan)) TestSedan->TryEnter(this, true);
@@ -135,6 +141,7 @@ void ACityLiveRPPlayerController::UsePassengerDoor()
 
 void ACityLiveRPPlayerController::InteractWithSedan()
 {
+    if (IsVehicleEntryActive()) return;
     if (CityMobileControls.IsValid()) CityMobileControls->ResetControls();
     if (ACitySedan* Vehicle = GetSeatedSedan())
     {

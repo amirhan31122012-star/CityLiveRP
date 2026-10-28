@@ -14,6 +14,7 @@ public:
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction) override;
     virtual void FinalizeBoneTransform() override;
     float GetCrouchAlpha() const { return CrouchAlpha; }
+    void SetVehicleEntryPose(float Sit, float Reach, FVector Handle, bool bRightHand);
 
     UPROPERTY(EditAnywhere, Category="CityLive|Crouch", meta=(ClampMin="0", ClampMax="60"))
     float PelvisDrop = 52.f;
@@ -23,5 +24,10 @@ public:
 
 private:
     float CrouchAlpha = 0.f;
+    float EntrySit = 0.f;
+    float EntryReach = 0.f;
+    FVector EntryHandle = FVector::ZeroVector;
+    bool bEntryRightHand = false;
     void ApplyCrouch();
+    void ApplyEntryHand();
 };

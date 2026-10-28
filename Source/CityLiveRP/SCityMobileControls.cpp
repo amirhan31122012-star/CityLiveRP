@@ -18,7 +18,8 @@ void SCityMobileControls::Construct(const FArguments& Args)
 
 ACityLiveRPCharacter* SCityMobileControls::GetCharacter() const
 {
-    return Controller.IsValid() && !Controller->GetSeatedSedan() ? Cast<ACityLiveRPCharacter>(Controller->GetPawn()) : nullptr;
+    return Controller.IsValid() && !Controller->GetSeatedSedan() && !Controller->IsVehicleEntryActive()
+        ? Cast<ACityLiveRPCharacter>(Controller->GetPawn()) : nullptr;
 }
 
 ACitySedan* SCityMobileControls::GetVehicle() const
@@ -199,26 +200,65 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
     const FSlateRect&, FSlateWindowElementList& Out, int32 Layer,
     const FWidgetStyle&, bool) const
 {
+    if (Controller.IsValid() && Controller->IsVehicleEntryActive()) return Layer;
     FVector2D Left, Right;
     float Radius;
     Layout(Geometry, Left, Right, Radius);
     auto Circle = [&](FVector2D Center, float R, FLinearColor Color)
     {
+        const FSlateRoundedBoxBrush Face(FLinearColor::White, R);
+        const FVector2D Diameter(R * 2.f, R * 2.f);
+        FSlateDrawElement::MakeBox(Out, Layer,
+            Geometry.ToPaintGeometry(Diameter, FSlateLayoutTransform(Center - FVector2D(R, R) + FVector2D(0, 3))),
+            &Face, ESlateDrawEffect::None, FLinearColor(0, 0, 0, .22f));
+        const float Activation = FMath::Clamp((Color.G - Color.R) * 2.5f, 0.f, 1.f);
+        FSlateDrawElement::MakeBox(Out, Layer,
+            Geometry.ToPaintGeometry(Diameter, FSlateLayoutTransform(Center - FVector2D(R, R))),
+            &Face, ESlateDrawEffect::None,
+            FMath::Lerp(FLinearColor(.035f, .05f, .07f, .45f), FLinearColor(.1f, .4f, .22f, .38f), Activation));
         TArray<FVector2D> Points;
-        for (int32 i = 0; i <= 48; ++i)
+        for (int32 i = 0; i <= 96; ++i)
         {
-            const float Angle = 2.f * PI * i / 48.f;
+            const float Angle = 2.f * PI * i / 96.f;
             Points.Add(Center + FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * R);
         }
         FSlateDrawElement::MakeLines(Out, Layer, Geometry.ToPaintGeometry(), Points,
-            ESlateDrawEffect::None, Color, true, 3.f);
+            ESlateDrawEffect::None, Color * FLinearColor(1, 1, 1, .65f), true, 1.5f);
     };
-    auto Stroke = [&](FVector2D Center, std::initializer_list<FVector2D> Shape)
+    auto Stroke = [&](FVector2D Center, std::initializer_list<FVector2D> Shape, float Thickness = .04f)
     {
+        // Trim each corner and sample a quadratic curve instead of sharp joins.
+        const TArray<FVector2D> Vertices(Shape.begin(), static_cast<int32>(Shape.size()));
         TArray<FVector2D> Points;
-        for (const FVector2D& Point : Shape) Points.Add(Center + Point * Radius);
+        const bool bClosed = Vertices.Num() > 2 && Vertices[0].Equals(Vertices.Last(), .001);
+        const int32 Count = bClosed ? Vertices.Num() - 1 : Vertices.Num();
+        for (int32 Index = 0; Index < Count; ++Index)
+        {
+            const FVector2D Point = Vertices[Index];
+            if (!bClosed && (Index == 0 || Index == Count - 1)) { Points.Add(Center + Point * Radius); continue; }
+            const FVector2D Before = Vertices[(Index + Count - 1) % Count];
+            const FVector2D After = Vertices[(Index + 1) % Count];
+            const double Cut = FMath::Min(.08, FMath::Min((Before - Point).Size(), (After - Point).Size()) * .3);
+            const FVector2D In = Point + (Before - Point).GetSafeNormal() * Cut;
+            const FVector2D Next = Point + (After - Point).GetSafeNormal() * Cut;
+            for (int32 Step = 0; Step <= 8; ++Step)
+            {
+                const double T = Step / 8.0;
+                Points.Add(Center + (In * ((1-T)*(1-T)) + Point * (2*T*(1-T)) + Next * (T*T)) * Radius);
+            }
+        }
+        if (bClosed) Points.Add(Points[0]);
+        const float Width = FMath::Max(2.f, Radius * Thickness);
         FSlateDrawElement::MakeLines(Out, Layer + 1, Geometry.ToPaintGeometry(), Points,
-            ESlateDrawEffect::None, FLinearColor::White, true, FMath::Max(2.f, Radius * 0.045f));
+            ESlateDrawEffect::None, FLinearColor(.94f, .97f, 1.f, .95f), true, Width);
+        if (!bClosed)
+        {
+            const FSlateRoundedBoxBrush Cap(FLinearColor::White, Width * .5f);
+            for (const FVector2D& End : {Points[0], Points.Last()})
+                FSlateDrawElement::MakeBox(Out, Layer + 1,
+                    Geometry.ToPaintGeometry(FVector2D(Width, Width), FSlateLayoutTransform(End - FVector2D(Width*.5f, Width*.5f))),
+                    &Cap, ESlateDrawEffect::None, FLinearColor(.94f, .97f, 1.f, .95f));
+        }
     };
     const FVector2D DoorCenter(Right.X, Right.Y - Radius * 2.4f);
     if (Controller.IsValid() && Controller->CanUsePassengerDoor())
@@ -281,10 +321,7 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
     const FLinearColor IconColor(0.95f, 0.98f, 0.95f, 0.95f);
     auto Limb = [&](std::initializer_list<FVector2D> Joints)
     {
-        TArray<FVector2D> Points;
-        for (const FVector2D& Joint : Joints) Points.Add(Right + Joint * Radius);
-        FSlateDrawElement::MakeLines(Out, Layer + 1, Geometry.ToPaintGeometry(),
-            Points, ESlateDrawEffect::None, IconColor, true, Radius * 0.115f);
+        Stroke(Right, Joints, .09f);
     };
     const FVector2D Head = Right + FVector2D(0.16f, -0.48f) * Radius;
     const float HeadRadius = Radius * 0.115f;

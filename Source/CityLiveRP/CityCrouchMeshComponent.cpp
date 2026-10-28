@@ -9,8 +9,9 @@ void UCityCrouchMeshComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
     FActorComponentTickFunction* TickFunction)
 {
     const ACharacter* Character = Cast<ACharacter>(GetOwner());
-    const float Target = Character && Character->bIsCrouched &&
+    const float GroundCrouch = Character && Character->bIsCrouched &&
         !Character->GetCharacterMovement()->IsFalling() ? 1.f : 0.f;
+    const float Target = FMath::Max(GroundCrouch, EntrySit);
     const float Blend = 1.f - FMath::Exp(-BlendSpeed * DeltaTime);
     CrouchAlpha = FMath::Lerp(CrouchAlpha, Target, Blend);
     Super::TickComponent(DeltaTime, TickType, TickFunction);
@@ -19,11 +20,59 @@ void UCityCrouchMeshComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 void UCityCrouchMeshComponent::FinalizeBoneTransform()
 {
     // Do not deform an already-published pose a second time.
-    if (bNeedToFlipSpaceBaseBuffers && CrouchAlpha > 0.001f && !IsSimulatingPhysics())
+    if (bNeedToFlipSpaceBaseBuffers && !IsSimulatingPhysics())
     {
-        ApplyCrouch();
+        if (CrouchAlpha > 0.001f) ApplyCrouch();
+        if (EntryReach > 0.001f) ApplyEntryHand();
     }
     Super::FinalizeBoneTransform();
+}
+
+void UCityCrouchMeshComponent::SetVehicleEntryPose(float Sit, float Reach, FVector Handle, bool bRightHand)
+{
+    EntrySit = FMath::Clamp(Sit, 0.f, 1.f);
+    EntryReach = FMath::Clamp(Reach, 0.f, 1.f);
+    EntryHandle = Handle;
+    bEntryRightHand = bRightHand;
+}
+
+void UCityCrouchMeshComponent::ApplyEntryHand()
+{
+    const USkeletalMesh* Asset = GetSkeletalMeshAsset();
+    if (!Asset) return;
+    const FReferenceSkeleton& Ref = Asset->GetRefSkeleton();
+    TArray<FTransform>& Pose = GetEditableComponentSpaceTransforms();
+    if (Pose.Num() > Ref.GetNum()) return;
+    const int32 Shoulder = Ref.FindBoneIndex(bEntryRightHand ? TEXT("upperarm_r") : TEXT("upperarm_l"));
+    const int32 Elbow = Ref.FindBoneIndex(bEntryRightHand ? TEXT("lowerarm_r") : TEXT("lowerarm_l"));
+    const int32 HandBone = Ref.FindBoneIndex(bEntryRightHand ? TEXT("hand_r") : TEXT("hand_l"));
+    if (!Pose.IsValidIndex(Shoulder) || !Pose.IsValidIndex(Elbow) || !Pose.IsValidIndex(HandBone)) return;
+    const FVector Origin = Pose[Shoulder].GetLocation();
+    const FVector OriginalElbow = Pose[Elbow].GetLocation();
+    const FVector OriginalHand = Pose[HandBone].GetLocation();
+    const FVector Target = FMath::Lerp(OriginalHand, GetComponentTransform().InverseTransformPosition(EntryHandle), EntryReach);
+    const FVector Direction = (Target - Origin).GetSafeNormal();
+    FVector Pole = (OriginalElbow - Origin) - Direction * FVector::DotProduct(OriginalElbow - Origin, Direction);
+    if (Pole.IsNearlyZero()) Pole = FVector::CrossProduct(Direction, FVector::UpVector);
+    double Along, Bend;
+    if (Pole.IsNearlyZero() || !CityLiveCrouch::KneeOffset(FVector::Distance(Origin, OriginalElbow),
+        FVector::Distance(OriginalElbow, OriginalHand), FVector::Distance(Origin, Target), Along, Bend)) return;
+    const FVector DesiredElbow = Origin + Direction * Along + Pole.GetSafeNormal() * Bend;
+    auto RotateBranch = [&](int32 Root, const FQuat& Rotation)
+    {
+        const FVector Pivot = Pose[Root].GetLocation();
+        for (int32 Bone = Root; Bone < Pose.Num(); ++Bone)
+        {
+            int32 Parent = Bone;
+            while (Parent != INDEX_NONE && Parent != Root) Parent = Ref.GetParentIndex(Parent);
+            if (Parent != Root) continue;
+            Pose[Bone].SetLocation(Pivot + Rotation.RotateVector(Pose[Bone].GetLocation() - Pivot));
+            Pose[Bone].SetRotation((Rotation * Pose[Bone].GetRotation()).GetNormalized());
+        }
+    };
+    RotateBranch(Shoulder, FQuat::FindBetweenNormals((OriginalElbow - Origin).GetSafeNormal(), (DesiredElbow - Origin).GetSafeNormal()));
+    const FVector NewElbow = Pose[Elbow].GetLocation();
+    RotateBranch(Elbow, FQuat::FindBetweenNormals((Pose[HandBone].GetLocation() - NewElbow).GetSafeNormal(), (Target - NewElbow).GetSafeNormal()));
 }
 
 void UCityCrouchMeshComponent::ApplyCrouch()
