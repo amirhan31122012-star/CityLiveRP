@@ -112,7 +112,7 @@ void ACitySedan::BeginPlay()
 {
     Super::BeginPlay();
     CollisionBox->SetMassOverrideInKg(NAME_None, 1200.f);
-    CollisionBox->SetLinearDamping(.12f);
+    CollisionBox->SetLinearDamping(.035f);
     CollisionBox->SetAngularDamping(2.f);
     CollisionBox->SetUseCCD(true);
     CollisionBox->SetSimulatePhysics(true);
@@ -531,14 +531,26 @@ void ACitySedan::TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake)
         CollisionBox->AddForceAtLocation(Up * LiftForce, Anchor);
         if (LiftForce > 0.f) { ++Contacts; GroundNormal += Hit.ImpactNormal; }
     }
+    DriveLogTimer += DeltaTime;
+    if (Driver && (Gas || Brake) && DriveLogTimer >= 2.f)
+    {
+        UE_LOG(LogTemp, Display, TEXT("CityLiveDrive: speed=%.1f km/h contacts=%d/4 mass=%.0f kg gas=%d brake=%d"),
+            Speed * .036f, Contacts, Mass, Gas ? 1 : 0, Brake ? 1 : 0);
+        DriveLogTimer = 0.f;
+    }
     if (Contacts == 0) return;
     GroundNormal.Normalize();
     const FVector Forward = FVector::VectorPlaneProject(GetActorForwardVector(), GroundNormal).GetSafeNormal();
     const FVector Right = FVector::CrossProduct(GroundNormal, Forward).GetSafeNormal();
     const float Desired = CityLiveDriving::AdvanceSpeed(Speed, Driver != nullptr, Gas, Brake, DeltaTime);
-    const float Acceleration = FMath::Clamp((Desired - Speed) / DeltaTime, -900.f, 900.f);
+    const float Acceleration = FMath::Clamp((Desired - Speed) / DeltaTime,
+        -CityLiveDriving::BrakeAcceleration, CityLiveDriving::BrakeAcceleration);
     const float Grip = Contacts / 4.f;
-    CollisionBox->AddForce((Forward * Acceleration - Right * FVector::DotProduct(Velocity, Right) * 6.f) * Mass * Grip);
+    // A driven axle can transmit engine force with two grounded wheels. Previously
+    // multiplying all motor force by contacts/4 made such contact halve acceleration.
+    const float DriveGrip = FMath::Min(1.f, Contacts * .5f);
+    CollisionBox->AddForce((Forward * Acceleration * DriveGrip -
+        Right * FVector::DotProduct(Velocity, Right) * 6.f * Grip) * Mass);
     const FVector AngularVelocity = CollisionBox->GetPhysicsAngularVelocityInRadians();
     const float TargetYaw = Driver ? FMath::DegreesToRadians(SmoothedSteering * 55.f * FMath::Clamp(Speed / 350.f, -1.f, 1.f)) : 0.f;
     const FVector YawTorque = GroundNormal * (TargetYaw - FVector::DotProduct(AngularVelocity, GroundNormal)) * 4.f;
