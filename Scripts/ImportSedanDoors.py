@@ -6,6 +6,12 @@ import unreal
 fbx_path = Path(os.environ.get('CITYLIVE_DOORS_FBX', ''))
 if not fbx_path.is_file() or fbx_path.suffix.lower() != '.fbx':
     raise RuntimeError('Drag the prepared four-door FBX onto ImportSedanDoors.cmd.')
+# Catch choosing the original export instead of the prepared download before
+# creating any assets. FBX stores node names as uncompressed string properties.
+door_names = ('Door_Front_Left', 'Door_Front_Right', 'Door_Rear_Left', 'Door_Rear_Right')
+fbx_data = fbx_path.read_bytes()
+if any(name.encode('ascii') not in fbx_data for name in door_names):
+    raise RuntimeError('This FBX has no four-door rig. Download SK_CitySedan_4Doors_v2.fbx from the chat, not the original SedanForDoors export.')
 destination = '/Game/CityLiveVehicles/Sedan'
 asset_name = 'SK_CitySedan_4Doors'
 asset_path = destination + '/' + asset_name
@@ -41,6 +47,11 @@ unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
 imported = unreal.load_asset(asset_path)
 if not isinstance(imported, unreal.SkeletalMesh):
     raise RuntimeError('Skeletal mesh import failed: ' + repr(task.imported_object_paths))
+probe = unreal.PoseableMeshComponent()
+probe.set_skinned_asset_and_update(imported)
+missing_doors = [name for name in door_names if probe.get_bone_index(name) < 0]
+if missing_doors:
+    raise RuntimeError('Import lost door bones: ' + ', '.join(missing_doors))
 
 source_slots = list(original.get_editor_property('materials'))
 new_slots = list(imported.get_editor_property('materials'))

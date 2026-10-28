@@ -148,14 +148,16 @@ void ACitySedan::BeginPlay()
             }
         }
     }
-    const bool bHasDoorRig = RestVehicleBones.Contains(FName(TEXT("Door_Front_Left"))) && RestVehicleBones.Contains(FName(TEXT("Door_Front_Right"))) &&
+    bDoorRigReady = RestVehicleBones.Contains(FName(TEXT("Door_Front_Left"))) && RestVehicleBones.Contains(FName(TEXT("Door_Front_Right"))) &&
         RestVehicleBones.Contains(FName(TEXT("Door_Rear_Left"))) && RestVehicleBones.Contains(FName(TEXT("Door_Rear_Right")));
     const FName DoorBones[] = {FName(TEXT("Door_Front_Left")), FName(TEXT("Door_Front_Right")),
         FName(TEXT("Door_Rear_Left")), FName(TEXT("Door_Rear_Right"))};
     for (int32 Door = 0; Door < 4; ++Door)
         if (const FTransform* Hinge = RestVehicleBones.Find(DoorBones[Door]))
             DoorPivots[Door]->SetRelativeLocation(ImportedSedan->GetRelativeTransform().TransformPosition(Hinge->GetLocation()));
-    UE_LOG(LogTemp, Display, TEXT("CityLive sedan: imported model active (%s). Four-door rig: %s."), *SedanAsset->GetName(), bHasDoorRig ? TEXT("present") : TEXT("missing"));
+    UE_LOG(LogTemp, Display, TEXT("CityLive sedan: imported model active (%s). Four-door rig: %s."), *SedanAsset->GetPathName(), bDoorRigReady ? TEXT("present") : TEXT("missing"));
+    if (!bDoorRigReady)
+        UE_LOG(LogTemp, Warning, TEXT("CityLive: original sedan has fixed doors. Install SK_CitySedan_4Doors_v2.fbx using ImportSedanDoors.cmd; updating code alone does not install the model."));
 }
 
 void ACitySedan::UpdateImportedWheels(float DeltaTime)
@@ -244,6 +246,8 @@ int32 ACitySedan::FindPassengerSeat(const APlayerController* Player) const
 bool ACitySedan::TryEnter(APlayerController* Player, bool bPassengerSeat)
 {
     if (!CanEnter(Player, bPassengerSeat) || !HasAuthority()) return false;
+    if (!bDoorRigReady)
+        Player->ClientMessage(TEXT("Установлена модель с неподвижными дверями. Закройте игру и установите скачанный FBX через ImportSedanDoors.cmd."));
     ACityLiveRPCharacter* Occupant = Cast<ACityLiveRPCharacter>(Player->GetPawn());
     EntrySeat = bPassengerSeat ? FindPassengerSeat(Player) : -1;
     if (!BuildDoorRoute(Occupant))

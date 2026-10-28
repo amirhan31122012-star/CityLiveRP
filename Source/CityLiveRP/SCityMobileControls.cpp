@@ -63,6 +63,8 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
         ControlledCharacter = Character;
         ControlledVehicle = Vehicle;
     }
+    // A cancelled touch may reuse the same finger index without an End event.
+    ReleasePointer(Event.GetPointerIndex());
     FVector2D Left, Right;
     float Radius;
     Layout(Geometry, Left, Right, Radius);
@@ -130,21 +132,28 @@ FReply SCityMobileControls::OnTouchMoved(const FGeometry& Geometry, const FPoint
 
 FReply SCityMobileControls::OnTouchEnded(const FGeometry&, const FPointerEvent& Event)
 {
-    if (Event.GetPointerIndex() == BrakePointer)
+    return ReleasePointer(Event.GetPointerIndex())
+        ? FReply::Handled().ReleaseMouseCapture() : FReply::Unhandled();
+}
+
+bool SCityMobileControls::ReleasePointer(int32 PointerIndex)
+{
+    if (PointerIndex == INDEX_NONE) return false;
+    if (PointerIndex == BrakePointer)
     {
         BrakePointer = INDEX_NONE;
         if (ACitySedan* Vehicle = GetVehicle()) Vehicle->SetBrake(false);
-        return FReply::Handled().ReleaseMouseCapture();
+        return true;
     }
-    if (Event.GetPointerIndex() == StickPointer)
+    if (PointerIndex == StickPointer)
     {
         StickPointer = INDEX_NONE;
         Stick = FVector2D::ZeroVector;
         if (ACitySedan* Vehicle = GetVehicle()) Vehicle->SetSteering(0.f);
         if (ACityLiveRPCharacter* Character = GetCharacter()) Character->SetMobileSteering(0.f, 0.f);
-        return FReply::Handled().ReleaseMouseCapture();
+        return true;
     }
-    if (Event.GetPointerIndex() == RunPointer)
+    if (PointerIndex == RunPointer)
     {
         RunPointer = INDEX_NONE;
         bRunHeld = false;
@@ -154,9 +163,17 @@ FReply SCityMobileControls::OnTouchEnded(const FGeometry&, const FPointerEvent& 
             Character->SetMobileSprint(false);
             Character->DoJumpEnd();
         }
-        return FReply::Handled().ReleaseMouseCapture();
+        return true;
     }
-    return FReply::Unhandled();
+    return false;
+}
+
+void SCityMobileControls::OnMouseCaptureLost(const FCaptureLostEvent& Event)
+{
+    // Cancel only this finger: lifting the steering finger must not release gas.
+    // In particular, a lost brake touch must not leave both pedals held forever.
+    ReleasePointer(Event.PointerIndex);
+    SLeafWidget::OnMouseCaptureLost(Event);
 }
 
 void SCityMobileControls::ResetControls()

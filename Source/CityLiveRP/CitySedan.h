@@ -51,6 +51,7 @@ private:
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> PrototypeParts;
     UPROPERTY() TObjectPtr<UPoseableMeshComponent> ImportedSedan;
     TMap<FName, FTransform> RestVehicleBones;
+    bool bDoorRigReady = true; // The primitive prototype has four moving panels.
     float WheelRollDegrees = 0.f;
     void UpdateImportedWheels(float DeltaTime);
     void TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake);

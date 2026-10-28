@@ -26,5 +26,23 @@ int main()
     assert(AdvanceSpeed(-400.f, true, true, true, 1.f) == 0.f);
     assert(AdvanceSpeed(0.f, false, false, true, 1.f) == 0.f);
     assert(AdvanceSpeed(0.f, true, true, false, 1.f) == CityLiveDriving::EngineAcceleration);
+    for (int Fps : {15, 30, 60, 120, 240})
+    {
+        const float Dt = 1.f / Fps;
+        // Suspension/contacts can reintroduce opposite velocity every frame.
+        // Engine force must still be present, rather than merely cancelling it.
+        for (float Rollback : {-.01f, -.1f, -1.f, -5.f, -10.f})
+        {
+            const float GasAcceleration = (AdvanceSpeed(Rollback, true, true, false, Dt) - Rollback) / Dt;
+            const float ReverseAcceleration = (AdvanceSpeed(-Rollback, true, false, true, Dt) + Rollback) / Dt;
+            assert(std::abs(GasAcceleration - CityLiveDriving::EngineAcceleration) < .02f);
+            assert(std::abs(ReverseAcceleration + 180.f) < .02f);
+        }
+        // Both pedals must still stop either direction even inside the threshold.
+        assert(AdvanceSpeed(-.1f, true, true, true, Dt) == 0.f);
+        assert(AdvanceSpeed(.1f, true, true, true, Dt) == 0.f);
+    }
+    assert(AdvanceSpeed(-100.f, true, true, false, .01f) < 0.f);
+    assert(AdvanceSpeed(100.f, true, false, true, .01f) > 0.f);
     std::cout << "PASS: acceleration, limits, brake-to-reverse, gas-to-forward, pedal priority and empty car\n";
 }

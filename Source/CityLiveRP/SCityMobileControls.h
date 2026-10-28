@@ -27,6 +27,7 @@ public:
     virtual FReply OnTouchMoved(const FGeometry&, const FPointerEvent&) override;
     virtual FReply OnTouchEnded(const FGeometry&, const FPointerEvent&) override;
     virtual void OnFocusLost(const FFocusEvent&) override;
+    virtual void OnMouseCaptureLost(const FCaptureLostEvent&) override;
 
 private:
     TWeakObjectPtr<ACityLiveRPPlayerController> Controller;
@@ -46,4 +47,5 @@ private:
     ACitySedan* GetVehicle() const;
     static void Layout(const FGeometry&, FVector2D& Left, FVector2D& Right, float& Radius);
     void UpdateStick(const FGeometry&, const FPointerEvent&);
+    bool ReleasePointer(int32 PointerIndex);
 };
