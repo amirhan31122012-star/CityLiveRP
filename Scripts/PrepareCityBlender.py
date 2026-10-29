@@ -7,6 +7,7 @@ from mathutils import Matrix
 
 sys.path.insert(0, str(Path(__file__).parent))
 from CitySourceFiles import discover
+from CityTextureChecks import ensure_textures_readable
 
 source, output = map(Path, sys.argv[sys.argv.index('--') + 1:])
 parts = discover(source)  # Validate every buffer/texture before processing anything.
@@ -20,9 +21,7 @@ for part, path in parts:
     meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH' and len(o.data.polygons)]
     if not meshes:
         raise RuntimeError('No geometry in ' + str(path))
-    missing = [i.filepath for i in bpy.data.images if i.source == 'FILE' and not i.has_data]
-    if missing:
-        raise RuntimeError('Textures not loaded: ' + str(missing))
+    ensure_textures_readable(bpy.data.images)
     before = sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in meshes)
     for obj in meshes:
         # Unique mesh data and absolute vertices: every part shares the same origin.
