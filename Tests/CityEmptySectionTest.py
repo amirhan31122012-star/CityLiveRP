@@ -38,6 +38,8 @@ def fixture(root, empty):
                 'baseColorFactor': [.1, .8, .3, 1]}})
             scene['meshes'][0]['primitives'].append({
                 'attributes': {'POSITION': 0}, 'indices': 1, 'material': 1})
+            scene['meshes'][0]['primitives'].append({
+                'attributes': {'POSITION': 0}, 'indices': 1})  # legal glTF default material
         (folder / 'part.gltf').write_text(json.dumps(scene))
 
 
@@ -62,7 +64,9 @@ class EmptySectionTest(unittest.TestCase):
                     self.assertTrue(Path(part['fbx']).is_file())
                     self.assertEqual(part['materials'][0]['base_factor'], [.6, .2, .1, 1])
                     if part['name'] == 'Building':
-                        self.assertEqual([m['original_name'] for m in part['materials']], ['Fence', 'Fence'])
+                        self.assertEqual([m['original_name'] for m in part['materials']],
+                                         ['Fence', 'Fence', '_CityLiveDefault'])
+                        self.assertEqual(part['materials'][2]['base_factor'], [1, 1, 1, 1])
                         self.assertEqual(part['materials'][1]['base_factor'], [.1, .8, .3, 1])
                 self.assertIn('CITYLIVE_CITY_PREPARED', result.stdout)
                 # The renamed material must survive FBX, not just exist in JSON.

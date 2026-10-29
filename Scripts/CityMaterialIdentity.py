@@ -1,4 +1,5 @@
 """Give materials stable IDs before Blender imports/renames duplicate names."""
+from array import array
 import json
 import os
 from pathlib import Path
@@ -6,6 +7,7 @@ import re
 import struct
 from urllib.parse import quote
 from CitySourceFiles import local_uri
+from CityMaterialSource import ensure_default_material
 
 
 def stage_scene(source, output, label):
@@ -23,6 +25,7 @@ def stage_scene(source, output, label):
         scene = json.loads(chunks[0][1])
     else:
         scene = json.loads(source.read_text(encoding='utf-8-sig'))
+    ensure_default_material(scene)
     staged = output / (label + '_stable' + source.suffix.lower())
     for index, mat in enumerate(scene.get('materials', [])):
         mat['name'] = 'CL_' + label + '_' + str(index).zfill(4)
@@ -46,6 +49,21 @@ def stage_scene(source, output, label):
     else:
         staged.write_bytes(encoded)
     return staged
+
+
+def prune_unused_material_slots(meshes):
+    """Remove unused slots natively; Blender remaps face indices when slots pop."""
+    for obj in meshes:
+        indices = array('i', [0]) * len(obj.data.polygons)
+        obj.data.polygons.foreach_get('material_index', indices)
+        used = set(indices)
+        removed = 0
+        for index in range(len(obj.data.materials)-1, -1, -1):
+            if index not in used:
+                obj.data.materials.pop(index=index)
+                removed += 1
+        if removed:
+            print('CITYLIVE_PRUNE_UNUSED_SLOTS', obj.name, removed, flush=True)
 
 
 def bind_materials(meshes, records, all_materials=None):

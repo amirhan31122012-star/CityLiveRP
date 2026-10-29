@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from CitySourceFiles import discover
 from CityTextureChecks import ensure_textures_readable
 from CityMaterialSource import material_sources
-from CityMaterialIdentity import stage_scene, bind_materials
+from CityMaterialIdentity import stage_scene, bind_materials, prune_unused_material_slots
 
 source, output = map(Path, sys.argv[sys.argv.index('--') + 1:])
 parts = discover(source)  # Validate every buffer/texture before processing anything.
@@ -34,6 +34,7 @@ for part, path in parts:
     ensure_textures_readable(bpy.data.images)
     label = part.replace(' ', '')
     source_materials = material_sources(path, output, label)
+    prune_unused_material_slots(meshes)
     records = bind_materials(meshes, source_materials, bpy.data.materials)
     if not records:
         raise RuntimeError('No original PBR materials found in ' + str(path))

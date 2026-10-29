@@ -6,6 +6,22 @@ import struct
 from CitySourceFiles import local_uri
 
 
+def ensure_default_material(scene):
+    """A glTF primitive may legally omit its material: make that default explicit."""
+    primitives = [p for mesh in scene.get('meshes', []) for p in mesh.get('primitives', [])
+                  if p.get('material') is None]
+    if primitives:
+        materials = scene.setdefault('materials', [])
+        index = len(materials)
+        # glTF default material uses the default PBR factors (white, roughness 1,
+        # metallic 1). Do not borrow a neighbouring face's textured material.
+        materials.append({'name': '_CityLiveDefault', 'pbrMetallicRoughness': {
+            'baseColorFactor': [1, 1, 1, 1], 'roughnessFactor': 1, 'metallicFactor': 1}})
+        for primitive in primitives:
+            primitive['material'] = index
+    return scene
+
+
 def material_sources(source, output, part):
     source, output = Path(source), Path(output)
     binary = None
@@ -22,6 +38,8 @@ def material_sources(source, output, part):
                 binary = raw[offset+8:offset+8+size]
     else:
         scene = json.loads(source.read_text(encoding='utf-8-sig'))
+
+    ensure_default_material(scene)
 
     def image_file(index):
         image = scene['images'][index]
