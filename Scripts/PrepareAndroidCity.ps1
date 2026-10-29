@@ -18,6 +18,14 @@ try {
     if (-not (Test-Path -LiteralPath $skin -PathType Leaf)) {
         throw 'Сначала установите персонажа через BuildAndOpen.cmd.'
     }
+    foreach ($relativeIcon in @('Build\Android\res\drawable\icon.png',
+                                'Build\Android\res\drawable-anydpi-v26\icon.xml',
+                                'Build\Android\res\drawable\citylive_tiger_foreground.png',
+                                'Build\Android\res\values\citylive_icon_colors.xml')) {
+        if (-not (Test-Path -LiteralPath (Join-Path $ProjectDir $relativeIcon) -PathType Leaf)) {
+            throw "Файл значка не найден: $relativeIcon. Обновите проект в GitHub Desktop."
+        }
+    }
     # Pulling the repository may restore its default map. Use the map confirmed
     # by the successful local import for both cooking and the packaged startup.
     $ini = Join-Path $ProjectDir 'Config\DefaultEngine.ini'
