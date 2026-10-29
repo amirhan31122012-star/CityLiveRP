@@ -8,11 +8,12 @@ from mathutils import Matrix
 sys.path.insert(0, str(Path(__file__).parent))
 from CitySourceFiles import discover
 from CityTextureChecks import ensure_textures_readable
+from CityMaterialSource import material_sources
 
 source, output = map(Path, sys.argv[sys.argv.index('--') + 1:])
 parts = discover(source)  # Validate every buffer/texture before processing anything.
 output.mkdir(parents=True, exist_ok=True)
-report = {'parts': [], 'skipped_parts': [], 'source': str(source), 'version': 1}
+report = {'parts': [], 'skipped_parts': [], 'source': str(source), 'version': 2}
 optional_geometry = {'Green Area', 'Towers'}
 for part, path in parts:
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -28,6 +29,22 @@ for part, path in parts:
         print('CITYLIVE_CITY_SKIP_EMPTY', part, str(path), flush=True)
         continue
     ensure_textures_readable(bpy.data.images)
+    label = part.replace(' ', '')
+    source_materials = material_sources(path, output, label)
+    records = []
+    used = {mat for obj in meshes for mat in obj.data.materials if mat is not None}
+    for mat in used:
+        matches = [record for record in source_materials if record['original_name'] == mat.name]
+        if not matches:
+            matches = [record for record in source_materials
+                       if record['original_name'].startswith(mat.name)]
+        if len(matches) != 1:
+            raise RuntimeError('Cannot identify original PBR material: ' + mat.name)
+        record = matches[0]
+        mat.name = record['slot']  # Stable names survive FBX and UE slot sanitization.
+        records.append(record)
+    if not records:
+        raise RuntimeError('No original PBR materials found in ' + str(path))
     before = sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in meshes)
     for obj in meshes:
         # Unique mesh data and absolute vertices: every part shares the same origin.
@@ -57,7 +74,7 @@ for part, path in parts:
                              bake_anim=False, use_mesh_modifiers=True)
     after = sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in meshes)
     report['parts'].append({'name': label, 'fbx': str(filename), 'triangles_before': before,
-                             'triangles_after': after, 'objects': len(meshes)})
+                             'triangles_after': after, 'objects': len(meshes), 'materials': records})
     print('CITYLIVE_CITY_PART', label, before, after, flush=True)
 (output / 'manifest.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
 print('CITYLIVE_CITY_PREPARED', flush=True)

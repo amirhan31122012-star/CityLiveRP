@@ -23,7 +23,8 @@ def fixture(root, empty):
             (folder / 'part.bin').write_bytes(binary)
             scene.update({
                 'scenes': [{'nodes': [0]}], 'nodes': [{'mesh': 0}],
-                'meshes': [{'primitives': [{'attributes': {'POSITION': 0}, 'indices': 1}]}],
+                'meshes': [{'primitives': [{'attributes': {'POSITION': 0}, 'indices': 1, 'material': 0}]}],
+                'materials': [{'name': 'TestPaint', 'pbrMetallicRoughness': {'baseColorFactor': [.6, .2, .1, 1]}}],
                 'buffers': [{'uri': 'part.bin', 'byteLength': len(binary)}],
                 'bufferViews': [{'buffer': 0, 'byteLength': 36},
                                 {'buffer': 0, 'byteOffset': 36, 'byteLength': 6}],
@@ -52,7 +53,25 @@ class EmptySectionTest(unittest.TestCase):
                 self.assertEqual(len(report['parts']), 6 - len(empty))
                 for part in report['parts']:
                     self.assertTrue(Path(part['fbx']).is_file())
+                    self.assertEqual(part['materials'][0]['base_factor'], [.6, .2, .1, 1])
                 self.assertIn('CITYLIVE_CITY_PREPARED', result.stdout)
+                # The renamed material must survive FBX, not just exist in JSON.
+                check = Path(temp) / 'check_slots.py'
+                check.write_text("""import bpy, json
+from pathlib import Path
+report = json.loads(Path(%r).read_text())
+for part in report['parts']:
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=part['fbx'])
+    slots = {m.name for o in bpy.context.scene.objects if o.type == 'MESH'
+             for m in o.data.materials if m}
+    assert slots == {m['slot'] for m in part['materials']}, (slots, part)
+print('CITY_MATERIAL_SLOTS_ROUNDTRIP_OK')
+""" % str(output / 'manifest.json'))
+                verified = subprocess.run(['blender', '--background', '--python-exit-code', '1',
+                                           '--python', str(check)], capture_output=True, text=True, timeout=90)
+                self.assertEqual(verified.returncode, 0, verified.stdout + verified.stderr)
+                self.assertIn('CITY_MATERIAL_SLOTS_ROUNDTRIP_OK', verified.stdout)
             else:
                 self.assertFalse((output / 'manifest.json').exists())
                 self.assertIn('required city part', result.stdout + result.stderr)
