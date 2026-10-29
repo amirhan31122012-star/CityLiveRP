@@ -1,0 +1,59 @@
+@echo off
+setlocal
+chcp 65001 >nul
+set "PROJECT_DIR=%~dp0"
+set "CITY_SOURCE=C:\Projects\CityAssets\ModernCity\City_Exports"
+if not "%~1"=="" set "CITY_SOURCE=%~f1"
+if not exist "%CITY_SOURCE%\" (
+    echo Папка города не найдена: %CITY_SOURCE%
+    pause
+    exit /b 1
+)
+tasklist /FI "IMAGENAME eq UnrealEditor.exe" /NH 2>nul | find /I "UnrealEditor.exe" >nul
+if not errorlevel 1 (
+    echo Сначала закройте Unreal Engine.
+    pause
+    exit /b 1
+)
+set "UE_ROOT="
+for /f "tokens=2,*" %%A in ('reg query "HKLM\SOFTWARE\EpicGames\Unreal Engine\5.8" /v InstalledDirectory 2^>nul') do set "UE_ROOT=%%B"
+if not exist "%UE_ROOT%\Engine\Build\BatchFiles\Build.bat" set "UE_ROOT=%ProgramFiles%\Epic Games\UE_5.8"
+if not exist "%UE_ROOT%\Engine\Build\BatchFiles\Build.bat" (
+    echo Unreal Engine 5.8 не найден.
+    pause
+    exit /b 1
+)
+set "BLENDER_EXE="
+for /f "delims=" %%B in ('where blender.exe 2^>nul') do set "BLENDER_EXE=%%B"
+if not defined BLENDER_EXE (
+    for /d %%D in ("%ProgramFiles%\Blender Foundation\Blender *") do if exist "%%~D\blender.exe" set "BLENDER_EXE=%%~D\blender.exe"
+)
+if not defined BLENDER_EXE (
+    echo Blender не найден. Используется та же программа, что для подготовки дверей.
+    pause
+    exit /b 1
+)
+set "CITYLIVE_CITY_PREPARED=%PROJECT_DIR%Saved\CityImport\%RANDOM%_%RANDOM%_%RANDOM%"
+mkdir "%CITYLIVE_CITY_PREPARED%"
+echo 1/3. Подготовка города. Это может занять длительное время.
+echo Исходные файлы не изменяются. Журнал: %CITYLIVE_CITY_PREPARED%\Prepare.log
+"%BLENDER_EXE%" --background --python-exit-code 1 --python "%PROJECT_DIR%Scripts\PrepareCityBlender.py" -- "%CITY_SOURCE%" "%CITYLIVE_CITY_PREPARED%" > "%CITYLIVE_CITY_PREPARED%\Prepare.log" 2>&1
+if errorlevel 1 goto failure
+if not exist "%CITYLIVE_CITY_PREPARED%\manifest.json" goto failure
+echo 2/3. Сборка текущего кода.
+call "%UE_ROOT%\Engine\Build\BatchFiles\Build.bat" CityLiveRPEditor Win64 Development "-Project=%PROJECT_DIR%CityLiveRP.uproject" -WaitMutex -NoHotReloadFromIDE > "%CITYLIVE_CITY_PREPARED%\Build.log" 2>&1
+if errorlevel 1 goto failure
+echo 3/3. Импорт города и создание отдельной карты. Дождитесь окончания.
+"%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%PROJECT_DIR%CityLiveRP.uproject" "-ExecutePythonScript=%PROJECT_DIR%Scripts\ImportModernCity.py" "-abslog=%CITYLIVE_CITY_PREPARED%\Import.log" -unattended -nosplash
+if errorlevel 1 goto failure
+if not exist "%CITYLIVE_CITY_PREPARED%\import.ok" goto failure
+echo Готово. Откройте BuildAndOpen.cmd: запустится карта импортированного города.
+echo Это карта для проверки в редакторе. Android APK пока не собирайте.
+pause
+exit /b 0
+:failure
+echo Импорт остановлен. Открывается папка журналов.
+echo Пришлите Prepare.log, Build.log или Import.log с ошибкой.
+start "" "%CITYLIVE_CITY_PREPARED%"
+pause
+exit /b 1
