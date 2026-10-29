@@ -615,7 +615,9 @@ void ACitySedan::UpdateEntry(float DeltaTime)
     const float SeatY = Side * 40.f;
     const float SeatX = CityVehicleLayout::X(EntrySeat);
     const FVector Seat = GetActorTransform().TransformPosition(FVector(SeatX, SeatY, 10.f));
-    FVector Position = FMath::Lerp(EntryApproach, Seat, Sit);
+    const FVector SeatEdge = GetActorTransform().TransformPosition(FVector(SeatX, Side * 95.f, 10.f));
+    const FVector SittingPosition = FMath::Lerp(SeatEdge, Seat, CityLiveEntry::SeatShift(Phase));
+    FVector Position = FMath::Lerp(EntryApproach, SittingPosition, Sit);
     if (!bExiting && EntryTime < 0.f)
     {
         float Distance = FMath::Clamp((EntryTime + RouteDuration) / RouteDuration, 0.f, 1.f) * RouteLength;
@@ -632,7 +634,13 @@ void ACitySedan::UpdateEntry(float DeltaTime)
     }
     const FRotator FacingDoor = (HandleLocation() - EntryApproach).Rotation();
     FRotator DesiredRotation = FRotator(0, FacingDoor.Yaw, 0);
-    if (Sit > 0.f) DesiredRotation = FQuat::Slerp(DesiredRotation.Quaternion(), GetActorQuat(), Sit).Rotator();
+    if (Sit > 0.f)
+    {
+        // Sit sideways through the open doorway; turn into the cabin with legs.
+        const FQuat Sideways = FRotator(0, GetActorRotation().Yaw + Side * 90.f, 0).Quaternion();
+        const FQuat SeatedFacing = FQuat::Slerp(Sideways, GetActorQuat(), CityLiveEntry::BodyTurn(Phase));
+        DesiredRotation = FQuat::Slerp(DesiredRotation.Quaternion(), SeatedFacing, Sit).Rotator();
+    }
     const FVector Previous = EnteringCharacter->GetActorLocation();
     const FVector WalkDirection = Position - Previous;
     if (Phase < 0.f && WalkDirection.SizeSquared2D() > .1f) DesiredRotation = FRotator(0, WalkDirection.Rotation().Yaw, 0);
@@ -646,15 +654,36 @@ void ACitySedan::UpdateEntry(float DeltaTime)
         EntryMesh->SetVehicleEntryPose(0, CityLiveEntry::Hand(Phase), HandleLocation(), Side < 0.f);
         // Reach cabin size before the head crosses the roof edge; restore after clearing it.
         EntryMesh->SetVehicleFit(FMath::Clamp(Sit * 1.35f, 0.f, 1.f));
-        FVector Outside = GetActorTransform().TransformPosition(FVector(SeatX, Side * 112.f, 0));
-        Outside.Z = EntryApproach.Z - EnteringCharacter->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + 3.f;
-        const FVector OutsideLeft = Outside - GetActorForwardVector() * 12.f;
-        const FVector OutsideRight = Outside + GetActorForwardVector() * 12.f;
+        FVector Outside = GetActorTransform().TransformPosition(FVector(SeatX, Side * 140.f, 0));
+        Outside.Z = EntryApproach.Z - EnteringCharacter->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+        auto GroundFoot = [&](FVector Foot)
+        {
+            FCollisionQueryParams FootParams(SCENE_QUERY_STAT(CityEntryFoot), false, this);
+            FootParams.AddIgnoredActor(EnteringCharacter);
+            if (Driver) FootParams.AddIgnoredActor(Driver);
+            for (ACityLiveRPCharacter* Occupant : Passengers) if (Occupant) FootParams.AddIgnoredActor(Occupant);
+            FHitResult Ground;
+            if (GetWorld()->LineTraceSingleByChannel(Ground, Foot + FVector(0, 0, 60), Foot - FVector(0, 0, 90), ECC_Visibility, FootParams))
+                Foot.Z = Ground.ImpactPoint.Z;
+            // IK targets the ankle bone, not the bottom of the shoe.
+            Foot.Z += 8.f;
+            return Foot;
+        };
+        const FVector OutsideLeft = GroundFoot(Outside - GetActorForwardVector() * (Side * 12.f));
+        const FVector OutsideRight = GroundFoot(Outside + GetActorForwardVector() * (Side * 12.f));
         const FVector InsideLeft = GetActorTransform().TransformPosition(FVector(SeatX + 50.f, SeatY-11.f, -25));
         const FVector InsideRight = GetActorTransform().TransformPosition(FVector(SeatX + 50.f, SeatY+11.f, -25));
+        auto TransferFoot = [&](const FVector& Start, const FVector& End, bool Second)
+        {
+            const float Progress = CityLiveEntry::Leg(Phase, Second);
+            FVector Foot = FMath::Lerp(Start, End, CityLiveEntry::FootTravel(Progress));
+            const float Clearance = FMath::Max(Start.Z, End.Z) + 32.f;
+            Foot.Z = FMath::Lerp(static_cast<float>(Foot.Z), Clearance, CityLiveEntry::FootLift(Progress));
+            return Foot;
+        };
         EntryMesh->SetVehicleSeatLegs(Sit,
-            FMath::Lerp(OutsideLeft, InsideLeft, CityLiveEntry::Leg(Phase, Side > 0.f)),
-            FMath::Lerp(OutsideRight, InsideRight, CityLiveEntry::Leg(Phase, Side < 0.f)));
+            TransferFoot(OutsideLeft, InsideLeft, Side > 0.f),
+            TransferFoot(OutsideRight, InsideRight, Side < 0.f));
     }
     if (EntryTime >= CityLiveEntry::Duration)
     {

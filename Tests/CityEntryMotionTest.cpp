@@ -25,5 +25,17 @@ int main()
     // Exit runs the same phases backwards: feet outside before the torso stands up.
     assert(Sit(3.f) == 1.f && Leg(3.f, true) == 0.f);
     assert(Sit(1.99f) == 0.f && Door(1.99f) > .99f);
+    assert(SeatShift(2.85f) == 0.f && BodyTurn(2.85f) == 0.f);
+    assert(SeatShift(3.95f) == 1.f && BodyTurn(3.95f) == 1.f);
+    for (int Step = 0; Step <= 100; ++Step)
+    {
+        const float P = Step / 100.f;
+        assert(FootTravel(P) >= 0.f && FootTravel(P) <= 1.f);
+        assert(FootLift(P) >= 0.f && FootLift(P) <= 1.f);
+        if (P >= .3f && P <= .7f) assert(FootLift(P) > .999f);
+        if (P <= .2f) assert(FootTravel(P) == 0.f);
+        if (P >= .8f) assert(FootTravel(P) == 1.f);
+    }
+    assert(FootLift(0.f) == 0.f && FootLift(1.f) == 0.f);
     std::cout << "PASS: hand/door timing, torso before separate legs on entry, legs before torso on exit, smooth boundaries\n";
 }
