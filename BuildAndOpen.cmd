@@ -48,6 +48,16 @@ if exist "%PROJECT_DIR%Assets\Characters\Beige\SK_CityBeige.fbx" (
         exit /b 1
     )
 )
+if not exist "%PROJECT_DIR%Content\CityLiveMaps\CityLive_V1.umap" (
+    if exist "%PROJECT_DIR%Saved\V1MapReady.ok" del "%PROJECT_DIR%Saved\V1MapReady.ok"
+    echo Создаётся район CityLive V1. Дождитесь окончания.
+    "%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%PROJECT_DIR%CityLiveRP.uproject" "-ExecutePythonScript=%PROJECT_DIR%Scripts\CreateV1Map.py" -unattended -nosplash
+    if not exist "%PROJECT_DIR%Saved\V1MapReady.ok" (
+        echo Карта не создана. Пришлите Saved\Logs\CityLiveRP.log.
+        pause
+        exit /b 1
+    )
+)
 start "" "%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe" "%PROJECT_DIR%CityLiveRP.uproject"
 exit /b 0
 
