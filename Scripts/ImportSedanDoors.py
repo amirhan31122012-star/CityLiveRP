@@ -15,38 +15,38 @@ if any(name.encode('ascii') not in fbx_data for name in door_names):
 destination = '/Game/CityLiveVehicles/Sedan'
 asset_name = 'SK_CitySedan_4Doors'
 asset_path = destination + '/' + asset_name
-if unreal.EditorAssetLibrary.does_asset_exist(asset_path):
-    raise RuntimeError('The four-door mesh already exists; refusing to overwrite local edits: ' + asset_path)
+existing = unreal.EditorAssetLibrary.does_asset_exist(asset_path)
 original = unreal.load_asset('/Game/VehicleVarietyVol2/Skeletons/SK_Sedan_01a.SK_Sedan_01a')
 if not isinstance(original, unreal.SkeletalMesh):
     raise RuntimeError('Original sedan must be installed locally first, including its materials.')
 
-options = unreal.FbxImportUI()
-options.automated_import_should_detect_type = False
-options.mesh_type_to_import = unreal.FBXImportType.FBXIT_SKELETAL_MESH
-options.import_as_skeletal = True
-options.import_mesh = True
-options.import_materials = False
-options.import_textures = False
-options.import_animations = False
-options.create_physics_asset = False
-options.skeletal_mesh_import_data.set_editor_property('import_morph_targets', False)
-options.skeletal_mesh_import_data.set_editor_property('convert_scene', True)
-options.skeletal_mesh_import_data.set_editor_property('convert_scene_unit', True)
-options.skeletal_mesh_import_data.set_editor_property('normal_import_method', unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS)
-task = unreal.AssetImportTask()
-task.filename = str(fbx_path.resolve())
-task.destination_path = destination
-task.destination_name = asset_name
-task.automated = True
-task.replace_existing = False
-task.save = True
-task.factory = unreal.FbxFactory()
-task.options = options
-unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+if not existing:
+    options = unreal.FbxImportUI()
+    options.automated_import_should_detect_type = False
+    options.mesh_type_to_import = unreal.FBXImportType.FBXIT_SKELETAL_MESH
+    options.import_as_skeletal = True
+    options.import_mesh = True
+    options.import_materials = False
+    options.import_textures = False
+    options.import_animations = False
+    options.create_physics_asset = False
+    options.skeletal_mesh_import_data.set_editor_property('import_morph_targets', False)
+    options.skeletal_mesh_import_data.set_editor_property('convert_scene', True)
+    options.skeletal_mesh_import_data.set_editor_property('convert_scene_unit', True)
+    options.skeletal_mesh_import_data.set_editor_property('normal_import_method', unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS)
+    task = unreal.AssetImportTask()
+    task.filename = str(fbx_path.resolve())
+    task.destination_path = destination
+    task.destination_name = asset_name
+    task.automated = True
+    task.replace_existing = False
+    task.save = True
+    task.factory = unreal.FbxFactory()
+    task.options = options
+    unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
 imported = unreal.load_asset(asset_path)
 if not isinstance(imported, unreal.SkeletalMesh):
-    raise RuntimeError('Skeletal mesh import failed: ' + repr(task.imported_object_paths))
+    raise RuntimeError('Expected a skeletal mesh at: ' + asset_path)
 probe = unreal.PoseableMeshComponent()
 probe.set_skinned_asset_and_update(imported)
 missing_doors = [name for name in door_names if probe.get_bone_index(name) < 0]
@@ -65,6 +65,9 @@ for slot in source_slots:
     if interface:
         by_name[interface.get_name()] = interface
 for index, slot in enumerate(new_slots):
+    # Resume an interrupted import without replacing user-assigned materials.
+    if existing and slot.get_editor_property('material_interface'):
+        continue
     interface = by_name.get(str(slot.get_editor_property('imported_material_slot_name')))
     if not interface:
         interface = by_name.get(str(slot.get_editor_property('material_slot_name')))
