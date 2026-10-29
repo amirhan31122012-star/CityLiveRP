@@ -16,3 +16,6 @@
 /*.blend
 
 /Content/CityLiveMaps/
+
+/Releases/
+__pycache__/
