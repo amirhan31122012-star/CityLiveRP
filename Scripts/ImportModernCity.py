@@ -26,6 +26,7 @@ meshes = []
 for skipped in report.get('skipped_parts', []):
     unreal.log_warning('City part skipped: ' + skipped['name'] + ' — ' + skipped['reason'])
 for part in report['parts']:
+    unreal.log('CITYLIVE_IMPORT_PART ' + part['name'])
     task = unreal.AssetImportTask()
     task.filename = part['fbx']
     task.destination_path = root + '/' + part['name']

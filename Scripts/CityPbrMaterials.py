@@ -135,14 +135,22 @@ def build_materials(records, destination):
 
 
 def assign_materials(mesh, materials):
-    slots = list(mesh.get_editor_property('static_materials'))
-    for index, slot in enumerate(slots):
+    # Edit detached struct copies so nested setters cannot notify the mesh.
+    slots = [slot.copy() for slot in mesh.get_editor_property('static_materials')]
+    assignments = []
+    for slot in slots:
         name = str(slot.get_editor_property('imported_material_slot_name'))
         material = materials.get(key(name))
         if material is None:
             material = materials.get(key(slot.get_editor_property('material_slot_name')))
         if material is None:
             raise RuntimeError('Unmatched original material slot: ' + mesh.get_name() + ' / ' + name)
-        mesh.set_material(index, material)
+        assignments.append((slot, material))
+    # SetMaterial per slot triggers PostEditChange/rebuild for every material.
+    # Validate all slots first, then publish the full array in one operation.
+    for slot, material in assignments:
+        slot.set_editor_property('material_interface', material)
+    mesh.set_editor_property('static_materials', slots)
+    unreal.log('CITYLIVE_MATERIALS_ASSIGNED ' + mesh.get_name() + ' slots=' + str(len(slots)))
     if not unreal.EditorAssetLibrary.save_loaded_asset(mesh, only_if_is_dirty=False):
         raise RuntimeError('Cannot save assigned city materials')
