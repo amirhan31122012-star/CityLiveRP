@@ -12,7 +12,8 @@ from CityTextureChecks import ensure_textures_readable
 source, output = map(Path, sys.argv[sys.argv.index('--') + 1:])
 parts = discover(source)  # Validate every buffer/texture before processing anything.
 output.mkdir(parents=True, exist_ok=True)
-report = {'parts': [], 'source': str(source), 'version': 1}
+report = {'parts': [], 'skipped_parts': [], 'source': str(source), 'version': 1}
+optional_geometry = {'Green Area', 'Towers'}
 for part, path in parts:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.context.scene.unit_settings.system = 'METRIC'
@@ -20,7 +21,12 @@ for part, path in parts:
     bpy.ops.import_scene.gltf(filepath=str(path))
     meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH' and len(o.data.polygons)]
     if not meshes:
-        raise RuntimeError('No geometry in ' + str(path))
+        if part not in optional_geometry:
+            raise RuntimeError('No geometry in required city part: ' + str(path))
+        report['skipped_parts'].append({'name': part, 'source': str(path),
+                                        'reason': 'No mesh polygons in imported scene'})
+        print('CITYLIVE_CITY_SKIP_EMPTY', part, str(path), flush=True)
+        continue
     ensure_textures_readable(bpy.data.images)
     before = sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in meshes)
     for obj in meshes:

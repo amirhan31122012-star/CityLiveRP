@@ -16,6 +16,8 @@ root = '/Game/CityLiveMaps/ModernCity/Run_' + token
 map_path = root + '/CityLive_ModernCity'
 assets = unreal.AssetToolsHelpers.get_asset_tools()
 meshes = []
+for skipped in report.get('skipped_parts', []):
+    unreal.log_warning('City part skipped: ' + skipped['name'] + ' — ' + skipped['reason'])
 for part in report['parts']:
     task = unreal.AssetImportTask()
     task.filename = part['fbx']
