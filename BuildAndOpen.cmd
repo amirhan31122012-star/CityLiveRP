@@ -40,5 +40,22 @@ if errorlevel 1 (
     exit /b 1
 )
 echo Сборка завершена. Открывается обновлённый проект.
+if exist "%PROJECT_DIR%Assets\Characters\Beige\SK_CityBeige.fbx" (
+    call :ensure_character_skin
+    if errorlevel 1 (
+        echo Установка персонажа не завершена. Пришлите Saved\Logs\CityLiveRP.log.
+        pause
+        exit /b 1
+    )
+)
 start "" "%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe" "%PROJECT_DIR%CityLiveRP.uproject"
+exit /b 0
+
+:ensure_character_skin
+if exist "%PROJECT_DIR%Saved\CharacterImport\Installed_v2.ok" if exist "%PROJECT_DIR%Content\CityLiveCharacters\Beige\SK_CityBeige_v2.uasset" exit /b 0
+set "CITYLIVE_SKIN_TOKEN=%RANDOM%_%RANDOM%_%RANDOM%"
+echo Первый запуск: устанавливается новый персонаж. Дождитесь окончания.
+"%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%PROJECT_DIR%CityLiveRP.uproject" "-ExecutePythonScript=%PROJECT_DIR%Scripts\ImportCharacterSkin.py" -unattended -nosplash
+if errorlevel 1 exit /b 1
+if not exist "%PROJECT_DIR%Saved\CharacterImport\Import_%CITYLIVE_SKIN_TOKEN%.ok" exit /b 1
 exit /b 0

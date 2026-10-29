@@ -10,6 +10,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
+class UCityCharacterSkinComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -52,6 +53,9 @@ protected:
 public:
 
 	/** Constructor */
+    UPROPERTY(EditDefaultsOnly, Category="CityLive|Appearance")
+    bool bUseCitySkin = true;
+
 	ACityLiveRPCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
     virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
@@ -117,6 +121,7 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 private:
+    UPROPERTY() TObjectPtr<UCityCharacterSkinComponent> CharacterSkin;
     float StandingCapsuleHalfHeight = 96.f;
     float MobileSteering = 0.f;
     float MobileForward = 0.f;

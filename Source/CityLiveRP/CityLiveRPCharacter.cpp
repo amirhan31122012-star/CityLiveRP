@@ -3,6 +3,7 @@
 
 #include "CityLiveRPCharacter.h"
 #include "CityCrouchMeshComponent.h"
+#include "CityCharacterSkinComponent.h"
 #include "MobileSteering.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
@@ -24,6 +25,8 @@ ACityLiveRPCharacter::ACityLiveRPCharacter(const FObjectInitializer& ObjectIniti
     : Super(ObjectInitializer.SetDefaultSubobjectClass<UCityCrouchMeshComponent>(ACharacter::MeshComponentName))
 {
     PrimaryActorTick.bCanEverTick = true;
+    CharacterSkin = CreateDefaultSubobject<UCityCharacterSkinComponent>(TEXT("CityCharacterSkin"));
+    CharacterSkin->SetupAttachment(GetMesh());
     GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
     // Поворот персонажа
@@ -119,6 +122,7 @@ void ACityLiveRPCharacter::BeginPlay()
     GetMesh()->SetVisibility(true);
     // Do not interpolate a cached, already-deformed pose back into this overlay.
     GetMesh()->bEnableUpdateRateOptimizations = false;
+    if (bUseCitySkin) CharacterSkin->InitializeSkin(GetMesh());
 }
 
 void ACityLiveRPCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
