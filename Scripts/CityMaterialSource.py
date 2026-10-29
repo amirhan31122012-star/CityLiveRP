@@ -59,11 +59,10 @@ def material_sources(source, output, part):
         if 'source' not in sampler:
             raise ValueError('Unsupported compressed texture: ' + str(sampler))
         transform = info.get('extensions', {}).get('KHR_texture_transform', {})
-        if transform.get('rotation', 0):
-            raise ValueError('Rotated texture coordinates need explicit conversion')
         return {'file': image_file(sampler['source']),
                 'uv': transform.get('texCoord', info.get('texCoord', 0)),
-                'scale': transform.get('scale', [1, 1]), 'offset': transform.get('offset', [0, 0])}
+                'scale': transform.get('scale', [1, 1]), 'offset': transform.get('offset', [0, 0]),
+                'rotation': transform.get('rotation', 0)}
 
     result = []
     for index, mat in enumerate(scene.get('materials', [])):

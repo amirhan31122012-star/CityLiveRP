@@ -3,6 +3,7 @@ import hashlib
 from pathlib import Path
 import re
 import unreal
+from CityUvTransform import uv_rows
 
 
 def key(name):
@@ -49,8 +50,30 @@ def build_materials(records, destination):
                                  'Data': unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_COLOR}[role])
         uv = edit.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate)
         uv.set_editor_property('coordinate_index', info['uv'])
-        uv.set_editor_property('u_tiling', info['scale'][0])
-        uv.set_editor_property('v_tiling', info['scale'][1])
+        # glTF rotates about (0, 0), not the texture centre. Build the
+        # affine matrix explicitly, with scale before rotation and offset last.
+        uv.set_editor_property('u_tiling', 1)
+        uv.set_editor_property('v_tiling', 1)
+        if info.get('rotation', 0):
+            coordinates = []
+            for row in uv_rows(info):
+                vector = edit.create_material_expression(material, unreal.MaterialExpressionConstant2Vector)
+                vector.set_editor_property('r', row[0])
+                vector.set_editor_property('g', row[1])
+                dot = edit.create_material_expression(material, unreal.MaterialExpressionDotProduct)
+                if not edit.connect_material_expressions(uv, '', dot, 'A'):
+                    raise RuntimeError('Cannot connect rotated texture coordinates')
+                if not edit.connect_material_expressions(vector, '', dot, 'B'):
+                    raise RuntimeError('Cannot connect texture rotation matrix')
+                coordinates.append(dot)
+            append = edit.create_material_expression(material, unreal.MaterialExpressionAppendVector)
+            for scalar, pin in zip(coordinates, ('A', 'B')):
+                if not edit.connect_material_expressions(scalar, '', append, pin):
+                    raise RuntimeError('Cannot combine rotated texture coordinates')
+            uv = append
+        else:
+            uv.set_editor_property('u_tiling', info['scale'][0])
+            uv.set_editor_property('v_tiling', info['scale'][1])
         if info['offset'] != [0, 0]:
             add = edit.create_material_expression(material, unreal.MaterialExpressionAdd)
             offset = edit.create_material_expression(material, unreal.MaterialExpressionConstant2Vector)
