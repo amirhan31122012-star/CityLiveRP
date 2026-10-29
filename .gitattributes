@@ -4,3 +4,6 @@
 /InstallCharacterSkin.cmd text eol=crlf
 /PrepareSedanDoorsLocal.cmd text eol=crlf
 /Scripts/SelectSedanDoors.ps1 text eol=crlf
+
+/BuildAndroidV1.cmd text eol=crlf
+/Scripts/PrepareAndroidCity.ps1 text eol=crlf

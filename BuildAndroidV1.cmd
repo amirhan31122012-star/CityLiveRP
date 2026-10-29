@@ -18,19 +18,29 @@ if not errorlevel 1 (
     pause
     exit /b 1
 )
-if not exist "%PROJECT_DIR%Content\CityLiveMaps\CityLive_V1.umap" goto missing_content
-if not exist "%PROJECT_DIR%Content\CityLiveCharacters\Beige\SK_CityBeige_v3.uasset" goto missing_content
-if not exist "%PROJECT_DIR%Saved" mkdir "%PROJECT_DIR%Saved"
-set "OUTPUT_DIR=%PROJECT_DIR%Releases\AndroidV1"
-echo Проверяется Android SDK. При ошибке откройте инструкцию Docs\AndroidV1.md.
-call "%UE_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" Turnkey -command=VerifySdk -platform=Android "-project=%PROJECT_DIR%CityLiveRP.uproject" -utf8output
-if errorlevel 1 (
-    echo Проверка SDK не пройдена. См. Docs\AndroidV1.md.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%PROJECT_DIR%Scripts\PrepareAndroidCity.ps1" -ProjectDir "%PROJECT_DIR%."
+if errorlevel 1 goto missing_content
+set "CITY_MAP="
+set /p CITY_MAP=<"%PROJECT_DIR%Saved\AndroidCityMap.txt"
+if not defined CITY_MAP goto missing_content
+set "OUTPUT_DIR=%PROJECT_DIR%Releases\AndroidV1\%RANDOM%_%RANDOM%_%RANDOM%"
+if exist "%OUTPUT_DIR%" (
+    echo Папка сборки уже существует. Запустите файл снова.
     pause
     exit /b 1
 )
+echo Проверяется Android SDK. При ошибке откройте инструкцию Docs\AndroidV1.md.
+call "%UE_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" Turnkey -command=VerifySdk -platform=Android "-project=%PROJECT_DIR%CityLiveRP.uproject" -utf8output > "%PROJECT_DIR%Saved\VerifyAndroidSDK.log" 2>&1
+if errorlevel 1 (
+    type "%PROJECT_DIR%Saved\VerifyAndroidSDK.log"
+    echo Проверка SDK не пройдена. Пришлите Saved\VerifyAndroidSDK.log.
+    pause
+    exit /b 1
+)
+echo Карта: %CITY_MAP%
+echo Журнал сборки: Saved\BuildAndroidV1.log
 echo Собирается тестовый APK ARM64 ASTC. Первый запуск может занять длительное время.
-call "%UE_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun "-project=%PROJECT_DIR%CityLiveRP.uproject" -noP4 -platform=Android -cookflavor=ASTC -clientconfig=Development -build -cook -map=/Game/CityLiveMaps/CityLive_V1 -stage -pak -package -archive "-archivedirectory=%OUTPUT_DIR%" -utf8output > "%PROJECT_DIR%Saved\BuildAndroidV1.log" 2>&1
+call "%UE_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun "-project=%PROJECT_DIR%CityLiveRP.uproject" -noP4 -platform=Android -cookflavor=ASTC -clientconfig=Development -build -cook "-map=%CITY_MAP%" -stage -pak -package -archive "-archivedirectory=%OUTPUT_DIR%" -utf8output > "%PROJECT_DIR%Saved\BuildAndroidV1.log" 2>&1
 if errorlevel 1 (
     echo Сборка не удалась. Пришлите Saved\BuildAndroidV1.log.
     pause
@@ -49,7 +59,7 @@ pause
 exit /b 0
 
 :missing_content
-echo Сначала запустите BuildAndOpen.cmd и проверьте карту и персонажа.
+echo Проверьте сообщение выше. Нужны импортированный город и установленный персонаж.
 echo Затем закройте редактор и снова запустите BuildAndroidV1.cmd.
 pause
 exit /b 1
