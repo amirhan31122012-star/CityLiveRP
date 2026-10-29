@@ -48,9 +48,10 @@ void UCityCharacterSkinComponent::TickComponent(float DeltaTime, ELevelTick Tick
 {
     Super::TickComponent(DeltaTime, TickType, TickFunction);
     USkeletalMeshComponent* Source = AnimationSource.Get();
-    if (!Source || !GetSkeletalMeshAsset()) return;
+    const USkeletalMesh* ActiveSkin = Cast<USkeletalMesh>(GetSkinnedAsset());
+    if (!Source || !ActiveSkin) return;
     const TArray<FTransform>& SourcePose = Source->GetComponentSpaceTransforms();
-    const FReferenceSkeleton& Ref = GetSkeletalMeshAsset()->GetRefSkeleton();
+    const FReferenceSkeleton& Ref = ActiveSkin->GetRefSkeleton();
     TArray<FTransform> Result = SkinReference;
     for (int32 Bone = 0; Bone < Result.Num(); ++Bone)
     {
