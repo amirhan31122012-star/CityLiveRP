@@ -12,3 +12,5 @@
 
 /RetryModernCity.cmd text eol=crlf
 /Scripts/ReusePreparedCity.ps1 text eol=crlf
+
+/OptimizeCityTextures.cmd text eol=crlf

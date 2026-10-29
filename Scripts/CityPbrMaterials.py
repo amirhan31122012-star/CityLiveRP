@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 import unreal
 from CityUvTransform import uv_rows
+from CityTextureBudget import apply_city_texture_budget
 
 
 def key(name):
@@ -35,7 +36,7 @@ def build_materials(records, destination):
             if not isinstance(tex, unreal.Texture2D):
                 raise RuntimeError('Texture import failed: ' + str(path))
             tex.set_editor_property('srgb', role == 'Color')
-            tex.set_editor_property('max_texture_size', 2048)
+            apply_city_texture_budget(tex, role)
             tex.set_editor_property('compression_settings', unreal.TextureCompressionSettings.TC_NORMALMAP
                                     if role == 'Normal' else unreal.TextureCompressionSettings.TC_DEFAULT)
             if role == 'Normal':
