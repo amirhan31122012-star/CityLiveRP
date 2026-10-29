@@ -35,6 +35,7 @@ public:
     void SetThrottle(bool bHeld) { bThrottle = bHeld; }
     void SetBrake(bool bHeld) { bBrake = bHeld; }
     void ResetInput();
+    void OrbitCamera(float YawDelta, float PitchDelta);
     bool IsEntering(const APlayerController* Player) const;
     void CancelEntry();
 
@@ -70,6 +71,8 @@ private:
     FRotator EntryStartRotation = FRotator::ZeroRotator;
     float EntryTime = 0.f;
     float EntryCameraBlend = 0.f;
+    float CameraYawOffset = 0.f;
+    float CameraPitch = -15.f;
     bool bEnteringPassenger = false;
     int32 EntrySeat = -1;
     bool bExiting = false;

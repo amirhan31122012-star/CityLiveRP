@@ -17,6 +17,7 @@ public:
     void SetVehicleEntryPose(float Sit, float Reach, FVector Handle, bool bRightHand);
     void SetVehicleSeatLegs(float Alpha, FVector LeftFoot, FVector RightFoot);
     void SetVehicleFit(float Alpha);
+    float GetAnkleWorldHeight() const;
 
     UPROPERTY(EditAnywhere, Category="CityLive|Crouch", meta=(ClampMin="0", ClampMax="60"))
     float PelvisDrop = 52.f;
@@ -26,7 +27,7 @@ public:
 
 private:
     float CrouchAlpha = 0.f;
-    float EntrySit = 0.f;
+    float EntryTorsoDip = 0.f;
     float EntryReach = 0.f;
     FVector EntryHandle = FVector::ZeroVector;
     bool bEntryRightHand = false;
@@ -37,5 +38,6 @@ private:
     FTransform OriginalVehicleMeshTransform;
     void ApplyCrouch();
     void ApplyEntryHand();
+    void ApplyEntryTorso();
     void ApplySeatLegs();
 };

@@ -168,3 +168,9 @@ bpy.ops.wm.save_as_mainfile(filepath=out+'/CityBeigeRig.blend')
 bpy.ops.export_scene.fbx(filepath=out+'/SK_CityBeige.fbx',use_selection=True,object_types={'MESH','ARMATURE'},add_leaf_bones=False,bake_anim=False,use_mesh_modifiers=False,axis_forward='-Y',axis_up='Z',apply_unit_scale=True)
 assert all(abs(sum(g.weight for g in v.groups)-1)<.0001 for v in o.data.vertices)
 print('RIG_OK',len(o.data.vertices),len(arm.data.bones))
+
+# Finish the generated mesh with independent legs and a neutral shoe direction.
+import importlib.util
+spec=importlib.util.spec_from_file_location('city_leg_repair',Path(__file__).with_name('SeparateCharacterLegs.py'))
+module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+module.separate_legs(Path(out)/'CityBeigeRig.blend',Path(out))

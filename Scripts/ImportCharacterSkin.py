@@ -6,7 +6,7 @@ import unreal
 project = Path(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()))
 source = project / 'Assets/Characters/Beige'
 destination = '/Game/CityLiveCharacters/Beige'
-mesh_path = destination + '/SK_CityBeige_v2'
+mesh_path = destination + '/SK_CityBeige_v3'
 tools = unreal.AssetToolsHelpers.get_asset_tools()
 
 def import_file(filename, name, options=None):
@@ -39,8 +39,8 @@ if not mesh:
     options.create_physics_asset = False
     options.skeletal_mesh_import_data.set_editor_property('convert_scene', True)
     options.skeletal_mesh_import_data.set_editor_property('convert_scene_unit', True)
-    options.skeletal_mesh_import_data.set_editor_property('normal_import_method', unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS)
-    mesh = import_file('SK_CityBeige.fbx', 'SK_CityBeige_v2', options)
+    options.skeletal_mesh_import_data.set_editor_property('normal_import_method', unreal.FBXNormalImportMethod.FBXNIM_COMPUTE_NORMALS)
+    mesh = import_file('SK_CityBeige.fbx', 'SK_CityBeige_v3', options)
 if not isinstance(mesh, unreal.SkeletalMesh):
     raise RuntimeError('Character asset is not a skeletal mesh.')
 skeleton = mesh.get_editor_property('skeleton')
@@ -52,23 +52,28 @@ for bone in ('pelvis', 'head', 'hand_l', 'hand_r', 'foot_l', 'foot_r'):
     if probe.get_bone_index(bone) < 0:
         raise RuntimeError('Required character bone missing: ' + bone)
 
-material_path = destination + '/M_CityBeige'
+material_path = destination + '/M_CityBeige_v3'
 material = unreal.load_asset(material_path)
 if not material:
     base = unreal.load_asset(destination + '/T_Beige_Base') or import_file('Image_1.png', 'T_Beige_Base')
     normal = unreal.load_asset(destination + '/T_Beige_Normal') or import_file('Image_3.png', 'T_Beige_Normal')
     packed = unreal.load_asset(destination + '/T_Beige_ORM') or import_file('Image_0.png', 'T_Beige_ORM')
     normal.set_editor_property('compression_settings', unreal.TextureCompressionSettings.TC_NORMALMAP)
+    base.set_editor_property('srgb', True)
+    base.set_editor_property('compression_settings', unreal.TextureCompressionSettings.TC_DEFAULT)
     normal.set_editor_property('srgb', False)
     normal.set_editor_property('flip_green_channel', True)
     packed.set_editor_property('srgb', False)
+    packed.set_editor_property('compression_settings', unreal.TextureCompressionSettings.TC_DEFAULT)
     base.set_editor_property('max_texture_size', 2048)
     normal.set_editor_property('max_texture_size', 2048)
     packed.set_editor_property('max_texture_size', 1024)
     for texture in (base, normal, packed):
-        unreal.EditorAssetLibrary.save_loaded_asset(texture)
-    material = tools.create_asset('M_CityBeige', destination, unreal.Material, unreal.MaterialFactoryNew())
+        if not unreal.EditorAssetLibrary.save_loaded_asset(texture, only_if_is_dirty=False):
+            raise RuntimeError('Character texture could not be saved: ' + texture.get_path_name())
+    material = tools.create_asset('M_CityBeige_v3', destination, unreal.Material, unreal.MaterialFactoryNew())
     edit = unreal.MaterialEditingLibrary
+    edit.set_material_usage(material, unreal.MaterialUsage.MATUSAGE_SKELETAL_MESH)
     for texture, sampler, channel, prop in (
         (base, unreal.MaterialSamplerType.SAMPLERTYPE_COLOR, 'RGB', unreal.MaterialProperty.MP_BASE_COLOR),
         (normal, unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL, 'RGB', unreal.MaterialProperty.MP_NORMAL),
@@ -95,5 +100,5 @@ if token and all(c.isdigit() or c == '_' for c in token):
     folder = project / 'Saved/CharacterImport'
     folder.mkdir(parents=True, exist_ok=True)
     (folder / ('Import_' + token + '.ok')).write_text(mesh_path, encoding='utf-8')
-    (folder / 'Installed_v2.ok').write_text(mesh_path, encoding='utf-8')
+    (folder / 'Installed_v3.ok').write_text(mesh_path, encoding='utf-8')
 unreal.log('CityLive: male skin installed; run BuildAndOpen.cmd.')

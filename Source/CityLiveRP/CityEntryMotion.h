@@ -20,6 +20,10 @@ inline float Sit(float Time) { return Blend(Time, 2.f, 2.8f); }
 inline float Leg(float Time, bool Second) { return Second ? Blend(Time, 3.35f, 3.9f) : Blend(Time, 2.85f, 3.35f); }
 inline float SeatShift(float Time) { return Blend(Time, 3.05f, 3.95f); }
 inline float BodyTurn(float Time) { return Blend(Time, 2.85f, 3.95f); }
+inline float TorsoDip(float Time)
+{
+    return Blend(Time, 1.95f, 2.4f) * (1.f - Blend(Time, 3.8f, 4.f));
+}
 // Raise the ankle before crossing the sill, then lower it onto the cabin floor.
 // Running backwards plants both feet outside before the body rises.
 inline float FootTravel(float Progress) { return Blend(Progress, .2f, .8f); }

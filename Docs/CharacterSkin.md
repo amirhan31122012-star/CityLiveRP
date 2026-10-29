@@ -13,8 +13,8 @@
 редактор игры не запускается; нужен Saved/Logs/CityLiveRP.log.
 
 Ручной повтор установки: InstallCharacterSkin.cmd. Ресурс имеет новое имя
-/Game/CityLiveCharacters/Beige/SK_CityBeige_v2, отдельно от раннего черновика.
-Успех подтверждается per-run Import_*.ok и Installed_v2.ok в Saved/CharacterImport.
+/Game/CityLiveCharacters/Beige/SK_CityBeige_v3, отдельно от раннего черновика.
+Успех подтверждается per-run Import_*.ok и Installed_v3.ok в Saved/CharacterImport.
 Скелет сохраняется явно до сетки. Генерируемый Content/CityLiveCharacters исключён
 из Git; исходный FBX и PNG уже включены в репозиторий.
 
@@ -46,7 +46,7 @@ blender -b --python Scripts/PrepareCharacterRig.py -- original.glb empty_output_
 на вершину. Проверены опущенные руки, вытянутая рука и сидячая поза; при движении
 руки голова и ноги остаются неподвижны. Снимки — Assets/Characters/Beige/PoseChecks.png.
 
-Высокая детализация (~197 тысяч треугольников) ещё требует LOD и проверки FPS
+Высокая детализация (~198 тысяч треугольников) ещё требует LOD и проверки FPS
 на Android. Текстуры в импортёре ограничены 2K, карта шероховатости — 1K.
 Импортёр, C++ и автоматический Windows-запуск не выполнены в облаке: Unreal
 отсутствует. Нужна проверка положения тела, поворота, масштаба, рук при ходьбе,

@@ -52,7 +52,7 @@ start "" "%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe" "%PROJECT_DIR%CityLi
 exit /b 0
 
 :ensure_character_skin
-if exist "%PROJECT_DIR%Saved\CharacterImport\Installed_v2.ok" if exist "%PROJECT_DIR%Content\CityLiveCharacters\Beige\SK_CityBeige_v2.uasset" exit /b 0
+if exist "%PROJECT_DIR%Saved\CharacterImport\Installed_v3.ok" if exist "%PROJECT_DIR%Content\CityLiveCharacters\Beige\SK_CityBeige_v3.uasset" exit /b 0
 set "CITYLIVE_SKIN_TOKEN=%RANDOM%_%RANDOM%_%RANDOM%"
 echo Первый запуск: устанавливается новый персонаж. Дождитесь окончания.
 "%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%PROJECT_DIR%CityLiveRP.uproject" "-ExecutePythonScript=%PROJECT_DIR%Scripts\ImportCharacterSkin.py" -unattended -nosplash

@@ -12,6 +12,8 @@ int main()
         assert(Door(T) >= 0.f && Door(T) <= 1.f);
         assert(Hand(T) >= 0.f && Hand(T) <= 1.f);
         assert(Sit(T) >= 0.f && Sit(T) <= 1.f);
+        assert(TorsoDip(T) >= 0.f && TorsoDip(T) <= 1.f);
+        if (TorsoDip(T) > 0.f) assert(Door(T) > .99f);
         if (Sit(T) > 0.f && Sit(T) < 1.f) assert(Door(T) > .99f);
         if (Door(T) > 0.f && T < 1.95f) assert(Hand(T) > .99f);
         if (T > 2.f) assert(Hand(T) < .99f);
@@ -37,5 +39,7 @@ int main()
         if (P >= .8f) assert(FootTravel(P) == 1.f);
     }
     assert(FootLift(0.f) == 0.f && FootLift(1.f) == 0.f);
+    assert(TorsoDip(0.f) == 0.f && TorsoDip(Duration) == 0.f);
+    assert(TorsoDip(2.5f) == 1.f && TorsoDip(3.8f) == 1.f);
     std::cout << "PASS: hand/door timing, torso before separate legs on entry, legs before torso on exit, smooth boundaries\n";
 }

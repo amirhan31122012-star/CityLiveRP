@@ -37,6 +37,8 @@ private:
     int32 StickPointer = INDEX_NONE;
     int32 RunPointer = INDEX_NONE;
     int32 BrakePointer = INDEX_NONE;
+    int32 LookPointer = INDEX_NONE;
+    FVector2D LastLookPosition = FVector2D::ZeroVector;
     double LastStickTap = -100.0;
     double LastRunTap = -100.0;
     bool bRunHeld = false;

@@ -23,6 +23,7 @@ void UCityCrouchMeshComponent::FinalizeBoneTransform()
     if (bNeedToFlipSpaceBaseBuffers && !IsSimulatingPhysics())
     {
         if (CrouchAlpha > 0.001f) ApplyCrouch();
+        if (EntryTorsoDip > .001f) ApplyEntryTorso();
         if (SeatLegAlpha > .001f) ApplySeatLegs();
         if (EntryReach > 0.001f) ApplyEntryHand();
     }
@@ -56,6 +57,21 @@ void UCityCrouchMeshComponent::SetVehicleFit(float Alpha)
     // Preserve pelvis height while giving head and shoulders clearance below the roof.
     SetRelativeLocation(OriginalVehicleMeshTransform.GetLocation() +
         FVector(0, 0, (1.f - Scale) * 90.f * OriginalVehicleMeshTransform.GetScale3D().Z));
+}
+
+float UCityCrouchMeshComponent::GetAnkleWorldHeight() const
+{
+    const USkeletalMesh* Asset = GetSkeletalMeshAsset();
+    if (!Asset) return 8.f;
+    const FReferenceSkeleton& Ref = Asset->GetRefSkeleton();
+    int32 Foot = Ref.FindBoneIndex(TEXT("foot_l"));
+    if (Foot == INDEX_NONE) return 8.f;
+    FTransform Reference = Ref.GetRefBonePose()[Foot];
+    for (Foot = Ref.GetParentIndex(Foot); Foot != INDEX_NONE; Foot = Ref.GetParentIndex(Foot))
+        Reference = Reference * Ref.GetRefBonePose()[Foot];
+    const FBoxSphereBounds BodyAssetBounds = Asset->GetBounds();
+    const double FloorZ = BodyAssetBounds.Origin.Z - BodyAssetBounds.BoxExtent.Z;
+    return static_cast<float>(FMath::Max(1.0, Reference.GetLocation().Z - FloorZ) * FMath::Abs(GetComponentTransform().GetScale3D().Z));
 }
 
 void UCityCrouchMeshComponent::ApplySeatLegs()
@@ -103,10 +119,31 @@ void UCityCrouchMeshComponent::ApplySeatLegs()
 
 void UCityCrouchMeshComponent::SetVehicleEntryPose(float Sit, float Reach, FVector Handle, bool bRightHand)
 {
-    EntrySit = FMath::Clamp(Sit, 0.f, 1.f);
+    EntryTorsoDip = FMath::Clamp(Sit, 0.f, 1.f);
     EntryReach = FMath::Clamp(Reach, 0.f, 1.f);
     EntryHandle = Handle;
     bEntryRightHand = bRightHand;
+}
+
+void UCityCrouchMeshComponent::ApplyEntryTorso()
+{
+    const USkeletalMesh* Asset = GetSkeletalMeshAsset();
+    if (!Asset || !GetOwner()) return;
+    const FReferenceSkeleton& Ref = Asset->GetRefSkeleton();
+    TArray<FTransform>& Pose = GetEditableComponentSpaceTransforms();
+    const int32 Spine = Ref.FindBoneIndex(TEXT("spine_01"));
+    if (!Pose.IsValidIndex(Spine) || Pose.Num() > Ref.GetNum()) return;
+    const FVector Pivot = Pose[Spine].GetLocation();
+    const FVector Axis = GetComponentTransform().InverseTransformVectorNoScale(GetOwner()->GetActorRightVector()).GetSafeNormal();
+    const FQuat Rotation(Axis, FMath::DegreesToRadians(22.f * EntryTorsoDip));
+    for (int32 Bone = Spine; Bone < Pose.Num(); ++Bone)
+    {
+        int32 Ancestor = Bone;
+        while (Ancestor != INDEX_NONE && Ancestor != Spine) Ancestor = Ref.GetParentIndex(Ancestor);
+        if (Ancestor != Spine) continue;
+        Pose[Bone].SetLocation(Pivot + Rotation.RotateVector(Pose[Bone].GetLocation() - Pivot));
+        Pose[Bone].SetRotation((Rotation * Pose[Bone].GetRotation()).GetNormalized());
+    }
 }
 
 void UCityCrouchMeshComponent::ApplyEntryHand()

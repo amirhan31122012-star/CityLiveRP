@@ -20,4 +20,5 @@ private:
     TArray<FTransform> SourceReference;
     TArray<FTransform> SkinReference;
     TArray<int32> SourceIndices;
+    TArray<int32> AimChildren;
 };

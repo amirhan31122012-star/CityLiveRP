@@ -17,6 +17,10 @@ Keep this credit and license link with distributions of the model, and include
 the character's attribution in game credits when distributing the game.
 The license file does not itself implement an in-game credits screen.
 
-About 197k triangles: still needs LOD/performance work for Android. No individual
+About 198k triangles: still needs LOD/performance work for Android. No individual
 finger or facial rig. Blender pose checks do not establish Unreal compatibility;
 UE compilation, retargeting and gameplay still require Windows verification.
+
+Version 3 separates and caps the trouser legs, widens the stance, fits knee/ankle
+joints to the surface and aligns the shoes. Limb weights below the crotch
+exclude the opposite leg. UE imports recompute normals for the edited mesh.

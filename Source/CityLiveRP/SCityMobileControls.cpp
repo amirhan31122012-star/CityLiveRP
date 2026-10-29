@@ -54,6 +54,7 @@ void SCityMobileControls::UpdateStick(const FGeometry& Geometry, const FPointerE
 
 FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPointerEvent& Event)
 {
+    if (Controller.IsValid() && Controller->IsVehicleEntryActive()) return FReply::Unhandled();
     ACityLiveRPCharacter* Character = GetCharacter();
     ACitySedan* Vehicle = GetVehicle();
     if (!Character && !Vehicle) return FReply::Unhandled();
@@ -82,7 +83,14 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
         Controller->InteractWithSedan();
         return FReply::Handled();
     }
-    if (Vehicle && !Controller->IsSedanDriver()) return FReply::Unhandled();
+    auto StartLook = [&]() -> FReply
+    {
+        if ((!Vehicle && !Character) || LookPointer != INDEX_NONE) return FReply::Unhandled();
+        LookPointer = Event.GetPointerIndex();
+        LastLookPosition = Position;
+        return FReply::Handled().CaptureMouse(SharedThis(this));
+    };
+    if (Vehicle && !Controller->IsSedanDriver()) return StartLook();
     if (Vehicle && BrakePointer == INDEX_NONE &&
         FVector2D::Distance(Position, Right - FVector2D(Radius * 2.2f, 0)) <= Radius)
     {
@@ -117,11 +125,24 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
         else LastRunTap = Now;
         return FReply::Handled().CaptureMouse(SharedThis(this));
     }
-    return FReply::Unhandled();
+    return StartLook();
 }
 
 FReply SCityMobileControls::OnTouchMoved(const FGeometry& Geometry, const FPointerEvent& Event)
 {
+    if (Event.GetPointerIndex() == LookPointer)
+    {
+        const FVector2D Position = Geometry.AbsoluteToLocal(Event.GetScreenSpacePosition());
+        const FVector2D Delta = Position - LastLookPosition;
+        LastLookPosition = Position;
+        const FVector2D Size = Geometry.GetLocalSize();
+        const float Scale = FMath::Max(1.f, static_cast<float>(FMath::Min(Size.X, Size.Y)));
+        if (ACitySedan* Vehicle = GetVehicle())
+            Vehicle->OrbitCamera(-Delta.X * 180.f / Scale, Delta.Y * 90.f / Scale);
+        else if (ACityLiveRPCharacter* Character = GetCharacter())
+            Character->OrbitCamera(-Delta.X * 180.f / Scale, Delta.Y * 90.f / Scale);
+        return FReply::Handled();
+    }
     if (Event.GetPointerIndex() == StickPointer)
     {
         UpdateStick(Geometry, Event);
@@ -139,6 +160,11 @@ FReply SCityMobileControls::OnTouchEnded(const FGeometry&, const FPointerEvent& 
 bool SCityMobileControls::ReleasePointer(int32 PointerIndex)
 {
     if (PointerIndex == INDEX_NONE) return false;
+    if (PointerIndex == LookPointer)
+    {
+        LookPointer = INDEX_NONE;
+        return true;
+    }
     if (PointerIndex == BrakePointer)
     {
         BrakePointer = INDEX_NONE;
@@ -187,7 +213,7 @@ void SCityMobileControls::ResetControls()
         Character->ResetMobileSteering();
     }
     Stick = FVector2D::ZeroVector;
-    StickPointer = RunPointer = BrakePointer = INDEX_NONE;
+    StickPointer = RunPointer = BrakePointer = LookPointer = INDEX_NONE;
     bRunHeld = false;
     RunHighlight = 0.f;
     LastStickTap = LastRunTap = -100.0;

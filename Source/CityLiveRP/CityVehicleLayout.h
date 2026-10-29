@@ -4,6 +4,10 @@
 
 namespace CityVehicleLayout
 {
+constexpr float SeatRootZ = -20.f;
+constexpr float SeatEdgeY = 78.f;
+constexpr float OutsideFootY = 130.f;
+constexpr float InsideFloorZ = -33.f;
 inline float Side(int Seat) { return Seat < 0 || Seat == 2 ? -1.f : 1.f; }
 inline float X(int Seat) { return Seat == 1 || Seat == 2 ? -95.f : -25.f; }
 inline int Door(int Seat) { return Seat < 0 ? 0 : Seat == 0 ? 1 : Seat == 1 ? 3 : 2; }

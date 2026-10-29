@@ -5,6 +5,7 @@
 #include "CityCrouchMeshComponent.h"
 #include "CityCharacterSkinComponent.h"
 #include "MobileSteering.h"
+#include "CityOrbitCamera.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -139,8 +140,8 @@ void ACityLiveRPCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResu
             - HeightDrop * CrouchMesh->GetCrouchAlpha()) * GetCapsuleComponent()->GetShapeScale();
     }
     const FVector Focus = GetActorLocation() + FVector(0.f, 0.f, 35.f + CrouchCameraOffset);
-    const FVector Forward = FRotator(0.f, GetActorRotation().Yaw, 0.f).Vector();
-    const FVector Desired = Focus - Forward * 420.f + FVector(0.f, 0.f, 140.f);
+    const FVector ViewDirection = FRotator(MobileCameraPitch, GetActorRotation().Yaw + MobileCameraYaw, 0.f).Vector();
+    const FVector Desired = Focus - ViewDirection * 442.7189f;
     FVector CameraLocation = Desired;
     FHitResult Hit;
     FCollisionQueryParams Params(SCENE_QUERY_STAT(CityFollowCamera), false, this);
@@ -152,6 +153,13 @@ void ACityLiveRPCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResu
     OutResult.Location = CameraLocation;
     OutResult.Rotation = (Focus - CameraLocation).Rotation();
     OutResult.FOV = 80.f;
+}
+
+void ACityLiveRPCharacter::OrbitCamera(float YawDelta, float PitchDelta)
+{
+    const CityOrbitCamera::State View = CityOrbitCamera::Advance(MobileCameraYaw, MobileCameraPitch, YawDelta, PitchDelta);
+    MobileCameraYaw = View.Yaw;
+    MobileCameraPitch = View.Pitch;
 }
 
 void ACityLiveRPCharacter::SetMobileSteering(float Steering, float Forward)
