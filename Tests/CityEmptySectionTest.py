@@ -31,6 +31,13 @@ def fixture(root, empty):
                 'accessors': [{'bufferView': 0, 'componentType': 5126, 'count': 3,
                                'type': 'VEC3', 'min': [0, 0, 0], 'max': [2, 0, 2]},
                               {'bufferView': 1, 'componentType': 5123, 'count': 3, 'type': 'SCALAR'}]})
+        if part == 'Building' and part not in empty:
+            # Real failure: original names are not unique source identities.
+            scene['materials'][0]['name'] = 'Fence'
+            scene['materials'].append({'name': 'Fence', 'pbrMetallicRoughness': {
+                'baseColorFactor': [.1, .8, .3, 1]}})
+            scene['meshes'][0]['primitives'].append({
+                'attributes': {'POSITION': 0}, 'indices': 1, 'material': 1})
         (folder / 'part.gltf').write_text(json.dumps(scene))
 
 
@@ -54,6 +61,9 @@ class EmptySectionTest(unittest.TestCase):
                 for part in report['parts']:
                     self.assertTrue(Path(part['fbx']).is_file())
                     self.assertEqual(part['materials'][0]['base_factor'], [.6, .2, .1, 1])
+                    if part['name'] == 'Building':
+                        self.assertEqual([m['original_name'] for m in part['materials']], ['Fence', 'Fence'])
+                        self.assertEqual(part['materials'][1]['base_factor'], [.1, .8, .3, 1])
                 self.assertIn('CITYLIVE_CITY_PREPARED', result.stdout)
                 # The renamed material must survive FBX, not just exist in JSON.
                 check = Path(temp) / 'check_slots.py'

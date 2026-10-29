@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from CitySourceFiles import discover
 from CityTextureChecks import ensure_textures_readable
 from CityMaterialSource import material_sources
+from CityMaterialIdentity import stage_scene, bind_materials
 
 source, output = map(Path, sys.argv[sys.argv.index('--') + 1:])
 parts = discover(source)  # Validate every buffer/texture before processing anything.
@@ -19,7 +20,9 @@ for part, path in parts:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.context.scene.unit_settings.system = 'METRIC'
     bpy.context.scene.unit_settings.scale_length = 1.0
-    bpy.ops.import_scene.gltf(filepath=str(path))
+    label = part.replace(' ', '')
+    staged = stage_scene(path, output, label)
+    bpy.ops.import_scene.gltf(filepath=str(staged))
     meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH' and len(o.data.polygons)]
     if not meshes:
         if part not in optional_geometry:
@@ -31,18 +34,7 @@ for part, path in parts:
     ensure_textures_readable(bpy.data.images)
     label = part.replace(' ', '')
     source_materials = material_sources(path, output, label)
-    records = []
-    used = {mat for obj in meshes for mat in obj.data.materials if mat is not None}
-    for mat in used:
-        matches = [record for record in source_materials if record['original_name'] == mat.name]
-        if not matches:
-            matches = [record for record in source_materials
-                       if record['original_name'].startswith(mat.name)]
-        if len(matches) != 1:
-            raise RuntimeError('Cannot identify original PBR material: ' + mat.name)
-        record = matches[0]
-        mat.name = record['slot']  # Stable names survive FBX and UE slot sanitization.
-        records.append(record)
+    records = bind_materials(meshes, source_materials, bpy.data.materials)
     if not records:
         raise RuntimeError('No original PBR materials found in ' + str(path))
     before = sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in meshes)

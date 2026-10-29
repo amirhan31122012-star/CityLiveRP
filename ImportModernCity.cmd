@@ -54,6 +54,9 @@ exit /b 0
 :failure
 echo Импорт остановлен. Открывается папка журналов.
 echo Пришлите Prepare.log, Build.log или Import.log с ошибкой.
+set "CITY_ERROR_LOG="
+for %%L in (Prepare Build Import) do if exist "%CITYLIVE_CITY_PREPARED%\%%L.log" set "CITY_ERROR_LOG=%CITYLIVE_CITY_PREPARED%\%%L.log"
+if defined CITY_ERROR_LOG powershell.exe -NoProfile -Command "Get-Content -LiteralPath $env:CITY_ERROR_LOG -Encoding UTF8 -Tail 35"
 start "" "%CITYLIVE_CITY_PREPARED%"
 pause
 exit /b 1
