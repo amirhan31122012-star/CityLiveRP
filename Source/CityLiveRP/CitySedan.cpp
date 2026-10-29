@@ -118,8 +118,13 @@ void ACitySedan::BeginPlay()
     CollisionBox->SetUseCCD(true);
     CollisionBox->SetSimulatePhysics(true);
     USkeletalMesh* SedanAsset = FourDoorMeshAsset.LoadSynchronous();
+    if (SedanAsset && !SedanAsset->GetSkeleton())
+    {
+        UE_LOG(LogTemp, Error, TEXT("CityLive: four-door mesh has no saved Skeleton; rerun ImportSedanDoors.cmd. Using original model."));
+        SedanAsset = nullptr;
+    }
     if (!SedanAsset) SedanAsset = SedanMeshAsset.LoadSynchronous();
-    if (!SedanAsset)
+    if (!SedanAsset || !SedanAsset->GetSkeleton())
     {
         UE_LOG(LogTemp, Warning, TEXT("CityLive sedan asset missing at %s; keeping prototype model."), *SedanMeshAsset.ToString());
         return;

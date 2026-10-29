@@ -16,6 +16,15 @@ destination = '/Game/CityLiveVehicles/Sedan'
 asset_name = 'SK_CitySedan_4Doors'
 asset_path = destination + '/' + asset_name
 existing = unreal.EditorAssetLibrary.does_asset_exist(asset_path)
+repair_missing_skeleton = False
+if existing:
+    previous = unreal.load_asset(asset_path)
+    if not isinstance(previous, unreal.SkeletalMesh):
+        raise RuntimeError('Existing asset is not a skeletal mesh: ' + asset_path)
+    if not previous.get_editor_property('skeleton'):
+        repair_missing_skeleton = True
+        existing = False
+        unreal.log_warning('CityLive: repairing incomplete mesh with missing Skeleton by reimporting the prepared FBX.')
 original = unreal.load_asset('/Game/VehicleVarietyVol2/Skeletons/SK_Sedan_01a.SK_Sedan_01a')
 if not isinstance(original, unreal.SkeletalMesh):
     raise RuntimeError('Original sedan must be installed locally first, including its materials.')
@@ -39,7 +48,7 @@ if not existing:
     task.destination_path = destination
     task.destination_name = asset_name
     task.automated = True
-    task.replace_existing = False
+    task.replace_existing = repair_missing_skeleton
     task.save = True
     task.factory = unreal.FbxFactory()
     task.options = options
@@ -47,6 +56,13 @@ if not existing:
 imported = unreal.load_asset(asset_path)
 if not isinstance(imported, unreal.SkeletalMesh):
     raise RuntimeError('Expected a skeletal mesh at: ' + asset_path)
+skeleton = imported.get_editor_property('skeleton')
+if not skeleton:
+    raise RuntimeError('Imported mesh has no Skeleton. Installation is incomplete; do not start the game.')
+# Save the dependency explicitly: saving only the mesh can leave a Skeleton
+# that exists in this editor session but is missing on the next startup.
+if not unreal.EditorAssetLibrary.save_loaded_asset(skeleton, only_if_is_dirty=False):
+    raise RuntimeError('Could not save the sedan Skeleton: ' + skeleton.get_path_name())
 probe = unreal.PoseableMeshComponent()
 probe.set_skinned_asset_and_update(imported)
 missing_doors = [name for name in door_names if probe.get_bone_index(name) < 0]
