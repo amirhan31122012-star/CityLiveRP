@@ -105,6 +105,16 @@ ACitySedan::ACitySedan()
     CameraArm->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
     CameraArm->SetRelativeRotation(FRotator(-15.f, 0.f, 0.f));
     CameraArm->bUsePawnControlRotation = false;
+    // Keep the horizon steady while the chassis pitches/rolls on wheel contacts.
+    CameraArm->bInheritPitch = false;
+    CameraArm->bInheritRoll = false;
+    CameraArm->bEnableCameraLag = true;
+    CameraArm->CameraLagSpeed = 14.f;
+    CameraArm->CameraLagMaxDistance = 65.f;
+    CameraArm->bEnableCameraRotationLag = true;
+    CameraArm->CameraRotationLagSpeed = 10.f;
+    CameraArm->bUseCameraLagSubstepping = true;
+    CameraArm->CameraLagMaxTimeStep = 1.f / 120.f;
     VehicleCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("VehicleCamera"));
     VehicleCamera->SetupAttachment(CameraArm, USpringArmComponent::SocketName);
 }
@@ -598,7 +608,7 @@ void ACitySedan::TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake)
     CollisionBox->AddForce((Forward * Acceleration * DriveGrip -
         Right * FVector::DotProduct(Velocity, Right) * 6.f * Grip) * Mass);
     const FVector AngularVelocity = CollisionBox->GetPhysicsAngularVelocityInRadians();
-    const float TargetYaw = Driver ? FMath::DegreesToRadians(SmoothedSteering * 55.f * FMath::Clamp(Speed / 350.f, -1.f, 1.f)) : 0.f;
+    const float TargetYaw = Driver ? CityLiveDriving::YawRateRadians(SmoothedSteering, Speed) : 0.f;
     const FVector YawTorque = GroundNormal * (TargetYaw - FVector::DotProduct(AngularVelocity, GroundNormal)) * 4.f;
     // Suspension supplies most of the body roll; light damping avoids endless rocking.
     const FVector TiltDamping = FVector::VectorPlaneProject(AngularVelocity, GroundNormal) * -1.5f;
