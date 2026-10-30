@@ -6,6 +6,7 @@
 /Scripts/SelectSedanDoors.ps1 text eol=crlf
 
 /BuildAndroidV1.cmd text eol=crlf
+/BuildAndroidV1Shipping.cmd text eol=crlf
 /Scripts/PrepareAndroidCity.ps1 text eol=crlf
 
 /ImportModernCity.cmd text eol=crlf
