@@ -30,11 +30,12 @@ try {
     }
     $mobileMarker = Join-Path $ProjectDir 'Saved\CityV11.json'
     if (-not (Test-Path -LiteralPath $mobileMarker -PathType Leaf)) {
-        throw 'Сначала выполните UpdateCityV11.cmd: обновление карты для Android 1.1.'
+        throw 'Сначала выполните RestoreCityV1.cmd: графика V1, исправленное небо и новые функции.'
     }
     $mobile = Get-Content -LiteralPath $mobileMarker -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($mobile.map -ne $map -or $mobile.version -ne '1.1.0' -or -not $mobile.mobile_sky) {
-        throw 'Обновление 1.1 не применено к текущей карте. Запустите UpdateCityV11.cmd.'
+    if ($mobile.map -ne $map -or $mobile.version -ne '1.1.2' -or
+        $mobile.graphics_baseline -ne 'v1' -or -not $mobile.mobile_sky) {
+        throw 'Графика V1 ещё не восстановлена для текущей карты. Запустите RestoreCityV1.cmd.'
     }
     # Pulling the repository may restore its default map. Use the map confirmed
     # by the successful local import for both cooking and the packaged startup.

@@ -18,6 +18,7 @@
 /OpenAndroidSettings.cmd text eol=crlf
 
 /UpdateCityV11.cmd text eol=crlf
+/RestoreCityV1.cmd text eol=crlf
 
 /CollectAndroidCrash.cmd text eol=crlf
 /Scripts/CollectAndroidCrash.ps1 text eol=crlf

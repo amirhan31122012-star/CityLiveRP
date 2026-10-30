@@ -22,8 +22,9 @@ mkdir "%UPDATE_LOG_DIR%"
 echo Сборка обновлённого кода перед обновлением карты.
 call "%UE_ROOT%\Engine\Build\BatchFiles\Build.bat" CityLiveRPEditor Win64 Development "-Project=%PROJECT_DIR%CityLiveRP.uproject" -WaitMutex -NoHotReloadFromIDE > "%UPDATE_LOG_DIR%\Build.log" 2>&1
 if errorlevel 1 goto failure
-echo Обновляется активная карта: удаляются декоративные машины и заменяется небо.
-echo Сохраняется копия карты CityLive_BeforeV11. Повторного импорта Blender нет.
+echo Восстанавливается графика первой APK из карты до обновления 1.1.
+echo Создаётся новая копия: исправляется небо и удаляются декоративные машины.
+echo Текущая карта сохраняется. Тени, дальность и текстуры не упрощаются. Blender не запускается.
 echo Дождитесь окончания. Журнал: %UPDATE_LOG_DIR%\Update.log
 "%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%PROJECT_DIR%CityLiveRP.uproject" /Engine/Maps/Entry "-ExecutePythonScript=%PROJECT_DIR%Scripts\UpdateCityV11.py" "-abslog=%UPDATE_LOG_DIR%\Update.log" -unattended -nosplash
 if errorlevel 1 goto failure
