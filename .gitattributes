@@ -21,5 +21,3 @@
 
 /CollectAndroidCrash.cmd text eol=crlf
 /Scripts/CollectAndroidCrash.ps1 text eol=crlf
-
-/BuildAndroidV1Full.cmd text eol=crlf
