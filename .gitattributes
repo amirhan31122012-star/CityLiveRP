@@ -14,3 +14,5 @@
 /Scripts/ReusePreparedCity.ps1 text eol=crlf
 
 /OptimizeCityTextures.cmd text eol=crlf
+
+/OpenAndroidSettings.cmd text eol=crlf
