@@ -7,6 +7,7 @@ import sys
 import tempfile
 import types
 import unittest
+import weakref
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,6 +36,11 @@ class PlayableCar:
     def get_actor_label(self): return 'CitySedan'
 
 
+class WorldReference:
+    """A Python world wrapper must be gone when Unreal switches maps."""
+    pass
+
+
 class RecoveryTest(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -53,10 +59,21 @@ class RecoveryTest(unittest.TestCase):
                                 MeshActor('Road'), Light(), PlayableCar()]}
         self.loaded = None
         self.can_save = True
+        self.cyclic_world_reference = False
+        self.world_reference = None
         def duplicate(source, target):
             self.maps[target] = copy.deepcopy(self.maps[source])
-            return self.maps[target]
-        def load(path): self.loaded = path; return True
+            wrapper = WorldReference()
+            if self.cyclic_world_reference:
+                wrapper.cycle = wrapper
+            self.world_reference = weakref.ref(wrapper)
+            return wrapper
+        def load(path):
+            # Mirrors the FPyReferenceCollector root in the user's fatal log.
+            if self.world_reference() is not None:
+                raise RuntimeError('World Memory Leaks: Python still references duplicated world')
+            self.loaded = path
+            return True
         def remove(actor): self.maps[self.loaded].remove(actor); return True
         levels = types.SimpleNamespace(load_level=load, save_current_level=lambda: self.can_save)
         actors = types.SimpleNamespace(get_all_level_actors=lambda: self.maps[self.loaded], destroy_actor=remove)
@@ -107,6 +124,12 @@ class RecoveryTest(unittest.TestCase):
             self.run_restore()
         self.assertEqual(self.marker.read_text(), CURRENT)
         self.assertNotIn(DESTINATION, self.maps)
+
+    def test_cyclic_python_world_reference_is_collected_before_map_load(self):
+        self.cyclic_world_reference = True
+        self.run_restore()
+        self.assertIsNone(self.world_reference())
+        self.assertEqual(self.loaded, DESTINATION)
 
     def test_failed_save_does_not_activate_new_map_or_claim_success(self):
         self.can_save = False

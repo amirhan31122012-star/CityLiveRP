@@ -3,6 +3,7 @@
 Maps and shared textures/meshes are never overwritten. A successful restore
 switches the startup marker to a new map referencing the existing city assets.
 """
+import gc
 import json
 import os
 from pathlib import Path
@@ -73,6 +74,11 @@ def main():
     copied = assets.duplicate_asset(baseline, destination)
     if not copied or not assets.save_loaded_asset(copied, only_if_is_dirty=False):
         raise RuntimeError('Cannot copy original V1 map; current city remains active')
+    # DuplicateAsset returns a UWorld wrapper, not just an asset path. LoadLevel
+    # unloads that package first and treats Python-held worlds as fatal leaks.
+    # Drop the wrapper (including possible Python cycles) before switching maps.
+    del copied
+    gc.collect()
     levels = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
     actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
     if not levels.load_level(destination):
