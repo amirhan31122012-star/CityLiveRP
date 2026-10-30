@@ -4,6 +4,7 @@
 #include "Widgets/SLeafWidget.h"
 #include "Input/Events.h"
 #include "Input/Reply.h"
+#include "CityFloatingStick.h"
 
 class ACityLiveRPPlayerController;
 class ACityLiveRPCharacter;
@@ -33,6 +34,7 @@ private:
     TWeakObjectPtr<ACityLiveRPPlayerController> Controller;
     TWeakObjectPtr<ACityLiveRPCharacter> ControlledCharacter;
     TWeakObjectPtr<ACitySedan> ControlledVehicle;
+    CityLiveTouch::FloatingStick StickAnchor;
     FVector2D Stick = FVector2D::ZeroVector;
     int32 StickPointer = INDEX_NONE;
     int32 RunPointer = INDEX_NONE;

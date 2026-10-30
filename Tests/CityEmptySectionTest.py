@@ -31,6 +31,11 @@ def fixture(root, empty):
                 'accessors': [{'bufferView': 0, 'componentType': 5126, 'count': 3,
                                'type': 'VEC3', 'min': [0, 0, 0], 'max': [2, 0, 2]},
                               {'bufferView': 1, 'componentType': 5123, 'count': 3, 'type': 'SCALAR'}]})
+        if part == 'Parking' and part not in empty:
+            scene['meshes'].append({'name': 'Parking Block Cars', 'primitives': [
+                {'attributes': {'POSITION': 0}, 'indices': 1, 'material': 0}]})
+            scene['nodes'].append({'mesh': 1, 'name': 'Parking Block Cars'})
+            scene['scenes'][0]['nodes'].append(1)
         if part == 'Building' and part not in empty:
             # Real failure: original names are not unique source identities.
             scene['materials'][0]['name'] = 'Fence'
@@ -63,6 +68,8 @@ class EmptySectionTest(unittest.TestCase):
                 for part in report['parts']:
                     self.assertTrue(Path(part['fbx']).is_file())
                     self.assertEqual(part['materials'][0]['base_factor'], [.6, .2, .1, 1])
+                    if part['name'] == 'Parking':
+                        self.assertEqual(part['objects'], 1)  # decorative vehicle omitted
                     if part['name'] == 'Building':
                         self.assertEqual([m['original_name'] for m in part['materials']],
                                          ['Fence', 'Fence', '_CityLiveDefault'])

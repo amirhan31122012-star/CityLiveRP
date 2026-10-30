@@ -4,6 +4,14 @@
 
 namespace CityLiveDriving
 {
+struct PedalState
+{
+    bool Throttle = false;
+    bool Brake = false;
+    void SetThrottle(bool Held) { Throttle = Held; if (Held) Brake = false; }
+    void SetBrake(bool Held) { Brake = Held; if (Held) Throttle = false; }
+    void Reset() { Throttle = Brake = false; }
+};
 constexpr float ForwardLimit = 3000.f; // 108 km/h
 constexpr float ReverseLimit = 400.f;
 constexpr float EngineAcceleration = 650.f;
@@ -25,6 +33,21 @@ inline float AdvanceSpeed(float Speed, bool DriverPresent, bool Throttle, bool B
 {
     // Brake first stops forward motion. Once stopped, holding it selects reverse.
     // Gas first stops reverse motion. Both pedals together always brake to zero.
+    const float Dt = std::max(0.f, DeltaTime);
+    // Carry remaining frame time through the stop: one held press selects the
+    // opposite direction, including at low frame rates, without a pause at zero.
+    if (DriverPresent && Throttle && !Brake && Speed < -DirectionChangeSpeed)
+    {
+        const float StopTime = -Speed / BrakeAcceleration;
+        return Dt <= StopTime ? Speed + BrakeAcceleration * Dt
+            : std::min(ForwardLimit, EngineAcceleration * (Dt - StopTime));
+    }
+    if (DriverPresent && Brake && !Throttle && Speed > DirectionChangeSpeed)
+    {
+        const float StopTime = Speed / BrakeAcceleration;
+        return Dt <= StopTime ? Speed - BrakeAcceleration * Dt
+            : -std::min(ReverseLimit, 180.f * (Dt - StopTime));
+    }
     float Target = 0.f;
     float Acceleration = 180.f;
     if (DriverPresent && Brake)

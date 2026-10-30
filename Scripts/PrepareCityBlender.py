@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from CitySourceFiles import discover
 from CityTextureChecks import ensure_textures_readable
 from CityMaterialSource import material_sources
+from CityMobilePolicy import is_decorative_vehicle
 from CityMaterialIdentity import stage_scene, bind_materials, prune_unused_material_slots
 
 source, output = map(Path, sys.argv[sys.argv.index('--') + 1:])
@@ -24,6 +25,7 @@ for part, path in parts:
     staged = stage_scene(path, output, label)
     bpy.ops.import_scene.gltf(filepath=str(staged))
     meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH' and len(o.data.polygons)]
+    meshes = [o for o in meshes if not is_decorative_vehicle(o.name)]
     if not meshes:
         if part not in optional_geometry:
             raise RuntimeError('No geometry in required city part: ' + str(path))

@@ -40,9 +40,10 @@ void SCityMobileControls::UpdateStick(const FGeometry& Geometry, const FPointerE
     FVector2D Left, Right;
     float Radius;
     Layout(Geometry, Left, Right, Radius);
-    Stick = (Geometry.AbsoluteToLocal(Event.GetScreenSpacePosition()) - Left) / FMath::Max(Radius, 1.f);
-    Stick = Stick.GetClampedToMaxSize(1.f);
-    if (Stick.Size() < 0.12f) Stick = FVector2D::ZeroVector;
+    const FVector2D Position = Geometry.AbsoluteToLocal(Event.GetScreenSpacePosition());
+    const FVector2D Size = Geometry.GetLocalSize();
+    const auto Axis = StickAnchor.Sample(Position.X, Position.Y, Size.X, Size.Y, Radius);
+    Stick = FVector2D(Axis.X, Axis.Y);
     if (ACitySedan* Vehicle = GetVehicle()) Vehicle->SetSteering(Stick.X);
     if (ACityLiveRPCharacter* Character = GetCharacter())
     {
@@ -99,8 +100,10 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
         return FReply::Handled().CaptureMouse(SharedThis(this));
     }
     const double Now = FPlatformTime::Seconds();
-    if (StickPointer == INDEX_NONE && FVector2D::Distance(Position, Left) <= Radius * 1.3f)
+    const FVector2D Size = Geometry.GetLocalSize();
+    if (StickPointer == INDEX_NONE && CityLiveTouch::CanStartStick(Position.X, Position.Y, Size.X, Size.Y))
     {
+        StickAnchor.Begin(Position.X, Position.Y, Size.X, Size.Y);
         StickPointer = Event.GetPointerIndex();
         if (Character && Now - LastStickTap <= DoubleTapSeconds)
         {
@@ -236,7 +239,8 @@ void SCityMobileControls::Tick(const FGeometry& Geometry, double Time, float Del
         ControlledCharacter = Character;
         ControlledVehicle = Vehicle;
     }
-    RunHighlight = FMath::FInterpTo(RunHighlight, bRunHeld ? 1.f : 0.f, DeltaTime, 14.f);
+    const bool bActiveRun = Vehicle ? Vehicle->IsThrottleHeld() : bRunHeld;
+    RunHighlight = FMath::FInterpTo(RunHighlight, bActiveRun ? 1.f : 0.f, DeltaTime, 14.f);
 }
 
 int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
@@ -336,7 +340,13 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
     }
     // A passenger sees only the exit door and cannot operate the pedals or steering.
     if (GetVehicle() && Controller.IsValid() && !Controller->IsSedanDriver()) return Layer + 1;
-    Circle(Left, Radius, FLinearColor(1, 1, 1, 0.6f));
+    if (StickPointer != INDEX_NONE)
+    {
+        const FVector2D Size = Geometry.GetLocalSize();
+        const auto Center = StickAnchor.Center(Size.X, Size.Y);
+        Left = FVector2D(Center.X, Center.Y);
+    }
+    Circle(Left, Radius, FLinearColor(1, 1, 1, StickPointer != INDEX_NONE ? .6f : .2f));
     Circle(Left + Stick * Radius * 0.65f, Radius * 0.32f, FLinearColor::White);
     // A low-opacity green fill gives feedback without obscuring the game.
     const FSlateRoundedBoxBrush Background(FLinearColor::White, Radius * 0.85f);
@@ -353,7 +363,7 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
     if (GetVehicle())
     {
         const FVector2D Brake = Right - FVector2D(Radius * 2.2f, 0);
-        Circle(Brake, Radius * 0.85f, BrakePointer != INDEX_NONE ? FLinearColor(.55f, .9f, .65f, .7f) : FLinearColor::White);
+        Circle(Brake, Radius * 0.85f, GetVehicle()->IsBrakeHeld() ? FLinearColor(.55f, .9f, .65f, .7f) : FLinearColor::White);
         // Accelerator: tall narrow pedal, brake: short wide pedal, each with rubber grooves.
         Stroke(Right, {{-.23f, -.6f}, {.32f, -.6f}, {.22f, .6f}, {-.33f, .6f}, {-.23f, -.6f}});
         for (int32 Groove = 0; Groove < 5; ++Groove)

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "UObject/SoftObjectPtr.h"
+#include "CitySedanDynamics.h"
 #include "CitySedan.generated.h"
 
 class UBoxComponent;
@@ -32,8 +33,10 @@ public:
     bool IsPassenger(const APlayerController* Player) const;
     bool TryExit(APlayerController* Player);
     void SetSteering(float Value) { Steering = FMath::Clamp(Value, -1.f, 1.f); }
-    void SetThrottle(bool bHeld) { bThrottle = bHeld; }
-    void SetBrake(bool bHeld) { bBrake = bHeld; }
+    void SetThrottle(bool bHeld) { Pedals.SetThrottle(bHeld); }
+    bool IsThrottleHeld() const { return Pedals.Throttle; }
+    void SetBrake(bool bHeld) { Pedals.SetBrake(bHeld); }
+    bool IsBrakeHeld() const { return Pedals.Brake; }
     void ResetInput();
     void OrbitCamera(float YawDelta, float PitchDelta);
     bool IsEntering(const APlayerController* Player) const;
@@ -90,6 +93,5 @@ private:
     float Steering = 0.f;
     float SmoothedSteering = 0.f;
     float Speed = 0.f;
-    bool bThrottle = false;
-    bool bBrake = false;
+    CityLiveDriving::PedalState Pedals;
 };

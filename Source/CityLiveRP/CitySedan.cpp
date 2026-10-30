@@ -228,7 +228,7 @@ bool ACitySedan::FindFlatSpawn(UWorld* World, const FVector& Candidate, float Ya
 void ACitySedan::ResetInput()
 {
     Steering = SmoothedSteering = 0.f;
-    bThrottle = bBrake = false;
+    Pedals.Reset();
 }
 
 void ACitySedan::OrbitCamera(float YawDelta, float PitchDelta)
@@ -522,7 +522,7 @@ void ACitySedan::Tick(float DeltaTime)
         KeyboardSteering -= DrivingPlayer->IsInputKeyDown(EKeys::A) ? 1.f : 0.f;
     }
     SmoothedSteering = FMath::FInterpTo(SmoothedSteering, FMath::Clamp(Steering + KeyboardSteering, -1.f, 1.f), DeltaTime, 5.f);
-    TickVehiclePhysics(DeltaTime, bThrottle || KeyboardGas, bBrake || KeyboardBrake);
+    TickVehiclePhysics(DeltaTime, Pedals.Throttle || KeyboardGas, Pedals.Brake || KeyboardBrake);
     for (UStaticMeshComponent* Wheel : Wheels)
         Wheel->AddLocalRotation(FRotator(0, -FMath::RadiansToDegrees(Speed * DeltaTime / 32.f), 0));
     UpdateImportedWheels(DeltaTime);

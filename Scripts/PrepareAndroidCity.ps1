@@ -26,6 +26,14 @@ try {
             throw "Файл значка не найден: $relativeIcon. Обновите проект в GitHub Desktop."
         }
     }
+    $mobileMarker = Join-Path $ProjectDir 'Saved\CityV11.json'
+    if (-not (Test-Path -LiteralPath $mobileMarker -PathType Leaf)) {
+        throw 'Сначала выполните UpdateCityV11.cmd: обновление карты для Android 1.1.'
+    }
+    $mobile = Get-Content -LiteralPath $mobileMarker -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($mobile.map -ne $map -or $mobile.version -ne '1.1.0' -or -not $mobile.mobile_sky) {
+        throw 'Обновление 1.1 не применено к текущей карте. Запустите UpdateCityV11.cmd.'
+    }
     # Pulling the repository may restore its default map. Use the map confirmed
     # by the successful local import for both cooking and the packaged startup.
     $ini = Join-Path $ProjectDir 'Config\DefaultEngine.ini'

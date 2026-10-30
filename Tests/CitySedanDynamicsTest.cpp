@@ -23,15 +23,15 @@ int main()
     assert(SlowFps == CityLiveDriving::ForwardLimit);
     assert(AdvanceSpeed(0.f, false, true, false, 1.f) == 0.f);
     assert(AdvanceSpeed(0.f, true, true, true, 1.f) == 0.f);
-    assert(AdvanceSpeed(1200.f, true, false, true, 2.f) == 0.f);
+    assert(AdvanceSpeed(1200.f, true, false, true, 2.f) == -180.f);
     assert(AdvanceSpeed(100.f, true, false, false, 1.f) == 0.f);
     assert(AdvanceSpeed(100.f, true, true, false, 0.f) == 100.f);
     float Reverse = 0.f;
     for (int I = 0; I < 600; ++I) Reverse = AdvanceSpeed(Reverse, true, false, true, 1.f / 60.f);
     assert(Reverse == -400.f && std::abs(Reverse) < SlowFps);
-    assert(AdvanceSpeed(1200.f, true, false, true, 2.f) == 0.f);
+    assert(AdvanceSpeed(1200.f, true, false, true, 2.f) == -180.f);
     assert(AdvanceSpeed(0.f, true, false, true, .1f) < 0.f);
-    assert(AdvanceSpeed(-400.f, true, true, false, 1.f) == 0.f);
+    assert(std::abs(AdvanceSpeed(-400.f, true, true, false, 1.f) - (650.f * 2.f / 3.f)) < .01f);
     assert(AdvanceSpeed(-400.f, true, true, true, 1.f) == 0.f);
     assert(AdvanceSpeed(0.f, false, false, true, 1.f) == 0.f);
     assert(AdvanceSpeed(0.f, true, true, false, 1.f) == CityLiveDriving::EngineAcceleration);
@@ -53,5 +53,37 @@ int main()
     }
     assert(AdvanceSpeed(-100.f, true, true, false, .01f) < 0.f);
     assert(AdvanceSpeed(100.f, true, false, true, .01f) > 0.f);
+    // The last pressed touch pedal wins; releasing the cancelled pedal must
+    // not cancel the new intent, and one gas press crosses zero without a retap.
+    CityLiveDriving::PedalState Pedals;
+    Pedals.SetBrake(true);
+    Pedals.SetThrottle(true);
+    assert(Pedals.Throttle && !Pedals.Brake);
+    Pedals.SetBrake(false);
+    assert(Pedals.Throttle && !Pedals.Brake);
+    float Previous = -400.f;
+    float FastTransition = 0.f;
+    for (int Fps : {15, 30, 60, 120})
+    {
+        float V = -400.f;
+        for (int I = 0; I < Fps; ++I)
+        {
+            const float Next = AdvanceSpeed(V, true, Pedals.Throttle, Pedals.Brake, 1.f/Fps);
+            assert(Next >= V);
+            assert(Next - V <= CityLiveDriving::BrakeAcceleration/Fps + .01f);
+            V = Next;
+        }
+        if (FastTransition != 0.f) assert(std::abs(V - FastTransition) < 8.f);
+        FastTransition = V;
+        assert(V > 400.f);
+        Previous = V;
+    }
+    assert(Previous > 0.f);
+    Pedals.SetBrake(true);
+    assert(!Pedals.Throttle && Pedals.Brake);
+    Pedals.SetThrottle(false);
+    assert(!Pedals.Throttle && Pedals.Brake);
+    Pedals.Reset();
+    assert(!Pedals.Throttle && !Pedals.Brake);
     std::cout << "PASS: acceleration, limits, brake-to-reverse, gas-to-forward, pedal priority and empty car\n";
 }
