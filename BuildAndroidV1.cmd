@@ -37,10 +37,18 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
+set "COOK_MODE=-iterativecooking"
+if "%CITYLIVE_ANDROID_FULL_COOK%"=="1" set "COOK_MODE="
+if defined COOK_MODE (
+    echo Ускоренная подготовка: используются сохранённые обработанные ресурсы.
+) else (
+    echo Полная подготовка ресурсов без iterative cooking.
+)
+echo Результат в обоих режимах - полный APK для установки поверх игры.
 echo Карта: %CITY_MAP%
 echo Журнал сборки: Saved\BuildAndroidV1.log
 echo Собирается тестовый APK ARM64 ASTC. Первый запуск может занять длительное время.
-call "%UE_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun "-project=%PROJECT_DIR%CityLiveRP.uproject" -noP4 -platform=Android -cookflavor=ASTC -clientconfig=Development -build -cook "-map=%CITY_MAP%" -stage -pak -package -archive "-archivedirectory=%OUTPUT_DIR%" -utf8output > "%PROJECT_DIR%Saved\BuildAndroidV1.log" 2>&1
+call "%UE_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun "-project=%PROJECT_DIR%CityLiveRP.uproject" -noP4 -platform=Android -cookflavor=ASTC -clientconfig=Development -build -cook %COOK_MODE% "-map=%CITY_MAP%" -stage -pak -package -archive "-archivedirectory=%OUTPUT_DIR%" -utf8output > "%PROJECT_DIR%Saved\BuildAndroidV1.log" 2>&1
 if errorlevel 1 (
     echo Сборка не удалась. Пришлите Saved\BuildAndroidV1.log.
     pause
