@@ -19,6 +19,8 @@ try {
         throw 'Сначала установите персонажа через BuildAndOpen.cmd.'
     }
     foreach ($relativeIcon in @('Build\Android\res\drawable\icon.png',
+                                'Build\Android\res\drawable\splashscreen_landscape.png',
+                                'Build\Android\res\drawable\splashscreen_portrait.png',
                                 'Build\Android\res\drawable-anydpi-v26\icon.xml',
                                 'Build\Android\res\drawable\citylive_tiger_foreground.png',
                                 'Build\Android\res\values\citylive_icon_colors.xml')) {
