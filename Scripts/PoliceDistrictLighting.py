@@ -12,5 +12,6 @@ def configure_sun(component):
 
 def configure_sky(component):
     component.set_editor_property('intensity',2.2)
-    component.set_editor_property('lower_hemisphere_is_solid_color',True)
+    # Python retains the legacy name although the editor label says Solid Color.
+    component.set_editor_property('lower_hemisphere_is_black',True)
     component.set_editor_property('lower_hemisphere_color',unreal.LinearColor(.18,.21,.25,1))
