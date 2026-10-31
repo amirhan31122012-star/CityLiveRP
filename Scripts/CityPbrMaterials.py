@@ -11,7 +11,7 @@ def key(name):
     return re.sub(r'[^a-z0-9]', '', str(name).lower())
 
 
-def build_materials(records, destination):
+def build_materials(records, destination, texture_budget=True):
     tools = unreal.AssetToolsHelpers.get_asset_tools()
     edit = unreal.MaterialEditingLibrary
     prop = unreal.MaterialProperty
@@ -36,7 +36,10 @@ def build_materials(records, destination):
             if not isinstance(tex, unreal.Texture2D):
                 raise RuntimeError('Texture import failed: ' + str(path))
             tex.set_editor_property('srgb', role == 'Color')
-            apply_city_texture_budget(tex, role)
+            if texture_budget:
+                apply_city_texture_budget(tex, role)
+            else:
+                tex.set_editor_property('never_stream', False)
             tex.set_editor_property('compression_settings', unreal.TextureCompressionSettings.TC_NORMALMAP
                                     if role == 'Normal' else unreal.TextureCompressionSettings.TC_DEFAULT)
             if role == 'Normal':

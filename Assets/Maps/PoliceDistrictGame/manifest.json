@@ -1,0 +1,1108 @@
+{
+  "version": 1,
+  "district": "PoliceDistrict",
+  "fbx": "PoliceDistrict.fbx",
+  "materials": [
+    {
+      "slot": "CLPD_000",
+      "source_name": "LawnBlades",
+      "base": {
+        "file": "Textures/CLPD_000_Color.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "roughness": 0.75,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": true
+    },
+    {
+      "slot": "CLPD_001",
+      "source_name": "LeafSprig",
+      "base": {
+        "file": "Textures/CLPD_001_Color.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "roughness": 0.800000011920929,
+      "metallic": 0.0,
+      "alpha": "MASK",
+      "cutoff": 0.45,
+      "two_sided": true
+    },
+    {
+      "slot": "CLPD_002",
+      "source_name": "SandGranules",
+      "base": null,
+      "normal": {
+        "file": "Textures/CLPD_002_Normal.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.47999998927116394,
+        0.36000001430511475,
+        0.18000000715255737,
+        1.0
+      ],
+      "roughness": 0.9300000071525574,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_003",
+      "source_name": "asphalt",
+      "base": {
+        "file": "Textures/asphalt_02_diff_1k.jpg",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "normal": {
+        "file": "Textures/CLPD_003_Normal.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "packed": {
+        "file": "Textures/CLPD_003_Data.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "roughness": 1,
+      "metallic": 1,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_004",
+      "source_name": "bark",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.5600000023841858,
+        0.5600000023841858,
+        0.4699999988079071,
+        1.0
+      ],
+      "roughness": 0.75,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_005",
+      "source_name": "bark_dark",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.07000000029802322,
+        0.06499999761581421,
+        0.04500000178813934,
+        1.0
+      ],
+      "roughness": 0.75,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_006",
+      "source_name": "blue",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.02500000037252903,
+        0.11999999731779099,
+        0.30000001192092896,
+        1.0
+      ],
+      "roughness": 0.75,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_007",
+      "source_name": "brick",
+      "base": {
+        "file": "Textures/red_brick_03_diff_1k.jpg",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "normal": {
+        "file": "Textures/CLPD_007_Normal.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "packed": {
+        "file": "Textures/CLPD_007_Data.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "roughness": 1,
+      "metallic": 1,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_008",
+      "source_name": "brick_light",
+      "base": {
+        "file": "Textures/red_brick_03_diff_1k.jpg",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "normal": {
+        "file": "Textures/CLPD_008_Normal.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "packed": {
+        "file": "Textures/CLPD_008_Data.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "roughness": 1,
+      "metallic": 1,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_009",
+      "source_name": "concrete",
+      "base": {
+        "file": "Textures/concrete_pavement_diff_1k.jpg",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "normal": {
+        "file": "Textures/CLPD_009_Normal.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "packed": {
+        "file": "Textures/CLPD_009_Data.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "roughness": 1,
+      "metallic": 1,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_010",
+      "source_name": "cream",
+      "base": {
+        "file": "Textures/grey_plaster_03_diff_1k.jpg",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "normal": {
+        "file": "Textures/CLPD_010_Normal.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "packed": {
+        "file": "Textures/CLPD_010_Data.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "roughness": 1,
+      "metallic": 1,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_011",
+      "source_name": "curtain",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.33000001311302185,
+        0.3100000023841858,
+        0.25999999046325684,
+        1.0
+      ],
+      "roughness": 0.949999988079071,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_012",
+      "source_name": "curtain_dark",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.07999999821186066,
+        0.0949999988079071,
+        0.10000000149011612,
+        1.0
+      ],
+      "roughness": 0.949999988079071,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_013",
+      "source_name": "glass",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.026000000536441803,
+        0.041999999433755875,
+        0.052000001072883606,
+        1.0
+      ],
+      "roughness": 0.12999999523162842,
+      "metallic": 0.6499999761581421,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_014",
+      "source_name": "grass",
+      "base": {
+        "file": "Textures/CLPD_014_Color.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "normal": {
+        "file": "Textures/CLPD_014_Normal.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "packed": {
+        "file": "Textures/CLPD_014_Data.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "roughness": 1,
+      "metallic": 1,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_015",
+      "source_name": "leaf3",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.09000000357627869,
+        0.2199999988079071,
+        0.054999999701976776,
+        1.0
+      ],
+      "roughness": 0.75,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": true
+    },
+    {
+      "slot": "CLPD_016",
+      "source_name": "metal",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.1599999964237213,
+        0.1899999976158142,
+        0.20000000298023224,
+        1.0
+      ],
+      "roughness": 0.4000000059604645,
+      "metallic": 0.6499999761581421,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_017",
+      "source_name": "panel_joint",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.4000000059604645,
+        0.4099999964237213,
+        0.3700000047683716,
+        1.0
+      ],
+      "roughness": 0.75,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_018",
+      "source_name": "paving",
+      "base": {
+        "file": "Textures/concrete_pavement_diff_1k.jpg",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "normal": {
+        "file": "Textures/CLPD_018_Normal.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "packed": {
+        "file": "Textures/CLPD_018_Data.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "roughness": 1,
+      "metallic": 1,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_019",
+      "source_name": "playground",
+      "base": {
+        "file": "Textures/CLPD_019_Color.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "normal": {
+        "file": "Textures/CLPD_019_Normal.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "packed": {
+        "file": "Textures/CLPD_019_Data.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "roughness": 1,
+      "metallic": 1,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_020",
+      "source_name": "police_wall",
+      "base": {
+        "file": "Textures/grey_plaster_03_diff_1k.jpg",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "normal": {
+        "file": "Textures/CLPD_020_Normal.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "packed": {
+        "file": "Textures/CLPD_020_Data.png",
+        "uv": 0,
+        "scale": [
+          1,
+          1
+        ],
+        "offset": [
+          0,
+          0
+        ],
+        "rotation": 0
+      },
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "roughness": 1,
+      "metallic": 1,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_021",
+      "source_name": "red",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.5699999928474426,
+        0.03500000014901161,
+        0.02500000037252903,
+        1.0
+      ],
+      "roughness": 0.75,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_022",
+      "source_name": "roof",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.17000000178813934,
+        0.1899999976158142,
+        0.20000000298023224,
+        1.0
+      ],
+      "roughness": 0.75,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_023",
+      "source_name": "white",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.8500000238418579,
+        0.8600000143051147,
+        0.7900000214576721,
+        1.0
+      ],
+      "roughness": 0.75,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_024",
+      "source_name": "wood",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.27000001072883606,
+        0.12999999523162842,
+        0.054999999701976776,
+        1.0
+      ],
+      "roughness": 0.75,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    },
+    {
+      "slot": "CLPD_025",
+      "source_name": "yellow",
+      "base": null,
+      "normal": null,
+      "packed": null,
+      "emissive": null,
+      "emissive_factor": [
+        0,
+        0,
+        0
+      ],
+      "base_factor": [
+        0.8500000238418579,
+        0.6000000238418579,
+        0.07000000029802322,
+        1.0
+      ],
+      "roughness": 0.75,
+      "metallic": 0.0,
+      "alpha": "OPAQUE",
+      "cutoff": 0.45,
+      "two_sided": false
+    }
+  ],
+  "triangles": 151502,
+  "mesh_count": 766,
+  "source_blend_sha256": "344b8e0f005894a44ccfd3a0656f92c7bb5c77928fe7b975f75ff1a7c749090b",
+  "files": [
+    {
+      "file": "PoliceDistrict.fbx",
+      "sha256": "16b8dcb76ece1000247f156f7e05ad5dcf6485ae695e072eb0912eb5d568130c"
+    },
+    {
+      "file": "Textures/CLPD_000_Color.png",
+      "sha256": "296935cbf1d8a2c235bc78f996f39ab1aa902b6019b45c952f9bc62f7e52aac3"
+    },
+    {
+      "file": "Textures/CLPD_001_Color.png",
+      "sha256": "5dc223004c06cd58ea4f3ceb0a41b455e9834a6b222788cdb84a47543a04dfa7"
+    },
+    {
+      "file": "Textures/CLPD_002_Normal.png",
+      "sha256": "61ce2759deb3a36c9c1ec620c7d882bb00103c0742c580bd44211640e512bf3c"
+    },
+    {
+      "file": "Textures/CLPD_003_Data.png",
+      "sha256": "db8ad48069b0dc3acb1167c59bd5ef9473b9c46956bcddf7efab831e1562c226"
+    },
+    {
+      "file": "Textures/CLPD_003_Normal.png",
+      "sha256": "f836dc0e8bd8ce76c75c91e6b3ea3add18b7f1c714a5c4843c1404db61e4d04e"
+    },
+    {
+      "file": "Textures/CLPD_007_Data.png",
+      "sha256": "71faf7818719a39415580eb5020bb775e68c928ab86921a818c28f8c8a1a8916"
+    },
+    {
+      "file": "Textures/CLPD_007_Normal.png",
+      "sha256": "b96829c6add58fdc2adc0fb37cc11823a4b5a64e7911a319290f226e9fea62cd"
+    },
+    {
+      "file": "Textures/CLPD_008_Data.png",
+      "sha256": "71faf7818719a39415580eb5020bb775e68c928ab86921a818c28f8c8a1a8916"
+    },
+    {
+      "file": "Textures/CLPD_008_Normal.png",
+      "sha256": "b96829c6add58fdc2adc0fb37cc11823a4b5a64e7911a319290f226e9fea62cd"
+    },
+    {
+      "file": "Textures/CLPD_009_Data.png",
+      "sha256": "ae5affe9882fe4085faa7b5c757fb55a654bab3d5ef0b0c4984d53ce1d699d15"
+    },
+    {
+      "file": "Textures/CLPD_009_Normal.png",
+      "sha256": "92bebcf8a99dd4b0cd3f0a65c615294e4b997318e37ad0058dc2f5b1300f8908"
+    },
+    {
+      "file": "Textures/CLPD_010_Data.png",
+      "sha256": "ec7d6b7fe12a2a00d7c40cda59b6f336c373096feb34bef80bcc701d7e9a6af5"
+    },
+    {
+      "file": "Textures/CLPD_010_Normal.png",
+      "sha256": "2a1bcc87920271dccf89a45d42d36a18094c7f95eb780ba313eaab7c900be7af"
+    },
+    {
+      "file": "Textures/CLPD_014_Color.png",
+      "sha256": "3da669a4ba6be0aa1dc24878050dfc496841138510d8d8e188cc0dcd2127552e"
+    },
+    {
+      "file": "Textures/CLPD_014_Data.png",
+      "sha256": "6e32c7314669f38420523bff69ebd77e80a3c6adc9747d960929157e6e2c9a51"
+    },
+    {
+      "file": "Textures/CLPD_014_Normal.png",
+      "sha256": "edfdef38cb648cbd6ceb86484d0e02e5ad181d19daf1e9c032cc16372b16ac92"
+    },
+    {
+      "file": "Textures/CLPD_018_Data.png",
+      "sha256": "ae5affe9882fe4085faa7b5c757fb55a654bab3d5ef0b0c4984d53ce1d699d15"
+    },
+    {
+      "file": "Textures/CLPD_018_Normal.png",
+      "sha256": "92bebcf8a99dd4b0cd3f0a65c615294e4b997318e37ad0058dc2f5b1300f8908"
+    },
+    {
+      "file": "Textures/CLPD_019_Color.png",
+      "sha256": "e91110d1432f753d51471668b33dcf7591686d09a135594de8000625fed9b6fe"
+    },
+    {
+      "file": "Textures/CLPD_019_Data.png",
+      "sha256": "695303c1505315bddc6e74a3e816dfcf50d02a26fa1946866047bb6d79e2d130"
+    },
+    {
+      "file": "Textures/CLPD_019_Normal.png",
+      "sha256": "de28f14117007b90b38a2fa25c1ce71ccd9357445975c9d3f918ae811daa9be3"
+    },
+    {
+      "file": "Textures/CLPD_020_Data.png",
+      "sha256": "ec7d6b7fe12a2a00d7c40cda59b6f336c373096feb34bef80bcc701d7e9a6af5"
+    },
+    {
+      "file": "Textures/CLPD_020_Normal.png",
+      "sha256": "2a1bcc87920271dccf89a45d42d36a18094c7f95eb780ba313eaab7c900be7af"
+    },
+    {
+      "file": "Textures/asphalt_02_diff_1k.jpg",
+      "sha256": "1aa5ce99f58a625c71d48cfc3e68b65ca85ccb00f39e045c0a928608a0ea25ed"
+    },
+    {
+      "file": "Textures/concrete_pavement_diff_1k.jpg",
+      "sha256": "70d3ff969a7421c7ae057b5d16386d11f5e59c6740db643352e1039413f419c4"
+    },
+    {
+      "file": "Textures/grey_plaster_03_diff_1k.jpg",
+      "sha256": "b0952ccabee3f68a1962684a8bc2fe64101b92e569cfd13cf1d8c11b65f395d9"
+    },
+    {
+      "file": "Textures/red_brick_03_diff_1k.jpg",
+      "sha256": "9c58254c099b2d211478f50a427fcdde622af24249ff2e94da41fb836f8c857f"
+    }
+  ]
+}

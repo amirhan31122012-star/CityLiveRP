@@ -3,11 +3,11 @@ $ErrorActionPreference = 'Stop'
 try {
     $marker = Join-Path $ProjectDir 'Saved\ModernCityMap.txt'
     if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) {
-        throw 'Сначала успешно завершите ImportModernCity.cmd.'
+        throw 'Сначала успешно завершите ImportPoliceDistrict.cmd: он установит новую основную карту.'
     }
     $map = [System.IO.File]::ReadAllText($marker).Trim()
     if ($map -notmatch '^/Game/CityLiveMaps/ModernCity/Run_[0-9_]+/CityLive_ModernCity$') {
-        throw 'Неверный путь карты в Saved\ModernCityMap.txt. Повторите импорт города.'
+        throw 'Неверный путь карты в Saved\ModernCityMap.txt. Запустите ImportPoliceDistrict.cmd.'
     }
     $relativeMap = $map.Substring('/Game/'.Length).Replace('/', '\') + '.umap'
     $mapFile = Join-Path (Join-Path $ProjectDir 'Content') $relativeMap
@@ -30,12 +30,21 @@ try {
     }
     $mobileMarker = Join-Path $ProjectDir 'Saved\CityV11.json'
     if (-not (Test-Path -LiteralPath $mobileMarker -PathType Leaf)) {
-        throw 'Сначала выполните RestoreCityV1.cmd: графика V1, исправленное небо и новые функции.'
+        throw 'Сначала выполните ImportPoliceDistrict.cmd: новая основная карта игры.'
     }
     $mobile = Get-Content -LiteralPath $mobileMarker -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($mobile.map -ne $map -or $mobile.version -ne '1.1.2' -or
-        $mobile.graphics_baseline -ne 'v1' -or -not $mobile.mobile_sky) {
-        throw 'Графика V1 ещё не восстановлена для текущей карты. Запустите RestoreCityV1.cmd.'
+        $mobile.graphics_baseline -ne 'v1' -or -not $mobile.mobile_sky -or
+        $mobile.source -ne 'PoliceDistrict') {
+        throw 'Активна прежняя карта. Сначала запустите ImportPoliceDistrict.cmd.'
+    }
+    $packageManifest = Join-Path $ProjectDir 'Assets\Maps\PoliceDistrictGame\manifest.json'
+    if (-not (Test-Path -LiteralPath $packageManifest -PathType Leaf)) {
+        throw 'Пакет новой карты отсутствует. Обновите проект в GitHub Desktop.'
+    }
+    $packageHash = (Get-FileHash -LiteralPath $packageManifest -Algorithm SHA256).Hash
+    if ($mobile.package_hash -ne $packageHash) {
+        throw 'Файлы новой карты обновились. Повторите ImportPoliceDistrict.cmd перед сборкой APK.'
     }
     # Pulling the repository may restore its default map. Use the map confirmed
     # by the successful local import for both cooking and the packaged startup.
