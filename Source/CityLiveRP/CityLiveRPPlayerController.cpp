@@ -17,6 +17,10 @@
 #include "Blueprint/UserWidget.h"
 #include "CityLiveRP.h"
 #include "Widgets/Input/SVirtualJoystick.h"
+#include "CityPlayerProfile.h"
+#include "SCityV2Menu.h"
+#include "Misc/CoreDelegates.h"
+#include "TimerManager.h"
 
 void ACityLiveRPPlayerController::BeginPlay()
 {
@@ -37,6 +41,7 @@ void ACityLiveRPPlayerController::BeginPlay()
         }
 
 	}
+    if (IsLocalPlayerController()) InitializeV2Session();
 }
 
 void ACityLiveRPPlayerController::SetupInputComponent()
@@ -80,31 +85,17 @@ void ACityLiveRPPlayerController::OnPossess(APawn* InPawn)
     if (IsLocalController() && Cast<ACityLiveRPCharacter>(InPawn))
     {
         SetViewTarget(InPawn);
-        if (HasAuthority() && !TestSedan)
+        if (!bHasInitialSpawn)
         {
-            FActorSpawnParameters Params;
-            Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::DontSpawnIfColliding;
-            for (float Distance : {650.f, 1000.f, 1500.f})
-            {
-                for (int32 Direction = 0; Direction < 12; ++Direction)
-                {
-                    const float Yaw = InPawn->GetActorRotation().Yaw;
-                    const FVector Candidate = InPawn->GetActorLocation() + FRotator(0, Yaw + Direction * 30.f, 0).Vector() * Distance;
-                    FVector SedanSpawnPosition;
-                    if (!ACitySedan::FindFlatSpawn(GetWorld(), Candidate, Yaw, InPawn, SedanSpawnPosition)) continue;
-                    TestSedan = GetWorld()->SpawnActor<ACitySedan>(ACitySedan::StaticClass(), SedanSpawnPosition, FRotator(0, Yaw, 0), Params);
-                    if (TestSedan) break;
-                }
-                if (TestSedan) break;
-            }
-            if (!TestSedan) UE_LOG(LogCityLiveRP, Warning, TEXT("No free flat parking footprint for test sedan within 15 metres of PlayerStart."));
+            InitialSpawn = InPawn->GetActorTransform();
+            bHasInitialSpawn = true;
         }
     }
 }
 
 bool ACityLiveRPPlayerController::CanInteractWithSedan() const
 {
-    return GetSeatedSedan() || (IsValid(TestSedan) && TestSedan->CanEnter(this));
+    return !IsCityMenuOpen() && bEnteredCity && (GetSeatedSedan() || (IsValid(TestSedan) && TestSedan->CanEnter(this)));
 }
 
 ACitySedan* ACityLiveRPPlayerController::GetSeatedSedan() const
@@ -128,12 +119,12 @@ bool ACityLiveRPPlayerController::IsVehicleEntryActive() const
 
 bool ACityLiveRPPlayerController::CanUsePassengerDoor() const
 {
-    return GetSeatedSedan() || (IsValid(TestSedan) && TestSedan->CanEnter(this, true));
+    return !IsCityMenuOpen() && bEnteredCity && (GetSeatedSedan() || (IsValid(TestSedan) && TestSedan->CanEnter(this, true)));
 }
 
 void ACityLiveRPPlayerController::UsePassengerDoor()
 {
-    if (IsVehicleEntryActive()) return;
+    if (IsCityMenuOpen() || !bEnteredCity || IsVehicleEntryActive()) return;
     if (GetSeatedSedan()) { InteractWithSedan(); return; }
     if (CityMobileControls.IsValid()) CityMobileControls->ResetControls();
     if (IsValid(TestSedan)) TestSedan->TryEnter(this, true);
@@ -141,7 +132,7 @@ void ACityLiveRPPlayerController::UsePassengerDoor()
 
 void ACityLiveRPPlayerController::InteractWithSedan()
 {
-    if (IsVehicleEntryActive()) return;
+    if (IsCityMenuOpen() || !bEnteredCity || IsVehicleEntryActive()) return;
     if (CityMobileControls.IsValid()) CityMobileControls->ResetControls();
     if (ACitySedan* Vehicle = GetSeatedSedan())
     {
@@ -161,6 +152,18 @@ void ACityLiveRPPlayerController::OnRep_Pawn()
 
 void ACityLiveRPPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    SaveProfile();
+    GetWorldTimerManager().ClearTimer(ParkingTimer);
+    GetWorldTimerManager().ClearTimer(SaveTimer);
+    FCoreDelegates::ApplicationWillEnterBackgroundDelegate.Remove(BackgroundSaveHandle);
+    FCoreDelegates::ApplicationWillDeactivateDelegate.Remove(DeactivateSaveHandle);
+    if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
+    {
+        if (CityMenu.IsValid()) Viewport->RemoveViewportWidgetContent(CityMenu.ToSharedRef());
+        if (CityHud.IsValid()) Viewport->RemoveViewportWidgetContent(CityHud.ToSharedRef());
+    }
+    CityMenu.Reset();
+    CityHud.Reset();
     if (CityMobileControls.IsValid())
     {
         CityMobileControls->ResetControls();

@@ -32,6 +32,19 @@ inline float YawRateRadians(float Steering, float Speed)
     // instead of reaching full cornering force prematurely at high speed.
     return std::clamp(Steering, -1.f, 1.f) * std::clamp(LowSpeedRate, -Limit, Limit);
 }
+inline float DriftStrength(float Speed)
+{
+    return std::clamp((std::abs(Speed)-400.f)/600.f,0.f,1.f);
+}
+inline float LateralGrip(float Drift)
+{
+    return 6.f-4.6f*std::clamp(Drift,0.f,1.f);
+}
+inline float HandbrakeSpeed(float Speed,float Drift,float DeltaTime)
+{
+    const float Step=180.f*std::clamp(Drift,0.f,1.f)*std::max(0.f,DeltaTime);
+    return Speed>0.f ? std::max(0.f,Speed-Step) : std::min(0.f,Speed+Step);
+}
 inline float AdvanceSpeed(float Speed, bool DriverPresent, bool Throttle, bool Brake, float DeltaTime)
 {
     // Brake first stops forward motion. Once stopped, holding it selects reverse.

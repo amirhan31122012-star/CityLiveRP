@@ -2,6 +2,7 @@
 setlocal
 chcp 65001 >nul
 set "PROJECT_DIR=%~dp0"
+if not defined CITY_BUILD_SERIES set "CITY_BUILD_SERIES=AndroidV1"
 set "BUILD_CONFIG=Development"
 if /I "%~2"=="Shipping" set "BUILD_CONFIG=Shipping"
 if not "%~2"=="" if /I not "%~2"=="Development" if /I not "%~2"=="Shipping" (
@@ -11,6 +12,7 @@ if not "%~2"=="" if /I not "%~2"=="Development" if /I not "%~2"=="Shipping" (
 )
 set "BUILD_LOG=%PROJECT_DIR%Saved\BuildAndroidV1.log"
 if "%BUILD_CONFIG%"=="Shipping" set "BUILD_LOG=%PROJECT_DIR%Saved\BuildAndroidV1Shipping.log"
+if /I "%CITY_BUILD_SERIES%"=="AndroidV2" set "BUILD_LOG=%PROJECT_DIR%Saved\BuildAndroidV2Shipping.log"
 set "UE_ROOT=%~1"
 if not defined UE_ROOT (
     for /f "tokens=2,*" %%A in ('reg query "HKLM\SOFTWARE\EpicGames\Unreal Engine\5.8" /v InstalledDirectory 2^>nul') do set "UE_ROOT=%%B"
@@ -32,8 +34,8 @@ if errorlevel 1 goto missing_content
 set "CITY_MAP="
 set /p CITY_MAP=<"%PROJECT_DIR%Saved\AndroidCityMap.txt"
 if not defined CITY_MAP goto missing_content
-set "OUTPUT_DIR=%PROJECT_DIR%Releases\AndroidV1\%RANDOM%_%RANDOM%_%RANDOM%"
-if "%BUILD_CONFIG%"=="Shipping" set "OUTPUT_DIR=%PROJECT_DIR%Releases\AndroidV1\Shipping\%RANDOM%_%RANDOM%_%RANDOM%"
+set "OUTPUT_DIR=%PROJECT_DIR%Releases\%CITY_BUILD_SERIES%\%RANDOM%_%RANDOM%_%RANDOM%"
+if "%BUILD_CONFIG%"=="Shipping" set "OUTPUT_DIR=%PROJECT_DIR%Releases\%CITY_BUILD_SERIES%\Shipping\%RANDOM%_%RANDOM%_%RANDOM%"
 if exist "%OUTPUT_DIR%" (
     echo Папка сборки уже существует. Запустите файл снова.
     pause

@@ -10,6 +10,10 @@ class UInputMappingContext;
 class UUserWidget;
 class SCityMobileControls;
 class ACitySedan;
+class ACityParkingMarker;
+class UCityPlayerProfile;
+class SCityV2Menu;
+class SWidget;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -21,6 +25,18 @@ class ACityLiveRPPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
+    bool IsCityMenuOpen() const { return CityMenu.IsValid(); }
+    bool IsProfileActive() const { return ActiveProfile != nullptr; }
+    int32 GetBalance() const;
+    FString GetProfileName() const;
+    FString RememberedFirst, RememberedLast;
+    bool SelectIdentity(FString First, FString Last, bool& bNew, FText& Error);
+    bool Authenticate(const FString& Password, FText& Error);
+    bool HasSavedPosition() const;
+    bool EnterCity(bool bLastPosition, FText& Error);
+    bool SpawnParkingCar(FText& Error);
+    void CloseCityMenu();
+    void SaveProfile();
     bool CanInteractWithSedan() const;
     void InteractWithSedan();
     bool CanUsePassengerDoor() const;
@@ -53,6 +69,26 @@ protected:
 
 	TSharedPtr<SCityMobileControls> CityMobileControls;
     UPROPERTY() TObjectPtr<ACitySedan> TestSedan;
+    UPROPERTY() TObjectPtr<UCityPlayerProfile> PendingProfile;
+    UPROPERTY() TObjectPtr<UCityPlayerProfile> ActiveProfile;
+    UPROPERTY() TArray<TObjectPtr<ACityParkingMarker>> ParkingMarkers;
+    TWeakObjectPtr<ACityParkingMarker> CurrentParking;
+    TWeakObjectPtr<ACityParkingMarker> SuppressedParking;
+    TSharedPtr<SCityV2Menu> CityMenu;
+    TSharedPtr<SWidget> CityHud;
+    FString PendingSlot;
+    bool bCreatingProfile = false;
+    bool bEnteredCity = false;
+    FTransform InitialSpawn;
+    bool bHasInitialSpawn = false;
+    FTimerHandle ParkingTimer, SaveTimer;
+    FDelegateHandle BackgroundSaveHandle, DeactivateSaveHandle;
+    void InitializeV2Session();
+    void OpenCityMenu(bool bGarage);
+    void CreateParkingMarkers();
+    void CheckParking();
+    FString CurrentMapId() const;
+    bool SafeWalkingPosition(const FVector& Near, FVector& Out, bool bSearch) const;
 
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void OnPossess(APawn* InPawn) override;

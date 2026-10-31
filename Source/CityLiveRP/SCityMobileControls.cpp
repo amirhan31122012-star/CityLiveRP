@@ -7,6 +7,7 @@
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "HAL/PlatformTime.h"
 #include "Misc/CoreDelegates.h"
+#include "Styling/CoreStyle.h"
 
 void SCityMobileControls::Construct(const FArguments& Args)
 {
@@ -18,13 +19,13 @@ void SCityMobileControls::Construct(const FArguments& Args)
 
 ACityLiveRPCharacter* SCityMobileControls::GetCharacter() const
 {
-    return Controller.IsValid() && !Controller->GetSeatedSedan() && !Controller->IsVehicleEntryActive()
+    return Controller.IsValid() && Controller->IsProfileActive() && !Controller->IsCityMenuOpen() && !Controller->GetSeatedSedan() && !Controller->IsVehicleEntryActive()
         ? Cast<ACityLiveRPCharacter>(Controller->GetPawn()) : nullptr;
 }
 
 ACitySedan* SCityMobileControls::GetVehicle() const
 {
-    return Controller.IsValid() ? Controller->GetSeatedSedan() : nullptr;
+    return Controller.IsValid() && !Controller->IsCityMenuOpen() ? Controller->GetSeatedSedan() : nullptr;
 }
 
 void SCityMobileControls::Layout(const FGeometry& Geometry, FVector2D& Left, FVector2D& Right, float& Radius)
@@ -55,7 +56,7 @@ void SCityMobileControls::UpdateStick(const FGeometry& Geometry, const FPointerE
 
 FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPointerEvent& Event)
 {
-    if (Controller.IsValid() && Controller->IsVehicleEntryActive()) return FReply::Unhandled();
+    if (Controller.IsValid() && (Controller->IsCityMenuOpen() || Controller->IsVehicleEntryActive())) return FReply::Unhandled();
     ACityLiveRPCharacter* Character = GetCharacter();
     ACitySedan* Vehicle = GetVehicle();
     if (!Character && !Vehicle) return FReply::Unhandled();
@@ -92,6 +93,13 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
         return FReply::Handled().CaptureMouse(SharedThis(this));
     };
     if (Vehicle && !Controller->IsSedanDriver()) return StartLook();
+    const FVector2D DriftCenter = Interaction - FVector2D(Radius * 2.2f, 0);
+    if (Vehicle && DriftPointer == INDEX_NONE && FVector2D::Distance(Position, DriftCenter) <= Radius * .85f)
+    {
+        DriftPointer = Event.GetPointerIndex();
+        Vehicle->SetDrift(true);
+        return FReply::Handled().CaptureMouse(SharedThis(this));
+    }
     if (Vehicle && BrakePointer == INDEX_NONE &&
         FVector2D::Distance(Position, Right - FVector2D(Radius * 2.2f, 0)) <= Radius)
     {
@@ -151,7 +159,7 @@ FReply SCityMobileControls::OnTouchMoved(const FGeometry& Geometry, const FPoint
         UpdateStick(Geometry, Event);
         return FReply::Handled();
     }
-    return Event.GetPointerIndex() == RunPointer || Event.GetPointerIndex() == BrakePointer ? FReply::Handled() : FReply::Unhandled();
+    return Event.GetPointerIndex() == RunPointer || Event.GetPointerIndex() == BrakePointer || Event.GetPointerIndex() == DriftPointer ? FReply::Handled() : FReply::Unhandled();
 }
 
 FReply SCityMobileControls::OnTouchEnded(const FGeometry&, const FPointerEvent& Event)
@@ -166,6 +174,12 @@ bool SCityMobileControls::ReleasePointer(int32 PointerIndex)
     if (PointerIndex == LookPointer)
     {
         LookPointer = INDEX_NONE;
+        return true;
+    }
+    if (PointerIndex == DriftPointer)
+    {
+        DriftPointer = INDEX_NONE;
+        if (ACitySedan* Vehicle = GetVehicle()) Vehicle->SetDrift(false);
         return true;
     }
     if (PointerIndex == BrakePointer)
@@ -216,7 +230,7 @@ void SCityMobileControls::ResetControls()
         Character->ResetMobileSteering();
     }
     Stick = FVector2D::ZeroVector;
-    StickPointer = RunPointer = BrakePointer = LookPointer = INDEX_NONE;
+    StickPointer = RunPointer = BrakePointer = DriftPointer = LookPointer = INDEX_NONE;
     bRunHeld = false;
     RunHighlight = 0.f;
     LastStickTap = LastRunTap = -100.0;
@@ -247,7 +261,7 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
     const FSlateRect&, FSlateWindowElementList& Out, int32 Layer,
     const FWidgetStyle&, bool) const
 {
-    if (Controller.IsValid() && Controller->IsVehicleEntryActive()) return Layer;
+    if (Controller.IsValid() && (Controller->IsCityMenuOpen() || Controller->IsVehicleEntryActive())) return Layer;
     FVector2D Left, Right;
     float Radius;
     Layout(Geometry, Left, Right, Radius);
@@ -337,6 +351,16 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
         Stroke(CarCenter, {{-.52f,.4f},{-.52f,.53f},{-.35f,.53f},{-.35f,.4f}});
         Stroke(CarCenter, {{.52f,.4f},{.52f,.53f},{.35f,.53f},{.35f,.4f}});
         Stroke(CarCenter, {{-.48f,.32f},{.48f,.32f}}, .025f);
+    }
+    if (GetVehicle() && Controller.IsValid() && Controller->IsSedanDriver())
+    {
+        const FVector2D DriftCenter = DoorCenter - FVector2D(Radius * 2.2f, 0);
+        Circle(DriftCenter, Radius * .85f, GetVehicle()->IsDriftHeld() ? FLinearColor(.55f,.9f,.65f,.7f) : FLinearColor::White);
+        FSlateDrawElement::MakeText(Out, Layer + 1,
+            Geometry.ToPaintGeometry(FVector2D(Radius * 1.4f, Radius * .5f),
+                FSlateLayoutTransform(DriftCenter - FVector2D(Radius * .62f, Radius * .22f))),
+            FText::FromString(TEXT("ДРИФТ")), FCoreStyle::GetDefaultFontStyle("Bold", FMath::Max(10, FMath::RoundToInt(Radius * .29f))),
+            ESlateDrawEffect::None, FLinearColor::White);
     }
     // A passenger sees only the exit door and cannot operate the pedals or steering.
     if (GetVehicle() && Controller.IsValid() && !Controller->IsSedanDriver()) return Layer + 1;

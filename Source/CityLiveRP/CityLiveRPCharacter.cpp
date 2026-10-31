@@ -248,6 +248,7 @@ void ACityLiveRPCharacter::DoLook(float Yaw, float Pitch)
 
 void ACityLiveRPCharacter::DoJumpStart()
 {
+    if (GetController() && GetController()->IsMoveInputIgnored()) return;
     Jump();
 }
 

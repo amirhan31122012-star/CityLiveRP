@@ -30,6 +30,10 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     bool CanEnter(const APlayerController* Player, bool bPassengerSeat = false) const;
     bool TryEnter(APlayerController* Player, bool bPassengerSeat = false);
+    bool SeatDriverImmediately(APlayerController* Player);
+    void SetDrift(bool bHeld) { bDriftHeld = bHeld; }
+    bool IsDriftHeld() const { return bDriftHeld; }
+    float GetSpeedKmh() const { return GetVelocity().Size2D() * .036f; }
     bool IsPassenger(const APlayerController* Player) const;
     bool TryExit(APlayerController* Player);
     void SetSteering(float Value) { Steering = FMath::Clamp(Value, -1.f, 1.f); }
@@ -93,5 +97,7 @@ private:
     float Steering = 0.f;
     float SmoothedSteering = 0.f;
     float Speed = 0.f;
+    bool bDriftHeld = false;
+    float DriftAmount = 0.f;
     CityLiveDriving::PedalState Pedals;
 };

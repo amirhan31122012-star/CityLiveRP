@@ -239,6 +239,7 @@ void ACitySedan::ResetInput()
 {
     Steering = SmoothedSteering = 0.f;
     Pedals.Reset();
+    bDriftHeld = false;
 }
 
 void ACitySedan::OrbitCamera(float YawDelta, float PitchDelta)
@@ -310,6 +311,27 @@ bool ACitySedan::TryEnter(APlayerController* Player, bool bPassengerSeat)
     SetEntryPhysicsPaused(true);
     Player->SetViewTargetWithBlend(this, .4f);
     return true;
+}
+
+bool ACitySedan::SeatDriverImmediately(APlayerController* Player)
+{
+    ACityLiveRPCharacter* Occupant = Player ? Cast<ACityLiveRPCharacter>(Player->GetPawn()) : nullptr;
+    if (!HasAuthority() || !Occupant || Driver || EnteringCharacter) return false;
+    EntrySeat = -1;
+    EnteringCharacter = Occupant;
+    EnteringPlayer = Player;
+    bEnteringPassenger = false;
+    bExiting = false;
+    Occupant->ResetMobileSteering();
+    Occupant->SetMobileSprint(false);
+    Occupant->GetCharacterMovement()->StopMovementImmediately();
+    Occupant->GetCharacterMovement()->DisableMovement();
+    Occupant->GetCharacterMovement()->SetComponentTickEnabled(false);
+    Occupant->SetActorEnableCollision(false);
+    Occupant->SetActorTickEnabled(false);
+    Occupant->GetMesh()->AddTickPrerequisiteActor(this);
+    CompleteEntry();
+    return Player->GetPawn() == this;
 }
 
 bool ACitySedan::BuildDoorRoute(ACityLiveRPCharacter* Occupant)
@@ -532,6 +554,9 @@ void ACitySedan::Tick(float DeltaTime)
         KeyboardSteering -= DrivingPlayer->IsInputKeyDown(EKeys::A) ? 1.f : 0.f;
     }
     SmoothedSteering = FMath::FInterpTo(SmoothedSteering, FMath::Clamp(Steering + KeyboardSteering, -1.f, 1.f), DeltaTime, 5.f);
+    const bool bDrift = Driver && (bDriftHeld || (DrivingPlayer && DrivingPlayer->IsInputKeyDown(EKeys::SpaceBar)));
+    const float DriftTarget = bDrift ? CityLiveDriving::DriftStrength(Speed) : 0.f;
+    DriftAmount = FMath::FInterpTo(DriftAmount, DriftTarget, DeltaTime, 5.f);
     TickVehiclePhysics(DeltaTime, Pedals.Throttle || KeyboardGas, Pedals.Brake || KeyboardBrake);
     for (UStaticMeshComponent* Wheel : Wheels)
         Wheel->AddLocalRotation(FRotator(0, -FMath::RadiansToDegrees(Speed * DeltaTime / 32.f), 0));
@@ -619,7 +644,8 @@ void ACitySedan::TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake)
         CollisionBox->AddForceAtLocation(SpringForces[ForceIndex], ForcePoints[ForceIndex]);
     const FVector Forward = FVector::VectorPlaneProject(GetActorForwardVector(), GroundNormal).GetSafeNormal();
     const FVector Right = FVector::CrossProduct(GroundNormal, Forward).GetSafeNormal();
-    const float Desired = CityLiveDriving::AdvanceSpeed(Speed, Driver != nullptr, Gas, Brake, DeltaTime);
+    const float Driven = CityLiveDriving::AdvanceSpeed(Speed, Driver != nullptr, Gas, Brake, DeltaTime);
+    const float Desired = CityLiveDriving::HandbrakeSpeed(Driven, DriftAmount, DeltaTime);
     const float Acceleration = FMath::Clamp((Desired - Speed) / DeltaTime,
         -CityLiveDriving::BrakeAcceleration, CityLiveDriving::BrakeAcceleration);
     const float Grip = Contacts / 4.f;
@@ -627,10 +653,10 @@ void ACitySedan::TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake)
     // multiplying all motor force by contacts/4 made such contact halve acceleration.
     const float DriveGrip = FMath::Min(1.f, Contacts * .5f);
     CollisionBox->AddForce((Forward * Acceleration * DriveGrip -
-        Right * FVector::DotProduct(Velocity, Right) * 6.f * Grip) * Mass);
+        Right * FVector::DotProduct(Velocity, Right) * CityLiveDriving::LateralGrip(DriftAmount) * Grip) * Mass);
     const FVector AngularVelocity = CollisionBox->GetPhysicsAngularVelocityInRadians();
-    const float TargetYaw = Driver ? CityLiveDriving::YawRateRadians(SmoothedSteering, Speed) : 0.f;
-    const FVector YawTorque = GroundNormal * (TargetYaw - FVector::DotProduct(AngularVelocity, GroundNormal)) * 4.f;
+    const float TargetYaw = Driver ? CityLiveDriving::YawRateRadians(SmoothedSteering, Speed) * (1.f + .18f * DriftAmount) : 0.f;
+    const FVector YawTorque = GroundNormal * (TargetYaw - FVector::DotProduct(AngularVelocity, GroundNormal)) * FMath::Lerp(4.f, 2.8f, DriftAmount);
     // Suspension supplies most of the body roll; light damping avoids endless rocking.
     const FVector TiltDamping = FVector::VectorPlaneProject(AngularVelocity, GroundNormal) * -1.5f;
     CollisionBox->AddTorqueInRadians((YawTorque + TiltDamping) * Grip, NAME_None, true);
