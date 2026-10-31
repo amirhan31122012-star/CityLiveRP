@@ -72,8 +72,8 @@ void ACityLiveRPPlayerController::OpenCityMenu(bool bGarage)
     if (!Viewport) return;
     if (CityMobileControls.IsValid())
     { CityMobileControls->ResetControls(); CityMobileControls->SetVisibility(EVisibility::Hidden); }
-    if (ACityLiveRPCharacter* Character=Cast<ACityLiveRPCharacter>(GetPawn()))
-    { Character->ResetMobileSteering(); Character->GetCharacterMovement()->StopMovementImmediately(); }
+    if (ACityLiveRPCharacter* PlayerCharacter=Cast<ACityLiveRPCharacter>(GetPawn()))
+    { PlayerCharacter->ResetMobileSteering(); PlayerCharacter->GetCharacterMovement()->StopMovementImmediately(); }
     SetIgnoreMoveInput(true); SetIgnoreLookInput(true);
     SAssignNew(CityMenu,SCityV2Menu).Controller(this).Garage(bGarage);
     Viewport->AddViewportWidgetContent(CityMenu.ToSharedRef(),100);
@@ -141,9 +141,9 @@ bool ACityLiveRPPlayerController::HasSavedPosition() const
 bool ACityLiveRPPlayerController::SafeWalkingPosition(const FVector& Near,FVector& Out,bool bSearch) const
 {
     if (Near.ContainsNaN()) return false;
-    const ACharacter* Character=Cast<ACharacter>(GetPawn());
-    const float Half=Character ? Character->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 96.f;
-    const float Radius=Character ? Character->GetCapsuleComponent()->GetScaledCapsuleRadius() : 42.f;
+    const ACharacter* PlayerCharacter=Cast<ACharacter>(GetPawn());
+    const float Half=PlayerCharacter ? PlayerCharacter->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 96.f;
+    const float Radius=PlayerCharacter ? PlayerCharacter->GetCapsuleComponent()->GetScaledCapsuleRadius() : 42.f;
     FCollisionQueryParams Params(SCENE_QUERY_STAT(CitySafeResume),false,GetPawn());
     for (int32 Index=0;Index<(bSearch ? 17 : 1);++Index)
     {
@@ -161,8 +161,8 @@ bool ACityLiveRPPlayerController::SafeWalkingPosition(const FVector& Near,FVecto
 }
 bool ACityLiveRPPlayerController::EnterCity(bool bLastPosition,FText& Error)
 {
-    ACityLiveRPCharacter* Character=Cast<ACityLiveRPCharacter>(GetPawn());
-    if (!ActiveProfile || !Character || !bHasInitialSpawn)
+    ACityLiveRPCharacter* PlayerCharacter=Cast<ACityLiveRPCharacter>(GetPawn());
+    if (!ActiveProfile || !PlayerCharacter || !bHasInitialSpawn)
     { Error=FText::FromString(TEXT("Город ещё запускается. Нажмите ещё раз через секунду."));return false; }
     FVector Target=InitialSpawn.GetLocation();
     float Yaw=InitialSpawn.Rotator().Yaw;
@@ -172,10 +172,10 @@ bool ACityLiveRPPlayerController::EnterCity(bool bLastPosition,FText& Error)
         { Error=FText::FromString(TEXT("Место выхода недоступно. Выберите начальное место спавна."));return false; }
         Yaw=ActiveProfile->LastYaw;
     }
-    if (!Character->TeleportTo(Target,FRotator(0,Yaw,0)))
+    if (!PlayerCharacter->TeleportTo(Target,FRotator(0,Yaw,0)))
     { Error=FText::FromString(TEXT("Место занято. Выберите другое место спавна."));return false; }
-    Character->GetCharacterMovement()->StopMovementImmediately();
-    SetControlRotation(FRotator(0,Yaw,0)); SetViewTarget(Character);
+    PlayerCharacter->GetCharacterMovement()->StopMovementImmediately();
+    SetControlRotation(FRotator(0,Yaw,0)); SetViewTarget(PlayerCharacter);
     bEnteredCity=true;
     CloseCityMenu(); SaveProfile();
     return true;
@@ -183,8 +183,8 @@ bool ACityLiveRPPlayerController::EnterCity(bool bLastPosition,FText& Error)
 void ACityLiveRPPlayerController::SaveProfile()
 {
     if(!bEnteredCity || !ActiveProfile || !GetPawn() || IsVehicleEntryActive()) return;
-    if (const ACharacter* Character=Cast<ACharacter>(GetPawn()))
-        if (Character->GetCharacterMovement()->IsFalling()) return;
+    if (const ACharacter* PlayerCharacter=Cast<ACharacter>(GetPawn()))
+        if (PlayerCharacter->GetCharacterMovement()->IsFalling()) return;
     FVector Safe;
     if (SafeWalkingPosition(GetPawn()->GetActorLocation(),Safe,false))
     {
