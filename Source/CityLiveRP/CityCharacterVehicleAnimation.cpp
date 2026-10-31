@@ -77,15 +77,15 @@ float ACityLiveRPCharacter::BodyAnkleHeight() const
 void ACityLiveRPCharacter::SetVehicleBodyPose(const FCityVehicleBodyPose& Pose)
 {
     if(CharacterSkin)CharacterSkin->SetVehicleBodyPose(Pose);
-    if(UCityCrouchMeshComponent* Mesh=Cast<UCityCrouchMeshComponent>(GetMesh()))
+    if(UCityCrouchMeshComponent* PoseMesh=Cast<UCityCrouchMeshComponent>(GetMesh()))
     {
         FCityVehicleBodyPose Source=Pose;
         const FVector Visible=ReferencePelvisOffset();
         const FVector Hidden=GetActorTransform().InverseTransformPosition(GetMesh()->GetComponentTransform().TransformPosition(ReferencePelvis(GetMesh())));
         Source.Pelvis-=GetActorTransform().TransformVectorNoScale(Visible-Hidden);
-        Mesh->SetVehicleEntryPose(0,0,FVector::ZeroVector,false);
-        Mesh->SetVehicleSeatLegs(0,FVector::ZeroVector,FVector::ZeroVector);
-        Mesh->SetVehicleBodyPose(Source);
+        PoseMesh->SetVehicleEntryPose(0,0,FVector::ZeroVector,false);
+        PoseMesh->SetVehicleSeatLegs(0,FVector::ZeroVector,FVector::ZeroVector);
+        PoseMesh->SetVehicleBodyPose(Source);
     }
 }
 void ACityLiveRPCharacter::ClearVehicleAnimation()
