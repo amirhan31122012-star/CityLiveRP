@@ -18,9 +18,15 @@
 #include "CityLiveRP.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 #include "CityPlayerProfile.h"
+#include "CityDistrictGameplayComponent.h"
 #include "SCityV2Menu.h"
 #include "Misc/CoreDelegates.h"
 #include "TimerManager.h"
+
+ACityLiveRPPlayerController::ACityLiveRPPlayerController()
+{
+    DistrictGameplay=CreateDefaultSubobject<UCityDistrictGameplayComponent>(TEXT("DistrictGameplay"));
+}
 
 void ACityLiveRPPlayerController::BeginPlay()
 {

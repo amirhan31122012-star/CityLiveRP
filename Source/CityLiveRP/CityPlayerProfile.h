@@ -14,6 +14,12 @@ public:
     UPROPERTY(SaveGame) FString Surname;
     UPROPERTY(SaveGame) FString PasswordSalt;
     UPROPERTY(SaveGame) TArray<uint8> PasswordHash;
+    UPROPERTY(SaveGame) TArray<FString> Apartments;
+    UPROPERTY(SaveGame) bool bCourierEmployed=false;
+    UPROPERTY(SaveGame) int32 CompletedDeliveries=0;
+    UPROPERTY(SaveGame) FString Organization;
+    UPROPERTY(SaveGame) int32 PoliceQuizScore=0;
+    UPROPERTY(SaveGame) int32 HospitalQuizScore=0;
     UPROPERTY(SaveGame) int32 Balance = CityProfileRules::StartingBalance;
     UPROPERTY(SaveGame) bool bHasLastPosition = false;
     UPROPERTY(SaveGame) FVector LastPosition = FVector::ZeroVector;

@@ -14,6 +14,7 @@ class ACityParkingMarker;
 class UCityPlayerProfile;
 class SCityV2Menu;
 class SWidget;
+class UCityDistrictGameplayComponent;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -25,6 +26,9 @@ class ACityLiveRPPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
+    ACityLiveRPPlayerController();
+    friend class UCityDistrictGameplayComponent;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="CityLive|District") TObjectPtr<UCityDistrictGameplayComponent> DistrictGameplay;
     bool IsCityMenuOpen() const { return CityMenu.IsValid(); }
     bool IsProfileActive() const { return ActiveProfile != nullptr; }
     int32 GetBalance() const;
