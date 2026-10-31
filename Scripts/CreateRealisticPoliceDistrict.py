@@ -113,8 +113,14 @@ for x in (-89,-67):
 
 # Replace geometric ball crowns with branches and individual small leaves.
 trees = [obj for obj in scene.objects if obj.name.startswith('Tree_trunk')]
+for trunk in trees:
+    # Perimeter trees used to stand in the outer sidewalk strip. Put them in
+    # the adjoining lawn before generating their branches and foliage.
+    if abs(trunk.location.y) > 98:
+        trunk.location.y = math.copysign(95,trunk.location.y)
+    trunk.location.z -= .04  # Trunk base enters the ground, without a visible gap.
 for obj in list(scene.objects):
-    if obj.name.startswith('Tree_crown'):
+    if obj.name.startswith(('Tree_crown','Tree_bed')):
         bpy.data.objects.remove(obj,do_unlink=True)
 for trunk in trees:
     x,y,z = trunk.location
@@ -169,6 +175,37 @@ for j in range(160):
     y = random.choice((10.5,13.5))+random.uniform(-.15,.15)
     ob = box('Curb_weed',(x,y,.12),(.025,.17,random.uniform(.1,.25)),'leaf3',random.uniform(0,math.tau))
 
+# Green lawns with sparse grass tufts. Keep the surface continuous under trees.
+grass_shader = mats['grass'].node_tree.nodes.get('Principled BSDF')
+for link in list(grass_shader.inputs['Base Color'].links):
+    mats['grass'].node_tree.links.remove(link)
+grass_shader.inputs['Base Color'].default_value = (.075,.18,.035,1)
+grass_shader.inputs['Roughness'].default_value = .95
+verts, faces = [], []
+patches = [(-124,-90,35,43),(-67,-29,35,43),(-125,-25,83,95),
+           (-106,-36,-53,-37),(30,44,43,60),(80,105,43,59),
+           (31,121,-48,-39),(-125,125,12,14),(-125,125,-14,-12)]
+for patch in patches:
+    xmin,xmax,ymin,ymax = patch
+    for j in range(150):
+        x,y = random.uniform(xmin,xmax),random.uniform(ymin,ymax)
+        if abs(x) < 12:  # The north/south street remains clear.
+            continue
+        for blade in range(random.randint(5,9)):
+            angle = random.uniform(0,math.tau)
+            px,py = x+random.uniform(-.13,.13),y+random.uniform(-.13,.13)
+            width,height = random.uniform(.015,.035),random.uniform(.09,.22)
+            dx,dy = math.cos(angle)*width,math.sin(angle)*width
+            i = len(verts)
+            verts.extend(((px-dx,py-dy,-.02),(px+dx,py+dy,-.02),
+                          (px+math.sin(angle)*.04,py-math.cos(angle)*.04,height)))
+            faces.append((i,i+1,i+2))
+mesh = bpy.data.meshes.new('Sparse_grass_tufts')
+mesh.from_pydata(verts,[],faces)
+mesh.materials.append(mats['leaf2'])
+tufts = bpy.data.objects.new('Sparse_grass_tufts',mesh)
+scene.collection.objects.link(tufts)
+
 # Daylight: physical sky for reflections, with its sun contribution reduced.
 world = scene.world.node_tree
 sky = world.nodes.new('ShaderNodeTexSky')
@@ -187,13 +224,15 @@ stats = {'objects':len(mesh_objects),
          'status':'Blender style preview, no Android performance claim',
          'textures':'Poly Haven CC0; see TextureCredits.json'}
 # Keep source images externally as portable relative paths next to the blend.
-base['camera']((-118,8,6),(-77,57,4.5),35)
+base['camera']((-26,-24,7),(-82,-65,7),35)
 bpy.ops.wm.save_as_mainfile(filepath=str(OUT/'CityLive_PoliceDistrict_Realistic.blend'))
 (OUT/'GeometryStats.json').write_text(json.dumps(stats,indent=2),encoding='utf-8')
 for name,position,target,lens in (
-    ('PoliceRealistic',(-118,8,6),(-77,57,4.5),35),
-    ('StreetRealistic',(-21,-23,2),(-81,58,4.5),38)):
+    ('HomesRealistic',(-26,-24,7),(-82,-65,7),35),
+    ('CourtyardRealistic',(36,38,4.5),(79,73,7),32)):
     base['camera'](position,target,lens)
+    if name == 'CourtyardRealistic':
+        scene.cycles.samples = 64
     scene.render.filepath = str(OUT/(name+'.png'))
     bpy.ops.render.render(write_still=True)
 print('CITYLIVE_REALISTIC_PREVIEW '+json.dumps(stats))
