@@ -1,0 +1,13 @@
+{
+  "objects": 5950,
+  "materials": 22,
+  "triangles": 105852,
+  "extent_metres": [
+    420,
+    340
+  ],
+  "source": "Original procedural geometry; no Black Russia assets",
+  "status": "Preview only. Not imported into Unreal or measured on Android.",
+  "exported_mesh_objects": 493,
+  "batch_cell_metres": 32
+}
