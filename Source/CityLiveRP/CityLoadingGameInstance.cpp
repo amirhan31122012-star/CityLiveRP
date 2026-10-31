@@ -60,7 +60,12 @@ void UCityLoadingGameInstance::OnStart()
     TArray<FSoftObjectPath> Assets { FSoftObjectPath(WorldPath),
         FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Beige/SK_CityBeige_v3.SK_CityBeige_v3")),
         FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Beige/M_CityBeige_v3.M_CityBeige_v3")),
-        FSoftObjectPath(TEXT("/Game/CityLiveVehicles/Sedan/SK_CitySedan_4Doors.SK_CitySedan_4Doors")) };
+        FSoftObjectPath(TEXT("/Game/CityLiveVehicles/Sedan/SK_CitySedan_4Doors.SK_CitySedan_4Doors")),
+        FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Vehicle/AS_CityEnter.AS_CityEnter")),
+        FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Vehicle/AS_CityExit.AS_CityExit")),
+        FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Vehicle/AS_CityEnterRight.AS_CityEnterRight")),
+        FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Vehicle/AS_CityExitRight.AS_CityExitRight")),
+        FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Vehicle/AS_CityDriverIdle.AS_CityDriverIdle")) };
     LoadingHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(Assets);
     if (!LoadingHandle.IsValid()) { bFailed = true; return; }
     TickHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this,&UCityLoadingGameInstance::TickLoading));

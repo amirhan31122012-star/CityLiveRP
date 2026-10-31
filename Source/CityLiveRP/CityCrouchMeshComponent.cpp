@@ -1,5 +1,6 @@
 #include "CityCrouchMeshComponent.h"
 #include "ProceduralCrouchMath.h"
+#include "CityBoneIK.h"
 #include "Engine/SkeletalMesh.h"
 #include "ReferenceSkeleton.h"
 #include "GameFramework/Character.h"
@@ -22,7 +23,18 @@ void UCityCrouchMeshComponent::FinalizeBoneTransform()
     // Do not deform an already-published pose a second time.
     if (bNeedToFlipSpaceBaseBuffers && !IsSimulatingPhysics())
     {
-        if (CrouchAlpha > 0.001f) ApplyCrouch();
+        if (VehicleBodyPose.bActive && GetSkeletalMeshAsset() && GetOwner())
+        {
+            const FReferenceSkeleton& Ref=GetSkeletalMeshAsset()->GetRefSkeleton();
+            const int32 Spine=Ref.FindBoneIndex(TEXT("spine_01"));
+            if(GetEditableComponentSpaceTransforms().IsValidIndex(Spine) && FMath::Abs(VehicleBodyPose.TorsoCorrection)>.001f)
+                CityBoneIK::Rotate(GetEditableComponentSpaceTransforms(),Ref,Spine,FQuat(
+                    GetComponentTransform().InverseTransformVectorNoScale(GetOwner()->GetActorRightVector()).GetSafeNormal(),
+                    FMath::DegreesToRadians(VehicleBodyPose.TorsoCorrection)));
+            CityBoneIK::Body(GetEditableComponentSpaceTransforms(),GetSkeletalMeshAsset()->GetRefSkeleton(),
+                GetComponentTransform(),GetOwner()->GetActorTransform(),VehicleBodyPose);
+        }
+        if (!VehicleBodyPose.bActive && CrouchAlpha > 0.001f) ApplyCrouch();
         if (EntryTorsoDip > .001f) ApplyEntryTorso();
         if (SeatLegAlpha > .001f) ApplySeatLegs();
         if (EntryReach > 0.001f) ApplyEntryHand();
@@ -35,28 +47,6 @@ void UCityCrouchMeshComponent::SetVehicleSeatLegs(float Alpha, FVector LeftFoot,
     SeatLegAlpha = FMath::Clamp(Alpha, 0.f, 1.f);
     SeatFootLeft = LeftFoot;
     SeatFootRight = RightFoot;
-}
-
-void UCityCrouchMeshComponent::SetVehicleFit(float Alpha)
-{
-    Alpha = FMath::Clamp(Alpha, 0.f, 1.f);
-    if (!bVehicleFitActive && Alpha <= 0.f) return;
-    if (!bVehicleFitActive)
-    {
-        OriginalVehicleMeshTransform = GetRelativeTransform();
-        bVehicleFitActive = true;
-    }
-    if (Alpha <= 0.f)
-    {
-        SetRelativeTransform(OriginalVehicleMeshTransform);
-        bVehicleFitActive = false;
-        return;
-    }
-    const float Scale = FMath::Lerp(1.f, .78f, Alpha);
-    SetRelativeScale3D(OriginalVehicleMeshTransform.GetScale3D() * Scale);
-    // Preserve pelvis height while giving head and shoulders clearance below the roof.
-    SetRelativeLocation(OriginalVehicleMeshTransform.GetLocation() +
-        FVector(0, 0, (1.f - Scale) * 90.f * OriginalVehicleMeshTransform.GetScale3D().Z));
 }
 
 float UCityCrouchMeshComponent::GetAnkleWorldHeight() const

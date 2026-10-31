@@ -265,8 +265,8 @@ bool ACityLiveRPPlayerController::SpawnParkingCar(FText& Error)
         if(NewCar)break;
     }
     if(!NewCar) {Error=FText::FromString(TEXT("Рядом нет свободного места для автомобиля. Попробуйте другую метку."));return false;}
-    if(!NewCar->SeatDriverImmediately(this))
-    {NewCar->Destroy();Error=FText::FromString(TEXT("Не удалось занять водительское место."));return false;}
+    if(!NewCar->TryEnter(this,false,true))
+    {NewCar->Destroy();Error=FText::FromString(TEXT("Не удалось начать посадку. Проверьте свободный проход и монтажи."));return false;}
     if(IsValid(TestSedan)) TestSedan->Destroy();
     TestSedan=NewCar;
     CloseCityMenu();SaveProfile();return true;

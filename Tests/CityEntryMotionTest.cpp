@@ -2,44 +2,40 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
-
-int main()
+#include <iomanip>
+#include <string>
+int main(int argc,char** argv)
 {
     using namespace CityLiveEntry;
-    for (int Frame = 0; Frame <= 600; ++Frame)
+    std::cout<<std::setprecision(9);
+    for(int I=0;I<=816;++I)
     {
-        const float T = Frame / 120.f;
-        assert(Door(T) >= 0.f && Door(T) <= 1.f);
-        assert(Hand(T) >= 0.f && Hand(T) <= 1.f);
-        assert(Sit(T) >= 0.f && Sit(T) <= 1.f);
-        assert(TorsoDip(T) >= 0.f && TorsoDip(T) <= 1.f);
-        if (TorsoDip(T) > 0.f) assert(Door(T) > .99f);
-        if (Sit(T) > 0.f && Sit(T) < 1.f) assert(Door(T) > .99f);
-        if (Door(T) > 0.f && T < 1.95f) assert(Hand(T) > .99f);
-        if (T > 2.f) assert(Hand(T) < .99f);
+        const float T=I/120.f;
+        for(const bool Exiting:{false,true})
+        {
+            const Pose P=Exiting?Exit(T):Enter(T);
+            for(float Value:{P.Door,P.Hand,P.Sit,P.FirstLeg,P.SecondLeg,P.SeatShift,P.BodyTurn,P.Lean,P.Wheel})
+                assert(Value>=-.00001f && Value<=1.00001f);
+            if(!Exiting && (P.FirstLeg>0 || P.SecondLeg>0)) assert(P.Sit==1);
+            if(!Exiting && P.SeatShift>0)assert(P.FirstLeg==1 && P.SecondLeg==1);
+            if(Exiting && P.Sit<1)assert(P.FirstLeg==0 && P.SecondLeg==0);
+            if((P.Sit>0 && P.Sit<1) || (P.FirstLeg>0 && P.FirstLeg<1) || (P.SecondLeg>0 && P.SecondLeg<1))assert(P.Door>.999f);
+            const float Previous=Exiting?Exit(T-.001f).Door:Enter(T-.001f).Door;
+            if(std::abs(P.Door-Previous)>.00001f)assert(P.Hand>.999f);
+            if(argc>1 && std::string(argv[1])=="--dump")
+                std::cout<<Exiting<<' '<<T<<' '<<P.Door<<' '<<P.Hand<<' '<<P.Sit<<' '<<P.FirstLeg<<' '<<P.SecondLeg<<' '<<P.SeatShift<<' '<<P.BodyTurn<<' '<<P.Lean<<' '<<P.Wheel<<'\n';
+        }
     }
-    assert(Door(0.f) == 0.f && Hand(0.f) == 0.f && Sit(0.f) == 0.f);
-    assert(Door(Duration) == 0.f && Hand(Duration) == 0.f && Sit(Duration) == 1.f);
-    assert(Blend(.0001f, 0.f, 1.f) < .00001f);
-    assert(Sit(2.85f) == 1.f && Leg(2.85f, false) == 0.f);
-    assert(Leg(3.4f, false) == 1.f && Leg(3.4f, true) < 1.f);
-    assert(Leg(4.f, false) == 1.f && Leg(4.f, true) == 1.f && Door(4.f) == 1.f);
-    // Exit runs the same phases backwards: feet outside before the torso stands up.
-    assert(Sit(3.f) == 1.f && Leg(3.f, true) == 0.f);
-    assert(Sit(1.99f) == 0.f && Door(1.99f) > .99f);
-    assert(SeatShift(2.85f) == 0.f && BodyTurn(2.85f) == 0.f);
-    assert(SeatShift(3.95f) == 1.f && BodyTurn(3.95f) == 1.f);
-    for (int Step = 0; Step <= 100; ++Step)
-    {
-        const float P = Step / 100.f;
-        assert(FootTravel(P) >= 0.f && FootTravel(P) <= 1.f);
-        assert(FootLift(P) >= 0.f && FootLift(P) <= 1.f);
-        if (P >= .3f && P <= .7f) assert(FootLift(P) > .999f);
-        if (P <= .2f) assert(FootTravel(P) == 0.f);
-        if (P >= .8f) assert(FootTravel(P) == 1.f);
-    }
-    assert(FootLift(0.f) == 0.f && FootLift(1.f) == 0.f);
-    assert(TorsoDip(0.f) == 0.f && TorsoDip(Duration) == 0.f);
-    assert(TorsoDip(2.5f) == 1.f && TorsoDip(3.8f) == 1.f);
-    std::cout << "PASS: hand/door timing, torso before separate legs on entry, legs before torso on exit, smooth boundaries\n";
+    assert(AdvanceTime(2,10,false)-2<.067f);
+    assert(AdvanceTime(2,-1,false)==2);
+    assert(AdvanceTime(2,.01f,true)<2);
+    assert(Enter(0).Sit==0 && Enter(Duration).Sit==1);
+    assert(Exit(0).Sit==1 && Exit(Duration).Sit==0);
+    assert(Enter(3.15f).Sit==1 && Enter(3.15f).FirstLeg==0);
+    assert(Enter(4.f).FirstLeg==1 && Enter(4.f).SecondLeg==0);
+    assert(Exit(3.2f).FirstLeg==0 && Exit(3.2f).SecondLeg==0 && Exit(3.2f).Sit==1);
+    assert(Enter(Duration).Door==0 && Exit(Duration).Door==0);
+    assert(FootLift(0)==0 && FootLift(1)==0);
+    for(int I=30;I<=70;++I)assert(FootLift(I/100.f)>.999f);
+    if(argc==1)std::cout<<"PASS: pelvis before separate legs, both feet before rise, handle during door motion, continuous phase bounds\n";
 }

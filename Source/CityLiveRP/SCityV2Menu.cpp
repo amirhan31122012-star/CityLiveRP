@@ -118,7 +118,7 @@ void SCityV2Menu::GaragePage()
     Fields->ClearChildren(); Message=FText::GetEmpty();
     Title=FText::FromString(TEXT("Парковка · вызов автомобиля"));
     Button(FText::FromString(TEXT("Седан · бесплатно")),[this](){
-        bCarSelected=true;Message=FText::FromString(TEXT("Выбран седан. После вызова вы окажетесь за рулём."));return FReply::Handled();});
+        bCarSelected=true;Message=FText::FromString(TEXT("Выбран седан. Персонаж подойдёт к двери и сядет за руль."));return FReply::Handled();});
     Button(FText::FromString(TEXT("Вызвать автомобиль")),[this](){
         if(!bCarSelected) Message=FText::FromString(TEXT("Сначала выберите автомобиль."));
         else if(Controller.IsValid()) Controller->SpawnParkingCar(Message);

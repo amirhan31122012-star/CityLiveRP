@@ -14,6 +14,12 @@ try {
     if (-not (Test-Path -LiteralPath $mapFile -PathType Leaf)) {
         throw "Карта не найдена: $mapFile"
     }
+    foreach ($clip in @('Enter', 'Exit', 'EnterRight', 'ExitRight', 'DriverIdle')) {
+        $clipPath = Join-Path $ProjectDir ("Content\CityLiveCharacters\Vehicle\AS_City" + $clip + '.uasset')
+        if (-not (Test-Path -LiteralPath $clipPath -PathType Leaf)) {
+            throw 'Сначала выполните InstallVehicleEntryAnimations.cmd: анимации посадки без уменьшения персонажа.'
+        }
+    }
     $skin = Join-Path $ProjectDir 'Content\CityLiveCharacters\Beige\SK_CityBeige_v3.uasset'
     if (-not (Test-Path -LiteralPath $skin -PathType Leaf)) {
         throw 'Сначала установите персонажа через BuildAndOpen.cmd.'

@@ -4,6 +4,7 @@
 #include "Materials/MaterialInterface.h"
 #include "GameFramework/Actor.h"
 #include "ProceduralCrouchMath.h"
+#include "CityBoneIK.h"
 #include <initializer_list>
 
 UCityCharacterSkinComponent::UCityCharacterSkinComponent()
@@ -147,6 +148,7 @@ void UCityCharacterSkinComponent::TickComponent(float DeltaTime, ELevelTick Tick
             (Goal - KneeGoal).GetSafeNormal()) * SkinReference[Knee].GetRotation()).GetNormalized());
         Result[Foot].SetLocation(Goal);
     }
+    CityBoneIK::Body(Result,Ref,GetComponentTransform(),GetOwner()->GetActorTransform(),VehicleBodyPose);
     for (int32 Bone = 0; Bone < Result.Num(); ++Bone)
         SetBoneTransformByName(Ref.GetBoneName(Bone), Result[Bone], EBoneSpaces::ComponentSpace);
     RefreshBoneTransforms();

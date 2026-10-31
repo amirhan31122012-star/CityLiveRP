@@ -4,6 +4,7 @@
 #include "GameFramework/Pawn.h"
 #include "UObject/SoftObjectPtr.h"
 #include "CitySedanDynamics.h"
+#include "CityVehicleSeat.h"
 #include "CitySedan.generated.h"
 
 class UBoxComponent;
@@ -29,13 +30,13 @@ public:
     virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     bool CanEnter(const APlayerController* Player, bool bPassengerSeat = false) const;
-    bool TryEnter(APlayerController* Player, bool bPassengerSeat = false);
-    bool SeatDriverImmediately(APlayerController* Player);
+    UFUNCTION(BlueprintCallable,Category="CityLive|Vehicle")
+    bool TryEnter(APlayerController* Player, bool bPassengerSeat = false, bool bFromParking = false);
     void SetDrift(bool bHeld) { bDriftHeld = bHeld; }
     bool IsDriftHeld() const { return bDriftHeld; }
     float GetSpeedKmh() const { return GetVelocity().Size2D() * .036f; }
     bool IsPassenger(const APlayerController* Player) const;
-    bool TryExit(APlayerController* Player);
+    UFUNCTION(BlueprintCallable,Category="CityLive|Vehicle") bool TryExit(APlayerController* Player);
     void SetSteering(float Value) { Steering = FMath::Clamp(Value, -1.f, 1.f); }
     void SetThrottle(bool bHeld) { Pedals.SetThrottle(bHeld); }
     bool IsThrottleHeld() const { return Pedals.Throttle; }
@@ -51,7 +52,22 @@ public:
     UPROPERTY(EditDefaultsOnly, Category="CityLive|Vehicle Model")
     TSoftObjectPtr<USkeletalMesh> FourDoorMeshAsset;
 
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="CityLive|Entry") TArray<FCityVehicleSeat> Seating;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="CityLive|Entry") TArray<TObjectPtr<USceneComponent>> SeatAnchors;
+    virtual void OnConstruction(const FTransform& Transform) override;
 private:
+    const FCityVehicleSeat& SeatSettings(int32 Seat) const;
+    FVector SeatPelvisWorld(int32 Seat) const;
+    bool ValidateEntrySpace(ACityLiveRPCharacter* Occupant) const;
+    bool DoorMotionClear(float From,float To,ACityLiveRPCharacter* Occupant) const;
+    bool bEntryIgnoredInput=false;
+    bool MoveEntryActor(const FVector& Position,const FRotator& Rotation);
+    void RestoreWalking(ACityLiveRPCharacter* Occupant,APlayerController* Player);
+    bool bReversingEntry = false;
+    bool bMontageStarted = false;
+    FRotator ApproachRotation=FRotator::ZeroRotator;
+    UPROPERTY() FCityVehicleBodyPose PendingBodyPose;
+    UPROPERTY() FCityVehicleBodyPose LastBodyPose;
     UPROPERTY() TObjectPtr<UBoxComponent> CollisionBox;
     UPROPERTY() TObjectPtr<USpringArmComponent> CameraArm;
     UPROPERTY() TObjectPtr<UCameraComponent> VehicleCamera;

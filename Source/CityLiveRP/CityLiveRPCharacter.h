@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "CityVehicleSeat.h"
 #include "Logging/LogMacros.h"
 #include "CityLiveRPCharacter.generated.h"
 
@@ -11,6 +12,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 class UCityCharacterSkinComponent;
+class UAnimMontage;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -96,6 +98,15 @@ public:
 
 public:
 
+    UFUNCTION(BlueprintCallable,Category="CityLive|Vehicle") bool PlayVehicleAnimation(FName Clip, bool bRightDoor = false);
+    UFUNCTION(BlueprintCallable,Category="CityLive|Vehicle") void SetVehicleAnimationTime(float Seconds);
+    UFUNCTION(BlueprintCallable,Category="CityLive|Vehicle") void SetVehicleBodyPose(const FCityVehicleBodyPose& Pose);
+    UFUNCTION(BlueprintCallable,Category="CityLive|Vehicle") void ClearVehicleAnimation();
+    bool HasVehicleAnimations() const;
+    FVector ReferencePelvisOffset() const;
+    float BodyHeightAbovePelvis() const;
+    float BodyAnkleHeight() const;
+
     /** Mobile controls: sprint is held, crouch is toggled. */
     void SetMobileSprint(bool bEnabled);
     void ToggleMobileCrouch();
@@ -123,6 +134,7 @@ public:
 
 private:
     UPROPERTY() TObjectPtr<UCityCharacterSkinComponent> CharacterSkin;
+    UPROPERTY() TObjectPtr<UAnimMontage> VehicleMontage;
     float StandingCapsuleHalfHeight = 96.f;
     float MobileSteering = 0.f;
     float MobileForward = 0.f;

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "CityVehicleSeat.h"
 #include "CityCrouchMeshComponent.generated.h"
 
 /** Applies a procedural crouch to the evaluated animation before publishing bones. */
@@ -16,7 +17,7 @@ public:
     float GetCrouchAlpha() const { return CrouchAlpha; }
     void SetVehicleEntryPose(float Sit, float Reach, FVector Handle, bool bRightHand);
     void SetVehicleSeatLegs(float Alpha, FVector LeftFoot, FVector RightFoot);
-    void SetVehicleFit(float Alpha);
+    void SetVehicleBodyPose(const FCityVehicleBodyPose& Pose) { VehicleBodyPose=Pose; }
     float GetAnkleWorldHeight() const;
 
     UPROPERTY(EditAnywhere, Category="CityLive|Crouch", meta=(ClampMin="0", ClampMax="60"))
@@ -34,8 +35,7 @@ private:
     float SeatLegAlpha = 0.f;
     FVector SeatFootLeft = FVector::ZeroVector;
     FVector SeatFootRight = FVector::ZeroVector;
-    bool bVehicleFitActive = false;
-    FTransform OriginalVehicleMeshTransform;
+    UPROPERTY() FCityVehicleBodyPose VehicleBodyPose;
     void ApplyCrouch();
     void ApplyEntryHand();
     void ApplyEntryTorso();
