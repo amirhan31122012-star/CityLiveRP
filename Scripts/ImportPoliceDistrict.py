@@ -14,6 +14,7 @@ from PoliceDistrictPolicy import validate_package, package_file, imported_kind
 from CityPbrMaterials import build_materials, assign_materials
 from CitySpawnSearch import find_open_spawn
 from CityMobileSky import install_mobile_sky
+from PoliceDistrictLighting import configure_sun, configure_sky, REVISION
 
 
 def atomic(path,text):
@@ -130,14 +131,16 @@ def main():
     world.get_world_settings().set_editor_property('default_game_mode',mode)
     sun=actors.spawn_actor_from_class(unreal.DirectionalLight,unreal.Vector(0,0,6000),unreal.Rotator(-38,-35,0))
     sun.light_component.set_editor_property('mobility',unreal.ComponentMobility.MOVABLE)
-    sun.light_component.set_editor_property('intensity',10.0)
+    configure_sun(sun.light_component)
     sky=actors.spawn_actor_from_class(unreal.SkyLight,unreal.Vector(0,0,5000))
     sky.light_component.set_editor_property('mobility',unreal.ComponentMobility.MOVABLE)
     sky.light_component.set_editor_property('real_time_capture',False)
+    configure_sky(sky.light_component)
     install_mobile_sky(root,actors)
     sky.light_component.recapture_sky()
     if not levels.save_current_level():raise RuntimeError('Cannot save district map')
     summary={'version':'1.1.2','graphics_baseline':'v1','mobile_sky':True,'map':map_path,
+             'lighting_revision':REVISION,
              'baseline_map':map_path,'previous_map':previous['map'],'source':'PoliceDistrict',
              'package_hash':hashlib.sha256((package/'manifest.json').read_bytes()).hexdigest(),
              'source_hash':manifest['source_blend_sha256'],'triangles':manifest['triangles']}

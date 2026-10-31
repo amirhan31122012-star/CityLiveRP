@@ -39,6 +39,9 @@ try {
         throw 'Активна прежняя карта. Сначала запустите ImportPoliceDistrict.cmd.'
     }
     $packageManifest = Join-Path $ProjectDir 'Assets\Maps\PoliceDistrictGame\manifest.json'
+    if ($mobile.lighting_revision -ne 1) {
+        throw 'Сначала выполните UpdateDistrictPolish.cmd: исправление освещения установленной карты.'
+    }
     if (-not (Test-Path -LiteralPath $packageManifest -PathType Leaf)) {
         throw 'Пакет новой карты отсутствует. Обновите проект в GitHub Desktop.'
     }

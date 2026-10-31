@@ -9,12 +9,17 @@ int main()
     for (float Speed : {0.f, 100.f, 350.f, 1000.f, 2000.f, 3000.f, -400.f})
     {
         const float Rate = CityLiveDriving::YawRateRadians(1.f, Speed);
-        assert(std::abs(Rate * Speed) <= 600.01f);
+        assert(std::abs(Rate * Speed) <= 680.01f);
         assert(std::abs(Rate + CityLiveDriving::YawRateRadians(-1.f, Speed)) < .0001f);
         assert(CityLiveDriving::YawRateRadians(0.f, Speed) == 0.f);
         assert(Rate * Speed >= 0.f);
     }
     assert(CityLiveDriving::YawRateRadians(1.f, 3000.f) < CityLiveDriving::YawRateRadians(1.f, 1000.f));
+    assert(std::abs(CityLiveDriving::YawRateRadians(1.f, 3000.f)*3000.f) <= 600.01f);
+    assert(CityLiveDriving::YawRateRadians(1.f,350.f) > 1.1f);
+    for (float Speed : {-400.f,350.f,1000.f,3000.f})
+        assert(std::abs(CityLiveDriving::YawRateRadians(.1f,Speed) -
+            .1f*CityLiveDriving::YawRateRadians(1.f,Speed)) < .00001f);
     float SlowFps = 0.f, FastFps = 0.f;
     for (int I = 0; I < 60; ++I) SlowFps = AdvanceSpeed(SlowFps, true, true, false, 1.f / 30.f);
     for (int I = 0; I < 240; ++I) FastFps = AdvanceSpeed(FastFps, true, true, false, 1.f / 120.f);

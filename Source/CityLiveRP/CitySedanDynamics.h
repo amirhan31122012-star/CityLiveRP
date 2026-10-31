@@ -22,12 +22,15 @@ constexpr float DirectionChangeSpeed = 10.f;
 inline float YawRateRadians(float Steering, float Speed)
 {
     constexpr float DegreesToRadians = .01745329252f;
-    const float LowSpeedRate = std::clamp(Steering, -1.f, 1.f) * 55.f * DegreesToRadians *
+    const float LowSpeedRate = 65.f * DegreesToRadians *
         std::clamp(Speed / 350.f, -1.f, 1.f);
-    // Bound requested lateral acceleration to about 0.6 g. A fixed yaw rate
-    // at top speed asks for several g and makes grip and steering fight.
-    const float Limit = 600.f / std::max(std::abs(Speed), 350.f);
-    return std::clamp(LowSpeedRate, -Limit, Limit);
+    // Allow slightly tighter urban turns, tapering back to the original 0.6 g
+    // bound at top speed so grip and steering do not fight.
+    const float HighwayBlend = std::clamp((std::abs(Speed) - 1500.f) / 1500.f, 0.f, 1.f);
+    const float Limit = (680.f - 80.f * HighwayBlend) / std::max(std::abs(Speed), 350.f);
+    // Apply the stick after the speed limit: a small touch stays a small turn,
+    // instead of reaching full cornering force prematurely at high speed.
+    return std::clamp(Steering, -1.f, 1.f) * std::clamp(LowSpeedRate, -Limit, Limit);
 }
 inline float AdvanceSpeed(float Speed, bool DriverPresent, bool Throttle, bool Brake, float DeltaTime)
 {

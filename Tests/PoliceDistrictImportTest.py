@@ -83,6 +83,7 @@ class ImportTest(unittest.TestCase):
             LevelEditorSubsystem='levels',EditorActorSubsystem='actors',UnrealEditorSubsystem='world',
             get_editor_subsystem=lambda key:{'levels':self.levels,'actors':actor_api,'world':world_api}[key],
             StaticMeshActor=Actor,PlayerStart='start',DirectionalLight='sun',SkyLight='sky',Vector=Vec,Rotator=lambda *a:a,
+            LinearColor=lambda *a:a,
             ComponentMobility=types.SimpleNamespace(STATIC=0,MOVABLE=1),load_class=lambda *a:object(),
             SystemLibrary=types.SimpleNamespace(line_trace_single=trace,sphere_trace_single=lambda *a:None),
             TraceTypeQuery=types.SimpleNamespace(TRACE_TYPE_QUERY1=0),DrawDebugTrace=types.SimpleNamespace(NONE=0),log=lambda *a:None)

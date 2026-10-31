@@ -24,3 +24,5 @@
 
 /CollectAndroidCrash.cmd text eol=crlf
 /Scripts/CollectAndroidCrash.ps1 text eol=crlf
+
+/UpdateDistrictPolish.cmd text eol=crlf

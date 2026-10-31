@@ -11,7 +11,7 @@
 3. Запустите BuildAndOpen.cmd для проверки в редакторе.
 4. Закройте Unreal и запустите BuildAndroidV1Shipping.cmd. Установите полученный
    APK из новой папки Releases/AndroidV1/Shipping/<номер> поверх установленной
-   игры с прежней подписью. Версия 1.2.0-test, StoreVersion=5.
+   игры с прежней подписью. Версия 1.2.1-test, StoreVersion=6.
 
 Blender, повторная обработка старого города, RestoreCityV1 и UpdateCityV11
 для этой установки не нужны. SDK/NDK/JAVA_HOME остаются прежними.
@@ -77,3 +77,6 @@ blender -b Assets/Maps/PoliceDistrictRealistic/CityLive_PoliceDistrict_Realistic
 
 `--reuse-materials` разрешён только при неизменном SHA256 исходного .blend;
 он пересобирает геометрию/группы коллизий, используя предыдущие запечённые карты.
+
+Обновление установленного района до 1.2.1: UpdateDistrictPolish.cmd, затем
+BuildAndroidV1Shipping.cmd. Повторный импорт города не требуется. Docs/DistrictPolish.md.

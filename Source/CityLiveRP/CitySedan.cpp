@@ -193,7 +193,7 @@ void ACitySedan::UpdateImportedWheels(float DeltaTime)
         else
         {
             const bool bFront = Bone.Key == FName(TEXT("Wheel_Front_Left")) || Bone.Key == FName(TEXT("Wheel_Front_Right"));
-            Rotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(bFront ? SmoothedSteering * 28.f : 0.f)) *
+            Rotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(bFront ? SmoothedSteering * 34.f : 0.f)) *
                 FQuat(FVector::RightVector, FMath::DegreesToRadians(WheelRollDegrees));
         }
         BonePose.SetRotation((Rotation * Bone.Value.GetRotation()).GetNormalized());
