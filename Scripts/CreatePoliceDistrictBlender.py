@@ -348,13 +348,14 @@ stats = {'objects': len(mesh_objects), 'materials': len(materials),
          'triangles': sum(sum(len(p.vertices)-2 for p in ob.data.polygons) for ob in mesh_objects),
          'extent_metres': [420,340], 'source': 'Original procedural geometry; no Black Russia assets',
          'status': 'Preview only. Not imported into Unreal or measured on Android.'}
-stats.update(export_batched_glb(mesh_objects, OUT/'CityLive_PoliceDistrict.glb'))
+if '--skip-export' not in sys.argv:
+    stats.update(export_batched_glb(mesh_objects, OUT/'CityLive_PoliceDistrict.glb'))
 (OUT/'GeometryStats.json').write_text(json.dumps(stats,indent=2),encoding='utf-8')
 bpy.ops.wm.save_as_mainfile(filepath=str(OUT/'CityLive_PoliceDistrict.blend'))
-for name,position,target,lens in (
+for name,position,target,lens in (() if '--skip-render' in sys.argv else (
     ('Overview',(-212,-236,190),(-8,15,0),40),
     ('Police',(-129,3,16),(-78,56,5),40),
-    ('Street',(10,-36,4),(-70,59,5),32)):
+    ('Street',(10,-36,4),(-70,59,5),32))):
     camera(position,target,lens)
     scene.render.filepath = str(OUT/(name+'.png'))
     bpy.ops.render.render(write_still=True)

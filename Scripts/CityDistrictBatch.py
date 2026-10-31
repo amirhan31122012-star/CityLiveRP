@@ -9,17 +9,23 @@ def export_batched_glb(objects, destination, cell_size=32):
     for obj in objects:
         material = obj.material_slots[0].material
         key = (math.floor(obj.location.x/cell_size), math.floor(obj.location.y/cell_size), material.name)
-        vertices, faces, _ = groups.setdefault(key, ([], [], material))
+        vertices, faces, _, uv = groups.setdefault(key, ([], [], material, []))
         offset = len(vertices)
         vertices.extend(tuple(obj.matrix_world @ vertex.co) for vertex in obj.data.vertices)
         faces.extend(tuple(index+offset for index in polygon.vertices) for polygon in obj.data.polygons)
+        layer = obj.data.uv_layers.active
+        uv.extend(tuple(layer.data[i].uv) if layer else (0,0)
+                  for polygon in obj.data.polygons for i in polygon.loop_indices)
     bpy.ops.object.select_all(action='DESELECT')
     temporary = []
     try:
-        for (x,y,mat_name), (vertices,faces,material) in groups.items():
+        for (x,y,mat_name), (vertices,faces,material,uv) in groups.items():
             mesh = bpy.data.meshes.new(f'Cell_{x}_{y}_{mat_name}')
             mesh.from_pydata(vertices, [], faces)
             mesh.materials.append(material)
+            layer = mesh.uv_layers.new(name='UVMap')
+            for loop, value in zip(layer.data, uv):
+                loop.uv = value
             obj = bpy.data.objects.new(mesh.name, mesh)
             bpy.context.scene.collection.objects.link(obj)
             obj.select_set(True)
