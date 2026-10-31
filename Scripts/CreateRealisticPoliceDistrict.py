@@ -10,6 +10,8 @@ import sys
 
 OUT = Path(sys.argv[sys.argv.index('--')+1]).resolve()
 script = Path(__file__).resolve().parent
+sys.path.insert(0,str(script))
+from CityLawnMaterial import realistic_lawn, grass_blade_variation
 sys.argv = ['blender', '--', str(OUT), '--skip-render', '--skip-export']
 base = runpy.run_path(str(script/'CreatePoliceDistrictBlender.py'))
 scene, mats = bpy.context.scene, base['materials']
@@ -176,11 +178,7 @@ for j in range(160):
     ob = box('Curb_weed',(x,y,.12),(.025,.17,random.uniform(.1,.25)),'leaf3',random.uniform(0,math.tau))
 
 # Green lawns with sparse grass tufts. Keep the surface continuous under trees.
-grass_shader = mats['grass'].node_tree.nodes.get('Principled BSDF')
-for link in list(grass_shader.inputs['Base Color'].links):
-    mats['grass'].node_tree.links.remove(link)
-grass_shader.inputs['Base Color'].default_value = (.075,.18,.035,1)
-grass_shader.inputs['Roughness'].default_value = .95
+realistic_lawn(mats['grass'])
 verts, faces = [], []
 patches = [(-124,-90,35,43),(-67,-29,35,43),(-125,-25,83,95),
            (-106,-36,-53,-37),(30,44,43,60),(80,105,43,59),
@@ -205,6 +203,7 @@ mesh.from_pydata(verts,[],faces)
 mesh.materials.append(mats['leaf2'])
 tufts = bpy.data.objects.new('Sparse_grass_tufts',mesh)
 scene.collection.objects.link(tufts)
+grass_blade_variation(tufts)
 
 # Daylight: physical sky for reflections, with its sun contribution reduced.
 world = scene.world.node_tree
