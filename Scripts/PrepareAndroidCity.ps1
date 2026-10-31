@@ -52,16 +52,30 @@ try {
     # Pulling the repository may restore its default map. Use the map confirmed
     # by the successful local import for both cooking and the packaged startup.
     $ini = Join-Path $ProjectDir 'Config\DefaultEngine.ini'
+    foreach ($relative in @('Content\CityLiveMaps\CityLive_Boot.umap', 'Content\CityLiveUI\T_LoadingCity.uasset')) {
+        if (-not (Test-Path -LiteralPath (Join-Path $ProjectDir $relative) -PathType Leaf)) {
+            throw 'Сначала выполните UpdateDistrictPolish.cmd: подготовка экрана загрузки с процентами.'
+        }
+    }
     $text = [System.IO.File]::ReadAllText($ini)
     foreach ($key in @('GameDefaultMap', 'EditorStartupMap')) {
         $pattern = '(?m)^' + $key + '=[^\r\n]*'
         if (-not [regex]::IsMatch($text, $pattern)) {
             throw "В DefaultEngine.ini отсутствует $key. Пришлите этот файл."
         }
-        $text = [regex]::Replace($text, $pattern, $key + '=' + $map + '.CityLive_ModernCity')
+        $target = $map + '.CityLive_ModernCity'
+        if ($key -eq 'GameDefaultMap') { $target = '/Game/CityLiveMaps/CityLive_Boot.CityLive_Boot' }
+        $text = [regex]::Replace($text, $pattern, $key + '=' + $target)
     }
     $utf8 = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($ini, $text, $utf8)
+    $gameIni = Join-Path $ProjectDir 'Config\DefaultGame.ini'
+    $gameText = [System.IO.File]::ReadAllText($gameIni)
+    if (-not [regex]::IsMatch($gameText, '(?m)^CityMapPath=[^\r\n]*')) {
+        throw 'Отсутствует настройка CityMapPath. Обновите проект в GitHub Desktop.'
+    }
+    $gameText = [regex]::Replace($gameText, '(?m)^CityMapPath=[^\r\n]*', 'CityMapPath=' + $map)
+    [System.IO.File]::WriteAllText($gameIni, $gameText, $utf8)
     [System.IO.File]::WriteAllText((Join-Path $ProjectDir 'Saved\AndroidCityMap.txt'), $map, $utf8)
     Write-Host "Карта для APK: $map"
 } catch {

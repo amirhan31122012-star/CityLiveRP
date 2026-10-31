@@ -51,7 +51,7 @@ echo Карта: %CITY_MAP%
 echo Конфигурация: %BUILD_CONFIG%. Графика и содержимое карты сохраняются.
 echo Журнал сборки: %BUILD_LOG%
 echo Собирается тестовый APK ARM64 ASTC. Первая сборка этой конфигурации может занять длительное время.
-call "%UE_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun "-project=%PROJECT_DIR%CityLiveRP.uproject" -noP4 -platform=Android -cookflavor=ASTC "-clientconfig=%BUILD_CONFIG%" -build -cook "-map=%CITY_MAP%" -stage -pak -package -archive "-archivedirectory=%OUTPUT_DIR%" -utf8output > "%BUILD_LOG%" 2>&1
+call "%UE_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun "-project=%PROJECT_DIR%CityLiveRP.uproject" -noP4 -platform=Android -cookflavor=ASTC "-clientconfig=%BUILD_CONFIG%" -build -cook "-map=/Game/CityLiveMaps/CityLive_Boot+%CITY_MAP%" -stage -pak -package -archive "-archivedirectory=%OUTPUT_DIR%" -utf8output > "%BUILD_LOG%" 2>&1
 if errorlevel 1 (
     echo Сборка не удалась. Пришлите журнал: %BUILD_LOG%
     pause

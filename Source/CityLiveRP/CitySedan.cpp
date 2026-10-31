@@ -124,6 +124,7 @@ void ACitySedan::BeginPlay()
 {
     Super::BeginPlay();
     CollisionBox->SetMassOverrideInKg(NAME_None, 1200.f);
+    CollisionBox->SetCenterOfMass(FVector(0, 0, -12.f));
     CollisionBox->SetLinearDamping(.035f);
     CollisionBox->SetAngularDamping(2.f);
     CollisionBox->SetUseCCD(true);
@@ -164,6 +165,14 @@ void ACitySedan::BeginPlay()
             }
         }
     }
+    // Equal spring preloads balance only when their support centroid is above
+    // the centre of mass. Imported axle locations need not be symmetric about
+    // the mesh bounds; keeping the box COM at zero caused a parked pitch bias.
+    const float CenterX = CitySuspension::SupportCenter(SuspensionAnchors[0].X, SuspensionAnchors[1].X,
+        SuspensionAnchors[2].X, SuspensionAnchors[3].X);
+    const float CenterY = CitySuspension::SupportCenter(SuspensionAnchors[0].Y, SuspensionAnchors[1].Y,
+        SuspensionAnchors[2].Y, SuspensionAnchors[3].Y);
+    CollisionBox->SetCenterOfMass(FVector(CenterX, CenterY, -12.f));
     bDoorRigReady = RestVehicleBones.Contains(FName(TEXT("Door_Front_Left"))) && RestVehicleBones.Contains(FName(TEXT("Door_Front_Right"))) &&
         RestVehicleBones.Contains(FName(TEXT("Door_Rear_Left"))) && RestVehicleBones.Contains(FName(TEXT("Door_Rear_Right")));
     const FName DoorBones[] = {FName(TEXT("Door_Front_Left")), FName(TEXT("Door_Front_Right")),
@@ -221,7 +230,8 @@ bool ACitySedan::FindFlatSpawn(UWorld* World, const FVector& Candidate, float Ya
         Maximum = FMath::Max(Maximum, static_cast<float>(Hit.ImpactPoint.Z));
     }
     if (Maximum - Minimum > 4.f) return false;
-    OutLocation = FVector(Candidate.X, Candidate.Y, (Minimum + Maximum) * .5f + 65.f);
+    OutLocation = FVector(Candidate.X, Candidate.Y, (Minimum + Maximum) * .5f +
+        CitySuspension::RestLength + CitySuspension::WheelRadius);
     return true;
 }
 

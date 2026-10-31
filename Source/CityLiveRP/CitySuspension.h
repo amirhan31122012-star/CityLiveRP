@@ -4,6 +4,10 @@
 
 namespace CitySuspension
 {
+inline float SupportCenter(float A, float B, float C, float D)
+{
+    return (A + B + C + D) * .25f;
+}
 inline float Force(float Compression, float VerticalSpeed, float Mass = 1200.f, float DeltaTime = 1.f / 60.f)
 {
     // Implicit spring/damper: raw explicit feedback was unstable at low FPS.

@@ -30,12 +30,17 @@ echo Журнал: %POLISH_LOG%\Import.log
 "%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%PROJECT_DIR%CityLiveRP.uproject" /Engine/Maps/Entry "-ExecutePythonScript=%PROJECT_DIR%Scripts\UpdatePoliceDistrictLighting.py" "-abslog=%POLISH_LOG%\Import.log" -unattended -nosplash
 if errorlevel 1 goto failure
 if not exist "%POLISH_LOG%\complete.ok" goto failure
+set "CITYLIVE_LOADING_DIR=%POLISH_LOG%"
+echo Подготовка экрана загрузки с процентами.
+"%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%PROJECT_DIR%CityLiveRP.uproject" /Engine/Maps/Entry "-ExecutePythonScript=%PROJECT_DIR%Scripts\PrepareCityLoading.py" "-abslog=%POLISH_LOG%\Loading.log" -unattended -nosplash
+if errorlevel 1 goto failure
+if not exist "%POLISH_LOG%\loading.ok" goto failure
 echo Готово. Свет и тени обновлены, изменения руления собраны.
 echo Для проверки запустите BuildAndOpen.cmd. Для APK закройте редактор и запустите BuildAndroidV1Shipping.cmd.
 pause
 exit /b 0
 :failure
-echo Обновление не завершено. Пришлите Build.log или Import.log из открывшейся папки.
+echo Обновление не завершено. Пришлите Build.log, Import.log или Loading.log из открывшейся папки.
 start "" "%POLISH_LOG%"
 pause
 exit /b 1

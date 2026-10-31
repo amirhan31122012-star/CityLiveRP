@@ -6,6 +6,20 @@
 int main()
 {
     using CitySuspension::Force;
+    // Imported axles can be offset from the mesh bounds. Equal spring support
+    // must not produce a nose-up torque on flat ground.
+    const float X[] = {170.f,170.f,-130.f,-130.f};
+    const float Y[] = {-90.f,110.f,-88.f,112.f};
+    const float CenterX = CitySuspension::SupportCenter(X[0],X[1],X[2],X[3]);
+    const float CenterY = CitySuspension::SupportCenter(Y[0],Y[1],Y[2],Y[3]);
+    float PitchTorque = 0.f, RollTorque = 0.f;
+    for (int I = 0; I < 4; ++I)
+    {
+        PitchTorque += (X[I]-CenterX)*Force(0,0);
+        RollTorque += (Y[I]-CenterY)*Force(0,0);
+    }
+    assert(std::abs(PitchTorque)<.01f && std::abs(RollTorque)<.01f);
+    assert(CenterX==20.f && CenterY==11.f);
     assert(Force(0, 0) * 4.f == 1200.f * 980.f);
     assert(Force(10, 0) > Force(0, 0));
     assert(Force(0, -30) > Force(0, 0));

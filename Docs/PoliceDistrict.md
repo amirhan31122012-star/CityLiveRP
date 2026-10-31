@@ -11,7 +11,7 @@
 3. Запустите BuildAndOpen.cmd для проверки в редакторе.
 4. Закройте Unreal и запустите BuildAndroidV1Shipping.cmd. Установите полученный
    APK из новой папки Releases/AndroidV1/Shipping/<номер> поверх установленной
-   игры с прежней подписью. Версия 1.2.1-test, StoreVersion=6.
+   игры с прежней подписью. Версия 1.2.2-test, StoreVersion=7.
 
 Blender, повторная обработка старого города, RestoreCityV1 и UpdateCityV11
 для этой установки не нужны. SDK/NDK/JAVA_HOME остаются прежними.
@@ -80,3 +80,6 @@ blender -b Assets/Maps/PoliceDistrictRealistic/CityLive_PoliceDistrict_Realistic
 
 Обновление установленного района до 1.2.1: UpdateDistrictPolish.cmd, затем
 BuildAndroidV1Shipping.cmd. Повторный импорт города не требуется. Docs/DistrictPolish.md.
+
+1.2.2: положение машины и экран загрузки с процентами — Docs/LoadingAndVehicle.md.
+Для установленного города выполните UpdateDistrictPolish.cmd перед сборкой APK.

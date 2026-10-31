@@ -35,12 +35,17 @@ echo Журнал: %DISTRICT_LOG%\Import.log
 "%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%PROJECT_DIR%CityLiveRP.uproject" /Engine/Maps/Entry "-ExecutePythonScript=%PROJECT_DIR%Scripts\ImportPoliceDistrict.py" "-abslog=%DISTRICT_LOG%\Import.log" -unattended -nosplash
 if errorlevel 1 goto failure
 if not exist "%DISTRICT_LOG%\complete.ok" goto failure
+set "CITYLIVE_LOADING_DIR=%DISTRICT_LOG%"
+echo Подготовка экрана загрузки с процентами.
+"%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%PROJECT_DIR%CityLiveRP.uproject" /Engine/Maps/Entry "-ExecutePythonScript=%PROJECT_DIR%Scripts\PrepareCityLoading.py" "-abslog=%DISTRICT_LOG%\Loading.log" -unattended -nosplash
+if errorlevel 1 goto failure
+if not exist "%DISTRICT_LOG%\loading.ok" goto failure
 echo Готово. Новая карта стала основной. Старый город в новую сборку не включается.
 echo Для проверки запустите BuildAndOpen.cmd. Для APK закройте редактор и запустите BuildAndroidV1Shipping.cmd.
 pause
 exit /b 0
 :failure
-echo Импорт не завершён. Пришлите Build.log или Import.log из открывшейся папки.
+echo Импорт не завершён. Пришлите Build.log, Import.log или Loading.log из открывшейся папки.
 start "" "%DISTRICT_LOG%"
 pause
 exit /b 1
