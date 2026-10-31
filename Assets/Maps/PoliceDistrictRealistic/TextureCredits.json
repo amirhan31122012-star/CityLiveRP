@@ -151,5 +151,32 @@
     "download_url": "https://dl.polyhaven.org/file/ph-assets/Models/png/1k/tree_small_02/tree_small_02_leaves_alpha_1k.png",
     "license": "CC0",
     "md5": "63199ba87a9e8928424bd8c3b8017bd0"
+  },
+  {
+    "asset": "grass_ground",
+    "file": "grass_ground_disp_1k.png",
+    "role": "height",
+    "source": "https://polyhaven.com/a/grass_ground",
+    "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grass_ground/grass_ground_disp_1k.png",
+    "license": "CC0",
+    "md5": "c26729d66abbb9b402b605f200974a09"
+  },
+  {
+    "asset": "grey_plaster_03",
+    "file": "grey_plaster_03_disp_1k.png",
+    "role": "height",
+    "source": "https://polyhaven.com/a/grey_plaster_03",
+    "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grey_plaster_03/grey_plaster_03_disp_1k.png",
+    "license": "CC0",
+    "md5": "7b1e10d5d29ea76d62400b7e3dfa86ee"
+  },
+  {
+    "asset": "red_brick_03",
+    "file": "red_brick_03_disp_1k.png",
+    "role": "height",
+    "source": "https://polyhaven.com/a/red_brick_03",
+    "download_url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/red_brick_03/red_brick_03_disp_1k.png",
+    "license": "CC0",
+    "md5": "c59c7944c3b4701b4226523ced4291e6"
   }
 ]

@@ -12,6 +12,7 @@ OUT = Path(sys.argv[sys.argv.index('--')+1]).resolve()
 script = Path(__file__).resolve().parent
 sys.path.insert(0,str(script))
 from CityLawnMaterial import realistic_lawn, grass_blade_variation
+from CitySurfaceDetail import apply_surface_detail
 sys.argv = ['blender', '--', str(OUT), '--skip-render', '--skip-export']
 base = runpy.run_path(str(script/'CreatePoliceDistrictBlender.py'))
 scene, mats = bpy.context.scene, base['materials']
@@ -204,6 +205,7 @@ mesh.materials.append(mats['leaf2'])
 tufts = bpy.data.objects.new('Sparse_grass_tufts',mesh)
 scene.collection.objects.link(tufts)
 grass_blade_variation(tufts)
+apply_surface_detail(scene,textures)
 
 # Daylight: physical sky for reflections, with its sun contribution reduced.
 world = scene.world.node_tree
