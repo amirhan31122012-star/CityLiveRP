@@ -190,7 +190,7 @@ void ACityLiveRPPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReas
 void ACityLiveRPPlayerController::RefreshAppearance()
 {
     ACityLiveRPCharacter* Person=Cast<ACityLiveRPCharacter>(GetPawn());if(!Person||!ActiveProfile)return;
-    const FName Role=ActiveProfile->bCourierEmployed ? FName(TEXT("Courier")) : ActiveProfile->Organization==TEXT("Police") ?
+    const FName DesiredAppearanceRole=ActiveProfile->bCourierEmployed ? FName(TEXT("Courier")) : ActiveProfile->Organization==TEXT("Police") ?
         FName(TEXT("Police")) : ActiveProfile->Organization==TEXT("Hospital") ? FName(TEXT("Medic")) : FName(TEXT("Civilian"));
-    if(Person->AppearanceRole!=Role)Person->SetAppearanceRole(Role);
+    if(Person->AppearanceRole!=DesiredAppearanceRole)Person->SetAppearanceRole(DesiredAppearanceRole);
 }

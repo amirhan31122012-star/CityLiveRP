@@ -60,7 +60,7 @@ public:
     bool bUseCitySkin = true;
     UPROPERTY(Config,EditAnywhere,Category="CityLive|Appearance") bool bUseRoleWardrobe=true;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="CityLive|Appearance") FName AppearanceRole=TEXT("Civilian");
-    UFUNCTION(BlueprintCallable,Category="CityLive|Appearance") bool SetAppearanceRole(FName Role);
+    UFUNCTION(BlueprintCallable,Category="CityLive|Appearance") bool SetAppearanceRole(FName NewAppearanceRole);
 
 	ACityLiveRPCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 

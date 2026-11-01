@@ -4,12 +4,12 @@
 #include "Engine/SkeletalMesh.h"
 #include "GameFramework/PlayerController.h"
 
-bool ACityLiveRPCharacter::SetAppearanceRole(FName Role)
+bool ACityLiveRPCharacter::SetAppearanceRole(FName NewAppearanceRole)
 {
-    if(Role!=TEXT("Civilian")&&Role!=TEXT("Police")&&Role!=TEXT("Medic")&&Role!=TEXT("Courier"))return false;
-    if(!CharacterSkin->InitializeSkin(GetMesh(),bUseRoleWardrobe?Role:FName(TEXT("Legacy"))))return false;
-    AppearanceRole=Role;
-    if(Role==TEXT("Courier"))
+    if(NewAppearanceRole!=TEXT("Civilian")&&NewAppearanceRole!=TEXT("Police")&&NewAppearanceRole!=TEXT("Medic")&&NewAppearanceRole!=TEXT("Courier"))return false;
+    if(!CharacterSkin->InitializeSkin(GetMesh(),bUseRoleWardrobe?NewAppearanceRole:FName(TEXT("Legacy"))))return false;
+    AppearanceRole=NewAppearanceRole;
+    if(NewAppearanceRole==TEXT("Courier"))
     {
         USkeletalMesh* Pack=LoadObject<USkeletalMesh>(nullptr,TEXT("/Game/CityLiveCharacters/Roles/SK_CityCourierPack.SK_CityCourierPack"));
         CourierBag->SetSkinnedAssetAndUpdate(Pack);
