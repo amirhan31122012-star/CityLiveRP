@@ -79,6 +79,7 @@ int32 UCityDistrictGameplayComponent::ApartmentPrice() const
 void UCityDistrictGameplayComponent::InitializeDistrict()
 {
     if(bInitialized)return;bInitialized=true;PrimaryComponentTick.bCanEverTick=true;SetComponentTickEnabled(true);
+    if(ChatHistory.IsEmpty())ChatHistory=TEXT("Добро пожаловать в CityLive RP!\nПолицейский район · город готов к игре");
     for(const auto& Entry:Entries())DistrictActors.Add(Label(GetWorld(),Entry.Position+FVector(0,0,75),FString(Entry.Id)+TEXT("\nВХОД"),FColor::Cyan,28));
     DistrictActors.Add(Label(GetWorld(),PoliceDoor+FVector(0,0,100),TEXT("ДЕЖУРНАЯ ЧАСТЬ"),FColor::Cyan));
     const FLinearColor Wall(.7f,.73f,.7f),Glass(.15f,.35f,.5f);
@@ -227,7 +228,7 @@ void UCityDistrictGameplayComponent::OpenChat()
 void UCityDistrictGameplayComponent::TickComponent(float Dt,ELevelTick Type,FActorComponentTickFunction* Function)
 {
     Super::TickComponent(Dt,Type,Function);if(!bInitialized)return;ScanTime+=Dt;if(ScanTime<.2f)return;ScanTime=0;
-    RefreshInteraction();FText Error;
+    RefreshInteraction();RefreshNavigation();FText Error;
     if(bDeliveryActive)
     {
         if(!IsValid(CourierMarker))CourierMarker=Label(GetWorld(),DeliveryTarget+FVector(0,0,120),TEXT("▼ ДОСТАВКА"),FColor::Red,90);
@@ -237,17 +238,14 @@ void UCityDistrictGameplayComponent::TickComponent(float Dt,ELevelTick Type,FAct
 }
 void UCityDistrictGameplayComponent::SetGps(FName Destination)
 {
-    if(Destination==TEXT("Police")){GpsTarget=PoliceDoor;GpsLabel=TEXT("Полиция");}
-    else if(Destination==TEXT("Hospital")){GpsTarget=HospitalDoor;GpsLabel=TEXT("Больница");}
-    else if(Destination==TEXT("Courier")){GpsTarget=CourierDesk;GpsLabel=TEXT("Работа курьера");}
-    else{for(const auto& Entry:Entries())if(Destination==FName(Entry.Id)){GpsTarget=Entry.Position;GpsLabel=Entry.Id;}}
-    if(IsValid(NavigationMarker))NavigationMarker->Destroy();NavigationMarker=Label(GetWorld(),GpsTarget+FVector(0,0,180),TEXT("▼ GPS"),FColor::Cyan,90);
+    SelectMapPlace(Destination);
 }
 FString UCityDistrictGameplayComponent::NavigationText() const
 {
-    const auto* Player=Cast<ACityLiveRPPlayerController>(GetOwner());if(!Player||!Player->GetPawn()||GpsLabel.IsEmpty())return FString();
+    FVector Target;FString Name;if(!NavigationTarget(Target,Name))return FString();
     if(bInside)return TEXT("GPS: сначала выйдите из здания");
-    return FString::Printf(TEXT("GPS: %s · %.0f м"),*GpsLabel,FVector::Dist2D(Player->GetPawn()->GetActorLocation(),GpsTarget)/100);
+    if(!CachedRoute.Valid)return Name+TEXT(" · маршрут недоступен");
+    return FString::Printf(TEXT("%s · %.0f м"),*Name,CachedRoute.Metres);
 }
 bool UCityDistrictGameplayComponent::JoinOrganization(FName Organization,int32 Correct,FText& Error)
 {
@@ -261,16 +259,23 @@ FText UCityDistrictGameplayComponent::ExecuteChat(FString Text)
 {
     Text.TrimStartAndEndInline();auto* Player=Cast<ACityLiveRPPlayerController>(GetOwner());if(!Player || !Player->ActiveProfile || !Player->bEnteredCity)return FText::GetEmpty();
     if(Text==TEXT("/gps")){Context=TEXT("Gps");return FText::FromString(TEXT("Выберите раздел GPS."));}
+    if(Text==TEXT("/map")){Context=TEXT("Map");return FText::GetEmpty();}
+    if(Text==TEXT("/gps off")){ClearGps();return FText::FromString(TEXT("GPS отключён."));}
     if(Text==TEXT("/credits"))return FText::FromString(TEXT("Основа персонажей: Casual Beige Knit Look — restore50, CC BY 4.0. Изменения, одежда и риг: CityLive RP. sketchfab.com/3d-models/casual-beige-knit-look-e92cefa2b26e47dc953cfdd16dbc076b · creativecommons.org/licenses/by/4.0/"));
-    if(Text==TEXT("/help"))return FText::FromString(TEXT("/gps /me /do /try /b /stats /time /job /quitjob /credits"));
+    if(Text==TEXT("/help"))return FText::FromString(TEXT("/gps /map /gps off /me /do /try /b /s /stats /time /job /quitjob /credits"));
     if(Text==TEXT("/stats"))return FText::FromString(Player->GetProfileName()+FString::Printf(TEXT(" · %d ₽ · доставок %d"),Player->GetBalance(),Player->ActiveProfile->CompletedDeliveries));
     if(Text==TEXT("/time"))return FText::FromString(FDateTime::Now().ToString(TEXT("%H:%M")));
     if(Text==TEXT("/job")){Context=TEXT("Courier");return FText::FromString(TEXT("Подойдите к NPC курьера для трудоустройства."));}
     if(Text==TEXT("/quitjob")){FText Error;if(!SetCourierEmployment(false,Error))return Error;return FText::FromString(TEXT("Смена курьера завершена."));}
-    if(Text.StartsWith(TEXT("/")) && !Text.StartsWith(TEXT("/me "))&&!Text.StartsWith(TEXT("/do "))&&!Text.StartsWith(TEXT("/try "))&&!Text.StartsWith(TEXT("/b ")))
+    if(Text.StartsWith(TEXT("/")) && !Text.StartsWith(TEXT("/me "))&&!Text.StartsWith(TEXT("/do "))&&!Text.StartsWith(TEXT("/try "))&&!Text.StartsWith(TEXT("/b "))&&!Text.StartsWith(TEXT("/s ")))
         return FText::FromString(TEXT("Команда недоступна. /help — список команд этой игры."));
     if(Text.Len()>180)Text=Text.Left(180);if(Text.StartsWith(TEXT("/try ")))Text+=FMath::RandBool()?TEXT(" — успешно"):TEXT(" — неудачно");
-    ChatHistory=(ChatHistory+TEXT("\n")+Player->GetProfileName()+TEXT(": ")+Text).Right(1200);return FText::FromString(ChatHistory);
+    FString Line;
+    if(Text.StartsWith(TEXT("/b ")))Line=TEXT("(( ")+Player->GetProfileName()+TEXT(": ")+Text.Mid(3)+TEXT(" ))");
+    else if(Text.StartsWith(TEXT("/s ")))Line=Player->GetProfileName()+TEXT(" кричит: ")+Text.Mid(3);
+    else if(Text.StartsWith(TEXT("/me ")))Line=TEXT("* ")+Player->GetProfileName()+TEXT(" ")+Text.Mid(4);
+    else Line=Player->GetProfileName()+TEXT(": ")+Text;
+    ChatHistory=(ChatHistory+TEXT("\n")+Line).Right(1200);return FText::FromString(ChatHistory);
 }
 
 bool UCityDistrictGameplayComponent::SpawnWorkScooter(FText& Error)

@@ -9,6 +9,8 @@
 #include "HAL/PlatformTime.h"
 #include "Misc/CoreDelegates.h"
 #include "Styling/CoreStyle.h"
+#include "CityUiTheme.h"
+#include "CityTouchLayout.h"
 
 void SCityMobileControls::Construct(const FArguments& Args)
 {
@@ -29,12 +31,11 @@ ACitySedan* SCityMobileControls::GetVehicle() const
     return Controller.IsValid() && !Controller->IsCityMenuOpen() ? Controller->GetSeatedSedan() : nullptr;
 }
 
-void SCityMobileControls::Layout(const FGeometry& Geometry, FVector2D& Left, FVector2D& Right, float& Radius)
+void SCityMobileControls::Layout(const FGeometry& Geometry,FVector2D& Left,FVector2D& Right,float& Radius) const
 {
     const FVector2D Size = Geometry.GetLocalSize();
-    Radius = FMath::Min(Size.X, Size.Y) * 0.12f;
-    Left = FVector2D(Size.X * 0.18f, Size.Y * 0.76f);
-    Right = FVector2D(Size.X * 0.82f, Size.Y * 0.76f);
+    const auto Positions=CityTouchLayout::Build(Size.X,Size.Y,GetVehicle()!=nullptr);
+    Radius=static_cast<float>(Positions.Radius);Left=FVector2D(Positions.LeftX,Positions.LeftY);Right=FVector2D(Positions.RightX,Positions.RightY);
 }
 
 void SCityMobileControls::UpdateStick(const FGeometry& Geometry, const FPointerEvent& Event)
@@ -75,10 +76,8 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
     const FVector2D Position = Geometry.AbsoluteToLocal(Event.GetScreenSpacePosition());
     const FVector2D Interaction(Right.X, Right.Y - Radius * 2.4f);
     const FVector2D ViewSize=Geometry.GetLocalSize();
-    if(Controller.IsValid() && Position.X>ViewSize.X*.5f-350 && Position.X<ViewSize.X*.5f+350 && Position.Y>=14 && Position.Y<=129)
-    {Controller->DistrictGameplay->OpenChat();return FReply::Handled();}
     if(Controller.IsValid() && Controller->DistrictGameplay->HasInteraction() &&
-        FVector2D::Distance(Position,FVector2D(ViewSize.X*.94f,ViewSize.Y*.55f))<Radius*.65f)
+        FVector2D::Distance(Position,FVector2D(ViewSize.X*.76f,ViewSize.Y*.84f))<Radius*.65f)
     {Controller->DistrictGameplay->Interact();return FReply::Handled();}
 
     if (Controller.IsValid() && Controller->CanUsePassengerDoor() &&
@@ -131,7 +130,7 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
         UpdateStick(Geometry, Event);
         return FReply::Handled().CaptureMouse(SharedThis(this));
     }
-    if (RunPointer == INDEX_NONE && FVector2D::Distance(Position, Right) <= Radius)
+    if (RunPointer == INDEX_NONE && FVector2D::Distance(Position, Right) <= Radius*(Vehicle?1.f:.70f))
     {
         RunPointer = Event.GetPointerIndex();
         bRunHeld = true;
@@ -286,11 +285,11 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
         FSlateDrawElement::MakeBox(Out, Layer,
             Geometry.ToPaintGeometry(Diameter, FSlateLayoutTransform(Center - FVector2D(R, R) + FVector2D(0, 3))),
             &Face, ESlateDrawEffect::None, FLinearColor(0, 0, 0, .22f));
-        const float Activation = FMath::Clamp((Color.G - Color.R) * 2.5f, 0.f, 1.f);
+        const float Activation = FMath::Clamp((Color.R - Color.B) * 1.5f, 0.f, 1.f);
         FSlateDrawElement::MakeBox(Out, Layer,
             Geometry.ToPaintGeometry(Diameter, FSlateLayoutTransform(Center - FVector2D(R, R))),
             &Face, ESlateDrawEffect::None,
-            FMath::Lerp(FLinearColor(.035f, .05f, .07f, .45f), FLinearColor(.1f, .4f, .22f, .38f), Activation));
+            FMath::Lerp(FLinearColor(.018f,.02f,.026f,.55f),FLinearColor(.5f,.07f,.005f,.4f),Activation));
         TArray<FVector2D> Points;
         for (int32 i = 0; i <= 96; ++i)
         {
@@ -344,10 +343,9 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
     const FVector2D ViewSize=Geometry.GetLocalSize();
     if(Controller.IsValid() && Controller->DistrictGameplay->HasInteraction())
     {
-        const FVector2D Click(ViewSize.X*.94f,ViewSize.Y*.55f);
-        Circle(Click,Radius*.6f,FLinearColor(1,.05f,.05f,1));
-        TArray<FVector2D> Cursor{Click+FVector2D(-12,-18),Click+FVector2D(-12,18),Click+FVector2D(0,8),Click+FVector2D(14,22),Click+FVector2D(20,16),Click+FVector2D(6,3),Click+FVector2D(22,3),Click+FVector2D(-12,-18)};
-        FSlateDrawElement::MakeLines(Out,Layer+1,Geometry.ToPaintGeometry(),Cursor,ESlateDrawEffect::None,FLinearColor::White,true,2);
+        const FVector2D Click(ViewSize.X*.76f,ViewSize.Y*.84f);
+        Circle(Click,Radius*.6f,CityUi::Orange());
+        Stroke(Click,{{-.19f,.28f},{-.3f,.02f},{-.23f,-.03f},{-.08f,.09f},{-.08f,-.32f},{.02f,-.36f},{.09f,-.3f},{.09f,-.03f},{.23f,.01f},{.28f,.17f},{.18f,.37f},{-.08f,.4f},{-.19f,.28f}},.035f);
     }
     const FVector2D DoorCenter(Right.X, Right.Y - Radius * 2.4f);
     if (Controller.IsValid() && Controller->CanUsePassengerDoor())
@@ -377,7 +375,7 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
     if (GetVehicle() && Controller.IsValid() && Controller->IsSedanDriver())
     {
         const FVector2D DriftCenter = DoorCenter - FVector2D(Radius * 2.2f, 0);
-        Circle(DriftCenter, Radius * .85f, GetVehicle()->IsDriftHeld() ? FLinearColor(.55f,.9f,.65f,.7f) : FLinearColor::White);
+        Circle(DriftCenter, Radius * .85f, GetVehicle()->IsDriftHeld() ? CityUi::Orange() : FLinearColor::White);
         FSlateDrawElement::MakeText(Out, Layer + 1,
             Geometry.ToPaintGeometry(FVector2D(Radius * 1.4f, Radius * .5f),
                 FSlateLayoutTransform(DriftCenter - FVector2D(Radius * .62f, Radius * .22f))),
@@ -392,24 +390,25 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
         const auto Center = StickAnchor.Center(Size.X, Size.Y);
         Left = FVector2D(Center.X, Center.Y);
     }
-    Circle(Left, Radius, FLinearColor(1, 1, 1, StickPointer != INDEX_NONE ? .6f : .2f));
-    Circle(Left + Stick * Radius * 0.65f, Radius * 0.32f, FLinearColor::White);
-    // A low-opacity green fill gives feedback without obscuring the game.
-    const FSlateRoundedBoxBrush Background(FLinearColor::White, Radius * 0.85f);
+    if(StickPointer!=INDEX_NONE||GetVehicle())
+    {Circle(Left,Radius,FLinearColor(1,1,1,StickPointer!=INDEX_NONE?.6f:.2f));Circle(Left+Stick*Radius*.65f,Radius*.32f,FLinearColor::White);}
+    // Warm low-opacity feedback without obscuring the game.
+    const float ButtonRadius=Radius*(GetVehicle()?.85f:.65f);
+    const FSlateRoundedBoxBrush Background(FLinearColor::White,ButtonRadius);
     FSlateDrawElement::MakeBox(Out, Layer,
-        Geometry.ToPaintGeometry(FVector2D(Radius * 1.7f, Radius * 1.7f),
-            FSlateLayoutTransform(Right - FVector2D(Radius * 0.85f, Radius * 0.85f))),
+        Geometry.ToPaintGeometry(FVector2D(ButtonRadius*2,ButtonRadius*2),
+            FSlateLayoutTransform(Right-FVector2D(ButtonRadius,ButtonRadius))),
         &Background, ESlateDrawEffect::None,
         FMath::Lerp(FLinearColor(0.08f, 0.08f, 0.08f, 0.18f),
-            FLinearColor(0.25f, 0.85f, 0.4f, 0.18f), RunHighlight));
-    Circle(Right, Radius * 0.85f,
+            FLinearColor(.8f,.13f,.01f,.24f), RunHighlight));
+    Circle(Right,ButtonRadius,
         FMath::Lerp(FLinearColor(1.f, 1.f, 1.f, 0.65f),
-            FLinearColor(0.55f, 0.9f, 0.65f, 0.7f), RunHighlight));
+            FLinearColor(1.f,.25f,.04f,.85f), RunHighlight));
 
     if (GetVehicle())
     {
         const FVector2D Brake = Right - FVector2D(Radius * 2.2f, 0);
-        Circle(Brake, Radius * 0.85f, GetVehicle()->IsBrakeHeld() ? FLinearColor(.55f, .9f, .65f, .7f) : FLinearColor::White);
+        Circle(Brake, Radius * 0.85f, GetVehicle()->IsBrakeHeld() ? CityUi::Orange() : FLinearColor::White);
         // Accelerator: tall narrow pedal, brake: short wide pedal, each with rubber grooves.
         Stroke(Right, {{-.23f, -.6f}, {.32f, -.6f}, {.22f, .6f}, {-.33f, .6f}, {-.23f, -.6f}});
         for (int32 Groove = 0; Groove < 5; ++Groove)

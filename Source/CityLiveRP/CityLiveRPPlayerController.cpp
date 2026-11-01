@@ -55,6 +55,8 @@ void ACityLiveRPPlayerController::SetupInputComponent()
 	Super::SetupInputComponent();
     InputComponent->BindKey(EKeys::E, IE_Pressed, this, &ACityLiveRPPlayerController::InteractWithSedan);
     InputComponent->BindKey(EKeys::T, IE_Pressed, DistrictGameplay.Get(), &UCityDistrictGameplayComponent::OpenChat);
+    InputComponent->BindKey(EKeys::M, IE_Pressed, DistrictGameplay.Get(), &UCityDistrictGameplayComponent::OpenMap);
+    InputComponent->BindKey(EKeys::G, IE_Pressed, DistrictGameplay.Get(), &UCityDistrictGameplayComponent::OpenGps);
     InputComponent->BindKey(EKeys::F, IE_Pressed, this, &ACityLiveRPPlayerController::UsePassengerDoor);
 
 	// only add IMCs for local player controllers

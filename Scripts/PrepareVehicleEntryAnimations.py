@@ -95,6 +95,7 @@ if not material or not unreal.EditorAssetLibrary.save_loaded_asset(material,only
     raise RuntimeError('Cannot save district surface material')
 # Install wardrobe meshes with the same body rig and explicit materials.
 import ImportRoleCharacters
+import ImportInterfaceAssets
 # Blueprints already use ABP_Unarmed's DefaultSlot. Runtime constructs UAnimMontage
 # instances in that slot and samples them with the same clock as doors/actor/IK.
 folder.mkdir(parents=True,exist_ok=True)

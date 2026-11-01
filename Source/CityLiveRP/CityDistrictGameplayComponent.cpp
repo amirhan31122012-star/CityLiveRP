@@ -55,7 +55,7 @@ bool UCityDistrictGameplayComponent::SetCourierEmployment(bool Employed,FText& E
     const bool Previous=Profile->bCourierEmployed;Profile->bCourierEmployed=Employed;
     if(!Persist(Profile)){Profile->bCourierEmployed=Previous;Error=FText::FromString(TEXT("Не удалось сохранить трудоустройство."));return false;}
     Player->RefreshAppearance();
-    if(!Employed)bDeliveryActive=false;
+    if(!Employed){bDeliveryActive=false;if(bTrackDelivery)ClearGps();}
     return true;
 }
 bool UCityDistrictGameplayComponent::BeginDelivery(FText& Error)
@@ -65,8 +65,9 @@ bool UCityDistrictGameplayComponent::BeginDelivery(FText& Error)
     {Error=FText::FromString(TEXT("Сначала устройтесь курьером."));return false;}
     if(bDeliveryActive){Error=FText::FromString(TEXT("Сначала завершите текущую доставку."));return false;}
     const auto& All=Buildings();const FBuilding& Target=All[NextDestination%All.Num()];
-    DeliveryTarget=Target.Entrance;DeliveryBuilding=FName(Target.Id);bDeliveryActive=true;
-    NextDestination=(NextDestination+1)%All.Num();return true;
+    ClearGps();
+    DeliveryTarget=Target.Entrance;DeliveryBuilding=FName(Target.Id);bDeliveryActive=true;bTrackDelivery=true;bRouteDirty=true;
+    NextDestination=(NextDestination+1)%All.Num();RefreshNavigation();return true;
 }
 bool UCityDistrictGameplayComponent::CompleteDelivery(FText& Error)
 {
@@ -84,5 +85,5 @@ bool UCityDistrictGameplayComponent::CompleteDelivery(FText& Error)
     {Profile->Balance-=CityDistrictRules::CourierReward;--Profile->CompletedDeliveries;
         Error=FText::FromString(TEXT("Не удалось сохранить выплату. Доставка остаётся активной."));return false;}
     // Consumed only after saving: crossing the same marker twice cannot pay twice.
-    bDeliveryActive=false;return true;
+    bDeliveryActive=false;if(bTrackDelivery)ClearGps();return true;
 }

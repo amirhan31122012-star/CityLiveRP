@@ -8,6 +8,7 @@
 class ACityLiveRPPlayerController;
 class SEditableTextBox;
 class SVerticalBox;
+class SCityMap;
 
 class SCityV2Menu : public SCompoundWidget
 {
@@ -19,19 +20,39 @@ public:
     SLATE_END_ARGS()
     void Construct(const FArguments& Args);
     void FocusChatInput();
+    virtual bool SupportsKeyboardFocus() const override{return true;}
+    virtual FReply OnKeyChar(const FGeometry&,const FCharacterEvent&) override;
+    virtual FReply OnKeyDown(const FGeometry&,const FKeyEvent&) override;
 private:
     TWeakObjectPtr<ACityLiveRPPlayerController> Controller;
     TSharedPtr<SVerticalBox> Fields;
+    TSharedPtr<SVerticalBox> Actions,KeyboardHost;
+    TSharedPtr<SCityMap> DistrictMap;
     TSharedPtr<SEditableTextBox> First, Last, Password, Confirmation;
     FText Title, Message;
-    FButtonStyle ActionStyle;
+    FButtonStyle ActionStyle,SecondaryStyle,RowStyle,KeyStyle;
     FEditableTextBoxStyle InputStyle;
+    FScrollBarStyle ScrollStyle;
     FSlateBrush BackgroundBrush;
     TStrongObjectPtr<UTexture2D> BackgroundImage;
     bool bLoginLayout=false;
     bool bNewProfile=false;
     bool bLastSpawn=false;
     bool bCarSelected=false;
+    bool bPasswordVisible=false,bChatLayout=false,bRussian=false,bShift=false,bSymbols=false;
+    FString LoginName,SelectedGps,ChatDraft;
+    int32 HistoryIndex=0,ChatChannel=0;
+    FVector MapSelection=FVector::ZeroVector;
+    FString MapLabel;
+    bool bMapSelection=false;
+    bool bLegendOpen=false;
+    FSlateBrush FrameBrush;
+    void BuildFrame(int32 Mode);
+    void MapPage();
+    void GpsPage();
+    void KeyboardPage();
+    void TypeChat(const FString& Value);
+    void BackspaceChat();
     void DistrictPage();
     void ChatOverlay();
     void SendChat();
@@ -40,5 +61,5 @@ private:
     void PasswordPage();
     void SpawnPage();
     void GaragePage();
-    void Button(const FText& Text, TFunction<FReply()> Action);
+    void Button(const FText& Text,TFunction<FReply()> Action,bool bPrimary=false);
 };

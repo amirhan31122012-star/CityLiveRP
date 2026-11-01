@@ -6,6 +6,7 @@
 #include "CitySedan.h"
 #include "SCityMobileControls.h"
 #include "SCityV2Menu.h"
+#include "SCityHud.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -44,28 +45,8 @@ void ACityLiveRPPlayerController::InitializeV2Session()
     { RememberedFirst=Memory->FirstName; RememberedLast=Memory->Surname; }
     if (UGameViewportClient* Viewport=GetWorld()->GetGameViewport())
     {
-        CityHud=SNew(SOverlay)
-            .Visibility_Lambda([this](){return bEnteredCity && !IsCityMenuOpen() ? EVisibility::SelfHitTestInvisible : EVisibility::Hidden;})
-            +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(24)
-            [SNew(SBorder).Padding(FMargin(24,14)).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.008f,.02f,.035f,.75f))
-                [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",30)).ColorAndOpacity(FLinearColor(.32f,1.f,.56f))
-                    .Text_Lambda([this](){return FText::FromString(FText::AsNumber(GetBalance()).ToString()+TEXT(" ₽"));})]]
-            +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(24,86,24,0)
-            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular",16)).Text_Lambda([this](){return FText::FromString(DistrictGameplay->NavigationText());})]
-            +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0,14)
-            [SNew(SBox).WidthOverride(700).HeightOverride(115)
-                [SNew(SButton).ContentPadding(0).ButtonColorAndOpacity(FLinearColor(0,0,0,0))
-                    .OnClicked_Lambda([this](){DistrictGameplay->OpenChat();return FReply::Handled();})
-                [SNew(SBorder).Padding(14).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.015f,.025f,.04f,.55f))
-                    [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular",19)).AutoWrapText(true)
-                        .Text_Lambda([this](){return FText::FromString(DistrictGameplay->ChatHistory.Right(280));})]]]]
-            +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,22)
-            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",26))
-                .Visibility_Lambda([this](){return IsSedanDriver() ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})
-                .Text_Lambda([this](){
-                    const ACitySedan* Car=GetSeatedSedan();
-                    const int32 Speed=Car ? FMath::RoundToInt(Car->GetSpeedKmh()) : 0;
-                    return FText::FromString(FString::Printf(TEXT("%03d км/ч"),Speed));})];
+        CityHud=SNew(SCityHud).Controller(this)
+            .Visibility_Lambda([this](){const bool Dialog=bDistrictMenu&&DistrictGameplay->Context!=TEXT("Chat")&&DistrictGameplay->Context!=TEXT("Map");return bEnteredCity&&(!IsCityMenuOpen()||Dialog)?EVisibility::SelfHitTestInvisible:EVisibility::Hidden;});
         Viewport->AddViewportWidgetContent(CityHud.ToSharedRef(),30);
     }
     CreateParkingMarkers();
@@ -86,6 +67,7 @@ void ACityLiveRPPlayerController::OpenCityMenu(bool bGarage,bool bDistrict)
     if (ACityLiveRPCharacter* PlayerCharacter=Cast<ACityLiveRPCharacter>(GetPawn()))
     { PlayerCharacter->ResetMobileSteering(); PlayerCharacter->GetCharacterMovement()->StopMovementImmediately(); }
     SetIgnoreMoveInput(true); SetIgnoreLookInput(true);
+    bDistrictMenu=bDistrict;
     SAssignNew(CityMenu,SCityV2Menu).Controller(this).Garage(bGarage).District(bDistrict);
     Viewport->AddViewportWidgetContent(CityMenu.ToSharedRef(),100);
     FInputModeGameAndUI Mode;
@@ -100,6 +82,7 @@ void ACityLiveRPPlayerController::CloseCityMenu()
     if (!CityMenu.IsValid() || !bEnteredCity) return;
     GetWorld()->GetGameViewport()->RemoveViewportWidgetContent(CityMenu.ToSharedRef());
     CityMenu.Reset();
+    bDistrictMenu=false;
     FSlateApplication::Get().ClearKeyboardFocus(EFocusCause::SetDirectly);
     SetIgnoreMoveInput(false); SetIgnoreLookInput(false);
     SetInputMode(FInputModeGameOnly()); bShowMouseCursor=false;

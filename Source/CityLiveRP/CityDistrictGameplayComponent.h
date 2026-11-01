@@ -1,6 +1,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "CityMapRoute.h"
 #include "CityDistrictGameplayComponent.generated.h"
 
 /** Persistent local district transactions; UI and scene actors use these operations. */
@@ -18,6 +19,9 @@ public:
     void OpenCurrentMenu();
     FString Context=TEXT("Chat");
     FString ChatHistory;
+    FString ChatUnsentDraft;
+    TArray<FString> SentMessages;
+    int32 ChatChannel=0;
     FName CurrentBuilding;
     int32 CurrentFloor=1;
     int32 MaxFloor() const;
@@ -30,6 +34,15 @@ public:
     bool JoinOrganization(FName Organization,int32 Correct,FText& Error);
     FText ExecuteChat(FString Text);
     void SetGps(FName Destination);
+    bool SelectMapPlace(FName Destination);
+    void SetMapDestination(FVector Point,const FString& Label);
+    void ClearGps();
+    void OpenMap();
+    void OpenGps();
+    FVector MapPosition() const;
+    bool IsInside() const {return bInside;}
+    bool NavigationTarget(FVector& Point,FString& Label) const;
+    const CityMap::Route& MapRoute() const {return CachedRoute;}
     FString NavigationText() const;
 private:
     UPROPERTY() TArray<TObjectPtr<AActor>> InteriorActors;
@@ -45,6 +58,12 @@ private:
     FString GpsLabel;
     FString Nearby;
     FString InteriorKind;
+    bool bGpsActive=false;
+    bool bTrackDelivery=false;
+    bool bRouteDirty=true;
+    FVector RouteStart=FVector::ZeroVector,RouteTarget=FVector::ZeroVector;
+    CityMap::Route CachedRoute;
+    void RefreshNavigation();
 public:
     bool InteriorReturnPoint(FVector& Point) const {if(!bInside)return false;Point=ReturnPoint;return true;}
 private:

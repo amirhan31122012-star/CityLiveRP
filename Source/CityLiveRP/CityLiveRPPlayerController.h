@@ -31,6 +31,7 @@ public:
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="CityLive|District") TObjectPtr<UCityDistrictGameplayComponent> DistrictGameplay;
     bool IsCityMenuOpen() const { return CityMenu.IsValid(); }
     bool IsProfileActive() const { return ActiveProfile != nullptr; }
+    bool IsInCity() const {return bEnteredCity;}
     int32 GetBalance() const;
     void RefreshAppearance();
     FString GetProfileName() const;
@@ -84,6 +85,7 @@ protected:
     FString PendingSlot;
     bool bCreatingProfile = false;
     bool bEnteredCity = false;
+    bool bDistrictMenu=false;
     FTransform InitialSpawn;
     bool bHasInitialSpawn = false;
     FTimerHandle ParkingTimer, SaveTimer;

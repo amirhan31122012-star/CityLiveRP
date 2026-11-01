@@ -50,7 +50,7 @@ private:
 
     ACityLiveRPCharacter* GetCharacter() const;
     ACitySedan* GetVehicle() const;
-    static void Layout(const FGeometry&, FVector2D& Left, FVector2D& Right, float& Radius);
+    void Layout(const FGeometry&,FVector2D& Left,FVector2D& Right,float& Radius) const;
     void UpdateStick(const FGeometry&, const FPointerEvent&);
     bool ReleasePointer(int32 PointerIndex);
 };

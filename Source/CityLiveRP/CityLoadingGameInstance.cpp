@@ -1,4 +1,5 @@
 #include "CityLoadingGameInstance.h"
+#include "CityUiTheme.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/GameViewportClient.h"
@@ -36,7 +37,7 @@ void UCityLoadingGameInstance::OnStart()
             [SNew(SImage).Image(&LoadingBrush)]]
         + SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Bottom)
         [SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-            .BorderBackgroundColor(FLinearColor(.012f,.02f,.035f,.96f))
+            .BorderBackgroundColor(CityUi::Panel())
             .Padding(FMargin(55,18,55,28))
             [SNew(SVerticalBox)
                 + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,12)
@@ -51,13 +52,18 @@ void UCityLoadingGameInstance::OnStart()
                 + SVerticalBox::Slot().AutoHeight()
                 [SNew(SBox).HeightOverride(14)
                     [SNew(SProgressBar).Percent_Lambda([this]() { return TOptional<float>(Progress); })
-                        .FillColorAndOpacity(FLinearColor(.95f,.61f,.12f))]]]];
+                        .FillColorAndOpacity(CityUi::Orange())]]]];
     Viewport->AddViewportWidgetContent(LoadingWidget.ToSharedRef(),10000);
     MapLoadedHandle = FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this,&UCityLoadingGameInstance::CityLoaded);
     if (!CityMapPath.StartsWith(TEXT("/Game/CityLiveMaps/ModernCity/Run_")) ||
         !CityMapPath.EndsWith(TEXT("/CityLive_ModernCity"))) { bFailed = true; return; }
     const FString WorldPath = CityMapPath + TEXT(".CityLive_ModernCity");
     TArray<FSoftObjectPath> Assets { FSoftObjectPath(WorldPath),
+        FSoftObjectPath(TEXT("/Game/CityLiveUI/T_LoginCity.T_LoginCity")),
+        FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Roles/SK_CityCivilian.SK_CityCivilian")),
+        FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Roles/SK_CityPolice.SK_CityPolice")),
+        FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Roles/SK_CityMedic.SK_CityMedic")),
+        FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Roles/SK_CityCourier.SK_CityCourier")),
         FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Beige/SK_CityBeige_v3.SK_CityBeige_v3")),
         FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Beige/M_CityBeige_v3.M_CityBeige_v3")),
         FSoftObjectPath(TEXT("/Game/CityLiveVehicles/Sedan/SK_CitySedan_4Doors.SK_CitySedan_4Doors")),

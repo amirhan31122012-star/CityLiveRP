@@ -32,6 +32,16 @@ try {
         }
     }
     $rolesMarker = Join-Path $ProjectDir 'Saved\RoleCharacters\Installed.json'
+    $interfaceMarker = Join-Path $ProjectDir 'Saved\CityInterface.json'
+    if (-not (Test-Path -LiteralPath $interfaceMarker) -or
+        -not (Test-Path -LiteralPath (Join-Path $ProjectDir 'Content\CityLiveUI\T_LoginCity.uasset'))) {
+        throw 'Выполните InstallDistrictContent.cmd: установка нового интерфейса.'
+    }
+    $interface = Get-Content -LiteralPath $interfaceMarker -Raw -Encoding UTF8 | ConvertFrom-Json
+    $artHash = (Get-FileHash -LiteralPath (Join-Path $ProjectDir 'Assets\Branding\CityLiveLoginCity.png') -Algorithm SHA256).Hash
+    if ($interface.revision -ne 1 -or $interface.art_sha256 -ne $artHash) {
+        throw 'Интерфейс обновился. Повторите InstallDistrictContent.cmd.'
+    }
     if (-not (Test-Path -LiteralPath $rolesMarker -PathType Leaf)) {
         throw 'Выполните InstallDistrictContent.cmd: установка подробных лиц персонажей.'
     }
