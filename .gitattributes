@@ -30,3 +30,5 @@
 /BuildAndroidV2.cmd text eol=crlf
 
 /InstallVehicleEntryAnimations.cmd text eol=crlf
+
+/InstallDistrictContent.cmd text eol=crlf

@@ -148,12 +148,27 @@ ACitySedan::ACitySedan()
 void ACitySedan::BeginPlay()
 {
     Super::BeginPlay();
-    CollisionBox->SetMassOverrideInKg(NAME_None, 1200.f);
+    if(bCourierScooter)
+    {
+        CollisionBox->SetBoxExtent(FVector(95,28,18));
+        SuspensionAnchors={FVector(65,-12,0),FVector(65,12,0),FVector(-65,-12,0),FVector(-65,12,0)};
+    }
+    CollisionBox->SetMassOverrideInKg(NAME_None, bCourierScooter ? 190.f : 1200.f);
     CollisionBox->SetCenterOfMass(FVector(0, 0, -12.f));
     CollisionBox->SetLinearDamping(.035f);
     CollisionBox->SetAngularDamping(2.f);
     CollisionBox->SetUseCCD(true);
     CollisionBox->SetSimulatePhysics(true);
+    if(bCourierScooter)
+    {
+        for(UStaticMeshComponent* Part:PrototypeParts)Part->SetVisibility(false);
+        for(UStaticMeshComponent* Wheel:Wheels)Wheel->SetVisibility(false);
+        UStaticMeshComponent* Visual=NewObject<UStaticMeshComponent>(this);
+        AddInstanceComponent(Visual);Visual->SetupAttachment(CollisionBox);
+        Visual->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/CityLiveVehicles/Courier/SM_CityScooter.SM_CityScooter")));
+        Visual->SetRelativeLocation(FVector(0,0,-60));Visual->SetCollisionEnabled(ECollisionEnabled::NoCollision);Visual->RegisterComponent();
+        return;
+    }
     USkeletalMesh* SedanAsset = FourDoorMeshAsset.LoadSynchronous();
     if (SedanAsset && !SedanAsset->GetSkeleton())
     {
@@ -284,7 +299,7 @@ void ACitySedan::OrbitCamera(float YawDelta, float PitchDelta)
 
 bool ACitySedan::CanEnter(const APlayerController* Player, bool bPassengerSeat) const
 {
-    return !EnteringCharacter && (bPassengerSeat ? FindPassengerSeat(Player) >= 0 : !Driver) && FMath::Abs(Speed) <= 30.f &&
+    return !(bCourierScooter && bPassengerSeat) && !EnteringCharacter && (bPassengerSeat ? FindPassengerSeat(Player) >= 0 : !Driver) && FMath::Abs(Speed) <= 30.f &&
         CollisionBox->GetPhysicsLinearVelocity().SizeSquared() <= FMath::Square(45.f) &&
         Player && Cast<ACityLiveRPCharacter>(Player->GetPawn()) && !IsPassenger(Player) &&
         FVector::DistSquared(GetActorLocation(), Player->GetPawn()->GetActorLocation()) <= FMath::Square(400.f);
@@ -474,7 +489,7 @@ bool ACitySedan::TryExit(APlayerController* Player)
         Player->SetIgnoreMoveInput(true);Player->SetIgnoreLookInput(true);bEntryIgnoredInput=true;
         bReversingEntry = false;
         LastBodyPose=FCityVehicleBodyPose();
-        bMontageStarted = Occupant->PlayVehicleAnimation(TEXT("Exit"),SeatSettings(EntrySeat).Side>0);
+        bMontageStarted = bCourierScooter ? false : Occupant->PlayVehicleAnimation(TEXT("Exit"),SeatSettings(EntrySeat).Side>0);
         EntryTime = 0.f;
         EntryApproach = ExitLocation;
         EntryStart = Occupant->GetActorLocation();
@@ -642,7 +657,7 @@ void ACitySedan::TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake)
         CollisionBox->AddForceAtLocation(SpringForces[ForceIndex], ForcePoints[ForceIndex]);
     const FVector Forward = FVector::VectorPlaneProject(GetActorForwardVector(), GroundNormal).GetSafeNormal();
     const FVector Right = FVector::CrossProduct(GroundNormal, Forward).GetSafeNormal();
-    const float Driven = CityLiveDriving::AdvanceSpeed(Speed, Driver != nullptr, Gas, Brake, DeltaTime);
+    const float Driven = FMath::Min(bCourierScooter ? 1800.f : CityLiveDriving::ForwardLimit,CityLiveDriving::AdvanceSpeed(Speed, Driver != nullptr, Gas, Brake, DeltaTime));
     const float Desired = CityLiveDriving::HandbrakeSpeed(Driven, DriftAmount, DeltaTime);
     const float Acceleration = FMath::Clamp((Desired - Speed) / DeltaTime,
         -CityLiveDriving::BrakeAcceleration, CityLiveDriving::BrakeAcceleration);
@@ -662,9 +677,11 @@ void ACitySedan::TickVehiclePhysics(float DeltaTime, bool Gas, bool Brake)
 
 void ACitySedan::UpdateEntry(float DeltaTime)
 {
+    if(bCourierScooter && EntryTime>=0){UpdateScooterEntry(DeltaTime);return;}
     if(!IsValid(EnteringCharacter)||!EnteringPlayer.IsValid()){CancelEntry();return;}
     const float PreviousTime=EntryTime;
     EntryTime=CityLiveEntry::AdvanceTime(EntryTime,DeltaTime,bReversingEntry);
+    if(bCourierScooter && EntryTime>=0){EntryTime=0;bMontageStarted=false;UpdateScooterEntry(DeltaTime);return;}
     const FCityVehicleSeat& Definition=SeatSettings(EntrySeat);
     const float Side=Definition.Side;
     const CityLiveEntry::Pose P=bExiting ? CityLiveEntry::Exit(EntryTime) : CityLiveEntry::Enter(EntryTime);

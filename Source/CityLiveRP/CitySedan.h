@@ -55,6 +55,8 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="CityLive|Entry") TArray<FCityVehicleSeat> Seating;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="CityLive|Entry") TArray<TObjectPtr<USceneComponent>> SeatAnchors;
     virtual void OnConstruction(const FTransform& Transform) override;
+protected:
+    bool bCourierScooter=false;
 private:
     const FCityVehicleSeat& SeatSettings(int32 Seat) const;
     FVector SeatPelvisWorld(int32 Seat) const;
@@ -103,6 +105,7 @@ private:
     float RouteLength = 0.f;
     float RouteDuration = 0.f;
     void UpdateEntry(float DeltaTime);
+    void UpdateScooterEntry(float DeltaTime);
     void CompleteEntry();
     void CompleteExit();
     bool BuildDoorRoute(ACityLiveRPCharacter* Occupant);

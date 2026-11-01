@@ -11,6 +11,7 @@ public:
     SLATE_BEGIN_ARGS(SCityV2Menu) {}
         SLATE_ARGUMENT(ACityLiveRPPlayerController*, Controller)
         SLATE_ARGUMENT(bool, Garage)
+        SLATE_ARGUMENT(bool, District)
     SLATE_END_ARGS()
     void Construct(const FArguments& Args);
 private:
@@ -21,6 +22,8 @@ private:
     bool bNewProfile=false;
     bool bLastSpawn=false;
     bool bCarSelected=false;
+    void DistrictPage();
+    void QuizPage(FName Organization,int32 Question=0,int32 Score=0);
     void IdentityPage();
     void PasswordPage();
     void SpawnPage();

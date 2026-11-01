@@ -54,6 +54,7 @@ void ACityLiveRPPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
     InputComponent->BindKey(EKeys::E, IE_Pressed, this, &ACityLiveRPPlayerController::InteractWithSedan);
+    InputComponent->BindKey(EKeys::T, IE_Pressed, DistrictGameplay.Get(), &UCityDistrictGameplayComponent::OpenChat);
     InputComponent->BindKey(EKeys::F, IE_Pressed, this, &ACityLiveRPPlayerController::UsePassengerDoor);
 
 	// only add IMCs for local player controllers
@@ -139,6 +140,7 @@ void ACityLiveRPPlayerController::UsePassengerDoor()
 void ACityLiveRPPlayerController::InteractWithSedan()
 {
     if (IsCityMenuOpen() || !bEnteredCity || IsVehicleEntryActive()) return;
+    if(DistrictGameplay->HasInteraction()){DistrictGameplay->Interact();return;}
     if (CityMobileControls.IsValid()) CityMobileControls->ResetControls();
     if (ACitySedan* Vehicle = GetSeatedSedan())
     {

@@ -34,7 +34,7 @@ inverse=qinv((rotation.x,rotation.y,rotation.z,rotation.w))
 forward=rotate(inverse,(1,0,0));up=rotate(inverse,(0,0,1))
 tools=unreal.AssetToolsHelpers.get_asset_tools()
 root='/Game/CityLiveCharacters/Vehicle'
-for clip in ('Enter','Exit','EnterRight','ExitRight','DriverIdle'):
+for clip in ('Enter','Exit','EnterRight','ExitRight','DriverIdle','ScooterMount','ScooterExit'):
     name='AS_City'+clip
     sequence=unreal.load_asset(root+'/'+name)
     if not sequence:
@@ -44,7 +44,7 @@ for clip in ('Enter','Exit','EnterRight','ExitRight','DriverIdle'):
         raise RuntimeError('Cannot create compatible sequence '+name)
     controller=sequence.get_editor_property('controller')
     if not controller:raise RuntimeError('Animation data controller missing: '+name)
-    frames=30 if clip=='DriverIdle' else round(DURATION*30)
+    frames=30 if clip=='DriverIdle' else 84 if clip.startswith('Scooter') else round(DURATION*30)
     samples=[sample(reference,i/30,clip,forward,up) for i in range(frames+1)]
     controller.open_bracket('CityLive full-size vehicle animation',False)
     try:
@@ -64,6 +64,20 @@ for clip in ('Enter','Exit','EnterRight','ExitRight','DriverIdle'):
     if not unreal.EditorAssetLibrary.save_loaded_asset(sequence,only_if_is_dirty=False):
         raise RuntimeError('Cannot save '+name)
     unreal.log('CITYLIVE_ENTRY_CLIP_READY '+sequence.get_path_name())
+# Import the original low-poly courier scooter, already built in the repository.
+scooter_task=unreal.AssetImportTask()
+scooter_task.filename=str(project/'Assets/Vehicles/Courier/SM_CityScooter.fbx')
+scooter_task.destination_path='/Game/CityLiveVehicles/Courier';scooter_task.destination_name='SM_CityScooter'
+scooter_task.automated=True;scooter_task.save=True;scooter_task.replace_existing=True;scooter_task.factory=unreal.FbxFactory()
+scooter_options=unreal.FbxImportUI();scooter_options.automated_import_should_detect_type=False
+scooter_options.mesh_type_to_import=unreal.FBXImportType.FBXIT_STATIC_MESH
+scooter_options.import_as_skeletal=False;scooter_options.import_materials=True;scooter_options.import_textures=False
+scooter_options.static_mesh_import_data.set_editor_property('combine_meshes',True)
+scooter_options.static_mesh_import_data.set_editor_property('convert_scene_unit',True)
+scooter_options.static_mesh_import_data.set_editor_property('auto_generate_collision',False)
+scooter_task.options=scooter_options;tools.import_asset_tasks([scooter_task])
+if not isinstance(unreal.load_asset('/Game/CityLiveVehicles/Courier/SM_CityScooter'),unreal.StaticMesh):
+    raise RuntimeError('Courier scooter import failed')
 # Blueprints already use ABP_Unarmed's DefaultSlot. Runtime constructs UAnimMontage
 # instances in that slot and samples them with the same clock as doors/actor/IK.
 folder.mkdir(parents=True,exist_ok=True)

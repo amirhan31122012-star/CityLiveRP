@@ -3,6 +3,7 @@
 #include "CityLiveRPCharacter.h"
 #include "CitySedan.h"
 #include "CityLiveRPPlayerController.h"
+#include "CityDistrictGameplayComponent.h"
 #include "Rendering/DrawElements.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "HAL/PlatformTime.h"
@@ -73,6 +74,13 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
     Layout(Geometry, Left, Right, Radius);
     const FVector2D Position = Geometry.AbsoluteToLocal(Event.GetScreenSpacePosition());
     const FVector2D Interaction(Right.X, Right.Y - Radius * 2.4f);
+    const FVector2D ViewSize=Geometry.GetLocalSize();
+    if(Controller.IsValid() && FVector2D::Distance(Position,FVector2D(ViewSize.X*.08f,ViewSize.Y*.12f))<Radius*.65f)
+    {Controller->DistrictGameplay->OpenChat();return FReply::Handled();}
+    if(Controller.IsValid() && Controller->DistrictGameplay->HasInteraction() &&
+        FVector2D::Distance(Position,FVector2D(ViewSize.X*.94f,ViewSize.Y*.55f))<Radius*.65f)
+    {Controller->DistrictGameplay->Interact();return FReply::Handled();}
+
     if (Controller.IsValid() && Controller->CanUsePassengerDoor() &&
         FVector2D::Distance(Position, Interaction) <= Radius)
     {
@@ -327,6 +335,18 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
                     &Cap, ESlateDrawEffect::None, FLinearColor(.94f, .97f, 1.f, .95f));
         }
     };
+    const FVector2D ViewSize=Geometry.GetLocalSize();
+    const FVector2D ChatCenter(ViewSize.X*.08f,ViewSize.Y*.12f);
+    Circle(ChatCenter,Radius*.5f,FLinearColor::White);
+    FSlateDrawElement::MakeText(Out,Layer+1,Geometry.ToPaintGeometry(FVector2D(90,30),FSlateLayoutTransform(ChatCenter-FVector2D(25,10))),
+        FText::FromString(TEXT("ЧАТ")),FCoreStyle::GetDefaultFontStyle("Bold",14),ESlateDrawEffect::None,FLinearColor::White);
+    if(Controller.IsValid() && Controller->DistrictGameplay->HasInteraction())
+    {
+        const FVector2D Click(ViewSize.X*.94f,ViewSize.Y*.55f);
+        Circle(Click,Radius*.6f,FLinearColor(1,.05f,.05f,1));
+        TArray<FVector2D> Cursor{Click+FVector2D(-12,-18),Click+FVector2D(-12,18),Click+FVector2D(0,8),Click+FVector2D(14,22),Click+FVector2D(20,16),Click+FVector2D(6,3),Click+FVector2D(22,3),Click+FVector2D(-12,-18)};
+        FSlateDrawElement::MakeLines(Out,Layer+1,Geometry.ToPaintGeometry(),Cursor,ESlateDrawEffect::None,FLinearColor::White,true,2);
+    }
     const FVector2D DoorCenter(Right.X, Right.Y - Radius * 2.4f);
     if (Controller.IsValid() && Controller->CanUsePassengerDoor())
     {

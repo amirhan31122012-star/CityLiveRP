@@ -32,6 +32,7 @@ bool ACitySedan::ValidateEntrySpace(ACityLiveRPCharacter* Occupant) const
 {
     if(!Occupant || !GetActorScale3D().Equals(FVector::OneVector,.0001f))return false;
     const FCityVehicleSeat& Definition=SeatSettings(EntrySeat);
+    if(bCourierScooter)return true;
     if(!Seating.IsValidIndex(EntrySeat+1)||!DoorPivots.IsValidIndex(Definition.DoorIndex)||!SeatAnchors.IsValidIndex(EntrySeat+1) ||
         !FMath::IsNearlyEqual(FMath::Abs(Definition.Side),1.f,.001f) || Definition.OpenAngle<45 || Definition.OpenAngle>90)return false;
     const FName Doors[]={TEXT("Door_Front_Left"),TEXT("Door_Front_Right"),TEXT("Door_Rear_Left"),TEXT("Door_Rear_Right")};
@@ -44,7 +45,7 @@ bool ACitySedan::ValidateEntrySpace(ACityLiveRPCharacter* Occupant) const
 }
 bool ACitySedan::DoorMotionClear(float From,float To,ACityLiveRPCharacter* Occupant) const
 {
-    if(FMath::IsNearlyEqual(From,To,.001f))return true;
+    if(bCourierScooter || FMath::IsNearlyEqual(From,To,.001f))return true;
     const FCityVehicleSeat& Definition=SeatSettings(EntrySeat);
     FCollisionQueryParams Params(SCENE_QUERY_STAT(CityDoorClearance),false,this);Params.AddIgnoredActor(Occupant);
     FTransform Hinge=DoorPivots[Definition.DoorIndex]->GetComponentTransform();Hinge.SetRotation(GetActorQuat());
@@ -73,7 +74,8 @@ bool ACitySedan::MoveEntryActor(const FVector& Position,const FRotator& Rotation
     Params.AddIgnoredActor(EnteringCharacter);
     const FVector Previous=EnteringCharacter->GetActorLocation();
     FHitResult Hit;
-    const auto BodyState=bExiting ? CityLiveEntry::Exit(EntryTime) : CityLiveEntry::Enter(EntryTime);
+    auto BodyState=bExiting ? CityLiveEntry::Exit(EntryTime) : CityLiveEntry::Enter(EntryTime);
+    if(bCourierScooter)BodyState.Sit=bExiting ? 1-CityLiveEntry::Blend(EntryTime,0,2.8f) : CityLiveEntry::Blend(EntryTime,0,2.8f);
     if(EntryTime<0.f || BodyState.Sit<.05f)
     {
         if(GetWorld()->SweepSingleByChannel(Hit,Previous,Position,FQuat::Identity,ECC_Pawn,

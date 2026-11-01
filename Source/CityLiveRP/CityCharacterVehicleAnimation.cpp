@@ -27,7 +27,7 @@ UAnimSequence* LoadClip(FName Name)
 }
 bool ACityLiveRPCharacter::HasVehicleAnimations() const
 {
-    for(const FName Name:{FName(TEXT("Enter")),FName(TEXT("Exit")),FName(TEXT("EnterRight")),FName(TEXT("ExitRight")),FName(TEXT("DriverIdle"))})
+    for(const FName Name:{FName(TEXT("Enter")),FName(TEXT("Exit")),FName(TEXT("EnterRight")),FName(TEXT("ExitRight")),FName(TEXT("DriverIdle")),FName(TEXT("ScooterMount")),FName(TEXT("ScooterExit"))})
     {
         UAnimSequence* Clip=LoadClip(Name);
         if(!Clip || !GetMesh()->GetSkeletalMeshAsset() || Clip->GetSkeleton()!=GetMesh()->GetSkeletalMeshAsset()->GetSkeleton())return false;

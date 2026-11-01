@@ -28,14 +28,14 @@ const TArray<FBuilding>& Buildings()
 bool Persist(UCityPlayerProfile* Profile)
 {return UGameplayStatics::SaveGameToSlot(Profile,UCityPlayerProfile::Slot(Profile->FirstName,Profile->Surname),0);}
 }
-UCityDistrictGameplayComponent::UCityDistrictGameplayComponent(){PrimaryComponentTick.bCanEverTick=false;}
+UCityDistrictGameplayComponent::UCityDistrictGameplayComponent(){PrimaryComponentTick.bCanEverTick=true;}
 bool UCityDistrictGameplayComponent::BuyApartment(FName Building,int32 Floor,int32 Door,FText& Error)
 {
     ACityLiveRPPlayerController* Player=Cast<ACityLiveRPPlayerController>(GetOwner());
     if(!Player || !Player->bEnteredCity || !Player->ActiveProfile)return false;
     UCityPlayerProfile* Profile=Player->ActiveProfile;
     const FBuilding* Definition=Buildings().FindByPredicate([&](const FBuilding& B){return Building==FName(B.Id);});
-    if(!Definition || Floor<1 || Floor>Definition->Floors || Door<1 || Door>4)
+    if(!bInside || InteriorKind!=TEXT("Residence") || CurrentBuilding!=Building || CurrentFloor!=Floor || !Definition || Floor<1 || Floor>Definition->Floors || Door<1 || Door>4)
     {Error=FText::FromString(TEXT("Квартира не найдена."));return false;}
     const FString Id=Building.ToString()+FString::Printf(TEXT(":%d:%d"),Floor,Door);
     const int32 Cost=CityDistrictRules::Price(Definition->Class);
@@ -51,6 +51,7 @@ bool UCityDistrictGameplayComponent::SetCourierEmployment(bool Employed,FText& E
     ACityLiveRPPlayerController* Player=Cast<ACityLiveRPPlayerController>(GetOwner());
     if(!Player || !Player->bEnteredCity || !Player->ActiveProfile)return false;
     UCityPlayerProfile* Profile=Player->ActiveProfile;
+    if(Employed && Nearby!=TEXT("Courier")){Error=FText::FromString(TEXT("Подойдите к NPC курьера."));return false;}
     const bool Previous=Profile->bCourierEmployed;Profile->bCourierEmployed=Employed;
     if(!Persist(Profile)){Profile->bCourierEmployed=Previous;Error=FText::FromString(TEXT("Не удалось сохранить трудоустройство."));return false;}
     if(!Employed)bDeliveryActive=false;

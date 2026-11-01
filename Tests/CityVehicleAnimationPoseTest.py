@@ -10,7 +10,7 @@ class VehicleAnimationPoseTest(unittest.TestCase):
 
     def test_all_frames_preserve_bind_lengths_and_unit_scale(self):
         ref=self.reference
-        for clip in ('Enter','Exit','EnterRight','ExitRight','DriverIdle'):
+        for clip in ('Enter','Exit','EnterRight','ExitRight','DriverIdle','ScooterMount','ScooterExit'):
             previous=None
             for index in range(205):
                 pose=sample(ref,index/30,clip,forward=(0,-1,0))

@@ -43,7 +43,11 @@ def between(a,b):
 def sample(reference,t,clip,forward=(0,1,0),up=(0,0,1)):
     """reference: ordered name -> dict(pos,rot,parent); return local bone keys."""
     p=phases(DURATION if clip=='DriverIdle' else t,clip.startswith('Exit'))
-    exiting=clip.startswith('Exit');side=1 if clip.endswith('Right') else -1
+    exiting=clip.startswith('Exit') or clip=='ScooterExit';side=1 if clip.endswith('Right') else -1
+    scooter=clip.startswith('Scooter')
+    if scooter:
+        p=phases(0);p['sit']=(1-blend(t,0,2.8)) if exiting else blend(t,0,2.8)
+        p['hand']=p['lean']=0;p['wheel']=p['sit']
     if clip=='DriverIdle':p=phases(DURATION)
     pose={n:dict(v,pos=tuple(v['pos']),rot=tuple(v['rot'])) for n,v in reference.items()}
     right=norm(cross(up,forward))
@@ -75,16 +79,16 @@ def sample(reference,t,clip,forward=(0,1,0),up=(0,0,1)):
         aim('thigh_'+side,'calf_'+side,target)
         aim('calf_'+side,'foot_'+side,mul(up,-1))
         # Small back/forward steps while following the external door handle.
-        if not exiting and clip!='DriverIdle':
+        if not exiting and clip!='DriverIdle' and not scooter:
             for start,end,amplitude in ((.95,1.7,-20),(1.7,2.05,12)):
                 if start<t<end:
                     step=(t-start)/(end-start)
                     branch('thigh_'+side,axis(right,amplitude*math.sin(step*math.tau)*math.sin(step*math.pi)**2*(1 if side=='l' else -1)))
-        if exiting and 5.65<t<6.4:
+        if exiting and not scooter and 5.65<t<6.4:
             step=(t-5.65)/.75
             branch('thigh_'+side,axis(right,20*math.sin(step*math.tau)*math.sin(step*math.pi)**2*(1 if side=='l' else -1)))
         # One coordinated walking step after rising, before closing the door.
-        if exiting and 4.5<t<5.15:
+        if exiting and not scooter and 4.5<t<5.15:
             phase=(t-4.5)/.65
             angle=18*math.sin(phase*math.tau)*math.sin(phase*math.pi)**2*(1 if side=='l' else -1)
             branch('thigh_'+side,axis(right,angle))

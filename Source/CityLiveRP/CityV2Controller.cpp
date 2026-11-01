@@ -1,6 +1,7 @@
 #include "CityLiveRPPlayerController.h"
 #include "CityLiveRPCharacter.h"
 #include "CityPlayerProfile.h"
+#include "CityDistrictGameplayComponent.h"
 #include "CityParkingMarker.h"
 #include "CitySedan.h"
 #include "SCityMobileControls.h"
@@ -48,7 +49,7 @@ void ACityLiveRPPlayerController::InitializeV2Session()
             [SNew(SBorder).Padding(14).BorderBackgroundColor(FLinearColor(.02f,.035f,.06f,.8f))
                 [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",20))
                     .Text_Lambda([this](){return FText::FromString(GetProfileName()+TEXT("\n")+
-                        FText::AsNumber(GetBalance()).ToString()+TEXT(" ₽"));})]]
+                        FText::AsNumber(GetBalance()).ToString()+TEXT(" ₽\n")+DistrictGameplay->NavigationText()+TEXT("\n")+DistrictGameplay->ChatHistory.Right(200));})]]
             +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,22)
             [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",26))
                 .Visibility_Lambda([this](){return IsSedanDriver() ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})
@@ -59,13 +60,14 @@ void ACityLiveRPPlayerController::InitializeV2Session()
         Viewport->AddViewportWidgetContent(CityHud.ToSharedRef(),30);
     }
     CreateParkingMarkers();
+    DistrictGameplay->InitializeDistrict();
     GetWorldTimerManager().SetTimer(ParkingTimer,this,&ACityLiveRPPlayerController::CheckParking,.2f,true);
     GetWorldTimerManager().SetTimer(SaveTimer,this,&ACityLiveRPPlayerController::SaveProfile,5.f,true);
     BackgroundSaveHandle=FCoreDelegates::ApplicationWillEnterBackgroundDelegate.AddUObject(this,&ACityLiveRPPlayerController::SaveProfile);
     DeactivateSaveHandle=FCoreDelegates::ApplicationWillDeactivateDelegate.AddUObject(this,&ACityLiveRPPlayerController::SaveProfile);
     OpenCityMenu(false);
 }
-void ACityLiveRPPlayerController::OpenCityMenu(bool bGarage)
+void ACityLiveRPPlayerController::OpenCityMenu(bool bGarage,bool bDistrict)
 {
     if (CityMenu.IsValid()) return;
     UGameViewportClient* Viewport=GetWorld()->GetGameViewport();
@@ -75,7 +77,7 @@ void ACityLiveRPPlayerController::OpenCityMenu(bool bGarage)
     if (ACityLiveRPCharacter* PlayerCharacter=Cast<ACityLiveRPCharacter>(GetPawn()))
     { PlayerCharacter->ResetMobileSteering(); PlayerCharacter->GetCharacterMovement()->StopMovementImmediately(); }
     SetIgnoreMoveInput(true); SetIgnoreLookInput(true);
-    SAssignNew(CityMenu,SCityV2Menu).Controller(this).Garage(bGarage);
+    SAssignNew(CityMenu,SCityV2Menu).Controller(this).Garage(bGarage).District(bDistrict);
     Viewport->AddViewportWidgetContent(CityMenu.ToSharedRef(),100);
     FInputModeGameAndUI Mode;
     Mode.SetWidgetToFocus(CityMenu);
@@ -186,7 +188,9 @@ void ACityLiveRPPlayerController::SaveProfile()
     if (const ACharacter* PlayerCharacter=Cast<ACharacter>(GetPawn()))
         if (PlayerCharacter->GetCharacterMovement()->IsFalling()) return;
     FVector Safe;
-    if (SafeWalkingPosition(GetPawn()->GetActorLocation(),Safe,false))
+    FVector Checkpoint=GetPawn()->GetActorLocation();
+    DistrictGameplay->InteriorReturnPoint(Checkpoint);
+    if (SafeWalkingPosition(Checkpoint,Safe,false))
     {
         ActiveProfile->LastPosition=Safe; ActiveProfile->LastYaw=GetPawn()->GetActorRotation().Yaw;
         ActiveProfile->LastMap=CurrentMapId();ActiveProfile->bHasLastPosition=true;

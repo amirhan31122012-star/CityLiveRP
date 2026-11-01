@@ -88,7 +88,7 @@ protected:
     FTimerHandle ParkingTimer, SaveTimer;
     FDelegateHandle BackgroundSaveHandle, DeactivateSaveHandle;
     void InitializeV2Session();
-    void OpenCityMenu(bool bGarage);
+    void OpenCityMenu(bool bGarage,bool bDistrict=false);
     void CreateParkingMarkers();
     void CheckParking();
     FString CurrentMapId() const;

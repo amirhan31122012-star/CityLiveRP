@@ -31,7 +31,7 @@ void SCityV2Menu::Construct(const FArguments& Args)
                     +SVerticalBox::Slot().AutoHeight().Padding(0,12)
                     [SNew(STextBlock).Text_Lambda([this](){return Message;})
                         .AutoWrapText(true).ColorAndOpacity(FLinearColor(1.f,.68f,.35f))]]]]];
-    if (Args._Garage) GaragePage(); else IdentityPage();
+    if(Args._District) DistrictPage(); else if (Args._Garage) GaragePage(); else IdentityPage();
 }
 void SCityV2Menu::Button(const FText& Text,TFunction<FReply()> Action)
 {
