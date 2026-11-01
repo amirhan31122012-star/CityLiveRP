@@ -31,6 +31,15 @@ try {
             throw 'Выполните InstallDistrictContent.cmd: установка новых персонажей.'
         }
     }
+    $rolesMarker = Join-Path $ProjectDir 'Saved\RoleCharacters\Installed.json'
+    if (-not (Test-Path -LiteralPath $rolesMarker -PathType Leaf)) {
+        throw 'Выполните InstallDistrictContent.cmd: установка подробных лиц персонажей.'
+    }
+    $roles = Get-Content -LiteralPath $rolesMarker -Raw -Encoding UTF8 | ConvertFrom-Json
+    $rolesHash = (Get-FileHash -LiteralPath (Join-Path $ProjectDir 'Assets\Characters\Roles\manifest.json') -Algorithm SHA256).Hash
+    if ($roles.face_revision -ne 2 -or $roles.package_hash -ne $rolesHash) {
+        throw 'Персонажи обновились. Повторите InstallDistrictContent.cmd перед сборкой APK.'
+    }
     $skin = Join-Path $ProjectDir 'Content\CityLiveCharacters\Beige\SK_CityBeige_v3.uasset'
     if (-not (Test-Path -LiteralPath $skin -PathType Leaf)) {
         throw 'Сначала установите персонажа через BuildAndOpen.cmd.'

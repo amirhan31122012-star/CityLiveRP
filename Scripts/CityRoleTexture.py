@@ -3,7 +3,7 @@ import bpy
 import numpy as np
 
 
-def bake(body, role, palette, original, target, original_uv, size=2048):
+def bake(body, role, palette, original, target, original_uv, size=2048, skin_tone=None):
     image = bpy.data.images.load(str(original), check_existing=True)
     pixels = np.empty(image.size[0] * image.size[1] * 4, dtype=np.float32)
     image.pixels.foreach_get(pixels)
@@ -63,6 +63,9 @@ def bake(body, role, palette, original, target, original_uv, size=2048):
         source_x = np.floor((source_uv[:,0] % 1) * image.size[0]).astype(int)
         source_y = np.floor((source_uv[:,1] % 1) * image.size[1]).astype(int)
         colour[skin] = pixels[source_y[skin], source_x[skin], :3]
+        if skin_tone is not None:
+            lum=colour[skin].mean(axis=1)
+            colour[skin]=skin_tone[None,:]*np.clip(lum[:,None]/.68,.72,1.12)
         hair = skin & ((z > 1.825) | ((z > 1.79) & (np.abs(px) > .058) & (py > -.21)))
         colour[hair] = colours['Ginger' if role == 'Courier' else 'Hair']
         if role == 'Medic':

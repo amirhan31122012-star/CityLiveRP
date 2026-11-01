@@ -1,7 +1,7 @@
 """Build four rigged role variants from the credited CC BY character.
 Run Blender -b -P Scripts/CreateRoleCharacters.py. No downloaded game assets.
 """
-import bpy,math,json,random,sys,numpy as np
+import bpy,bmesh,math,json,sys,argparse,numpy as np
 from pathlib import Path
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
@@ -9,10 +9,12 @@ from mathutils.kdtree import KDTree
 root=Path(__file__).resolve().parents[1];out=root/'Assets/Characters/Roles'
 sys.path.insert(0,str(root/'Scripts'))
 from CityRoleTexture import bake
+from CityRoleFace import shape,bake_face,make_eyes,eyes_material,skin_tone
 out.mkdir(parents=True,exist_ok=True)
-random.seed(14)
 records=[]
-for role in ('Civilian','Police','Medic','Courier'):
+parser=argparse.ArgumentParser();parser.add_argument('--role',choices=('Civilian','Police','Medic','Courier'))
+args=parser.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
+for role in ([args.role] if args.role else ('Civilian','Police','Medic','Courier')):
  bpy.ops.wm.read_factory_settings(use_empty=True)
  bpy.ops.import_scene.fbx(filepath=str(root/'Assets/Characters/Beige/SK_CityBeige.fbx'))
  body=next(o for o in bpy.data.objects if o.type=='MESH');arm=next(o for o in bpy.data.objects if o.type=='ARMATURE')
@@ -20,14 +22,23 @@ for role in ('Civilian','Police','Medic','Courier'):
  for modifier in list(body.modifiers):
   if modifier.type=='ARMATURE':body.modifiers.remove(modifier)
  # Separate new, bounded meshes rather than altering the original rig/asset.
- dec=body.modifiers.new('Mobile geometry','DECIMATE');dec.ratio=.18;dec.use_collapse_triangulate=True
- bpy.ops.object.modifier_apply(modifier=dec.name)
+ # Give the face its own geometry budget instead of collapsing it like trousers.
+ bpy.ops.object.select_all(action='DESELECT');body.select_set(True)
+ bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_mode(type='FACE');bpy.ops.mesh.select_all(action='DESELECT')
+ bm=bmesh.from_edit_mesh(body.data)
+ for face in bm.faces:
+  if all(v.co.z>1.595 for v in face.verts):face.select_set(True)
+ bmesh.update_edit_mesh(body.data)
+ bpy.ops.mesh.separate(type='SELECTED');bpy.ops.object.mode_set(mode='OBJECT')
+ head=next(o for o in bpy.context.selected_objects if o.type=='MESH' and o!=body)
+ for part,ratio in ((body,.145),(head,.67)):
+  bpy.context.view_layer.objects.active=part
+  dec=part.modifiers.new('Mobile geometry','DECIMATE');dec.ratio=ratio;dec.use_collapse_triangulate=True
+  bpy.ops.object.modifier_apply(modifier=dec.name)
+ bpy.ops.object.select_all(action='DESELECT');body.select_set(True);head.select_set(True);bpy.context.view_layer.objects.active=body;bpy.ops.object.join()
+ bm=bmesh.new();bm.from_mesh(body.data);bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=.000005);bm.to_mesh(body.data);bm.free()
  for v in body.data.vertices:
-  if v.co.z>1.61:
-   f=max(0,1-abs(v.co.z-1.73)/.13)
-   if role=='Police':v.co.x*=1+.13*f
-   elif role=='Medic':v.co.x*=1-.06*f;v.co.z+=.012*f
-   elif role=='Courier':v.co.x*=1+.06*f;v.co.y+=.006*f
+  v.co=shape(v.co,role)
  original=body.data.materials[0];original.name='Role_Skin'
  # Use only the existing photographed skin texture; clothing gets its own slots.
  original.use_nodes=True;nodes=original.node_tree.nodes;nodes.clear()
@@ -49,14 +60,27 @@ for role in ('Civilian','Police','Medic','Courier'):
  bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT')
  bpy.ops.uv.smart_project(angle_limit=math.radians(66),island_margin=.008)
  bpy.ops.object.mode_set(mode='OBJECT')
- texture=bake(body,role,palette,root/'Assets/Characters/Beige/Image_1.png',out/('T_Role_'+role+'.png'),original_uv)
+ texture=bake(body,role,palette,root/'Assets/Characters/Beige/Image_1.png',out/('T_Role_'+role+'.png'),original_uv,skin_tone=skin_tone(root,role))
  original.name='Role_'+role;tex.image=texture
  for p in body.data.polygons:p.material_index=0;p.use_smooth=True
+ # A separate 1K face atlas gives eyebrows, lips and skin their own texel budget.
+ face_indices=set()
+ for p in body.data.polygons:
+  centre=sum((body.data.vertices[i].co for i in p.vertices),Vector())/len(p.vertices)
+  if all(body.data.vertices[i].co.z>1.595 for i in p.vertices) and (centre.z>1.67 or abs(centre.x)<.074):face_indices.add(p.index)
+ bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_mode(type='FACE');bpy.ops.mesh.select_all(action='DESELECT')
+ bm=bmesh.from_edit_mesh(body.data);bm.faces.ensure_lookup_table()
+ for index in face_indices:bm.faces[index].select_set(True)
+ bmesh.update_edit_mesh(body.data)
+ bpy.ops.uv.smart_project(angle_limit=math.radians(66),island_margin=.012)
+ bpy.ops.object.mode_set(mode='OBJECT')
+ bake_face(body,role,root,original_uv,face_indices)
  coords=[v.co.copy() for v in body.data.vertices]
  bvh=BVHTree.FromPolygons(coords,[list(p.vertices) for p in body.data.polygons])
  kd=KDTree(len(coords))
  for i,p in enumerate(coords):kd.insert(p,i)
  kd.balance();parts=[body]
+ make_eyes(body,arm,role,eyes_material(root),parts)
  def weights(o,bone=None):
   for name in [b.name for b in arm.data.bones]:
    if o.vertex_groups.get(name) is None:o.vertex_groups.new(name=name)
@@ -111,26 +135,21 @@ for role in ('Civilian','Police','Medic','Courier'):
   box('Belt buckle',(0,-.12,.95),(.045,.012,.033),'Steel','pelvis')
   box('Radio',(.18,-.01,1.04),(.045,.05,.12),'Dark','pelvis')
   patch('Chest badge',[surface(.11,1.4),surface(.13,1.37),surface(.11,1.345),surface(.09,1.37)],'Gold')
-  line('Mustache',[surface(x,1.748) for x in (-.035,-.02,0,.02,.035)],.005,'Beard','head')
  if role=='Medic':
   for side in (-1,1):
    for row in range(3):
     za=.89+row*.05;zb=za+.05
     patch('Coat front',[surface(side*.085,za),surface(side*.18,za),surface(side*.18,zb),surface(side*.085,zb)],'White')
-   x=side*.036;z=1.797
-   line('Spectacle rim',[(x-.031,-.28,z-.018),(x+.031,-.28,z-.018),(x+.031,-.28,z+.018),(x-.031,-.28,z+.018),(x-.031,-.28,z-.018)],.0018,'Steel','head')
-   line('Spectacle temple',[(side*.067,-.28,z),(side*.083,-.13,z)],.0015,'Steel','head')
-   patch('Stubble',[surface(side*.025,1.735),surface(side*.065,1.76),surface(side*.06,1.69),surface(side*.025,1.675)],'GrayHair','head')
-  line('Spectacle bridge',[(-.006,-.28,1.8),(.006,-.28,1.8)],.0015,'Steel','head')
+   x=side*.035;z=1.745
+   points=[(x+.029*math.cos(a),-.251,z+.015*math.sin(a)) for a in [i*math.tau/24 for i in range(25)]]
+   line('Spectacle rim',points,.0011,'Steel','head')
+   line('Spectacle temple',[(side*.064,-.251,z),(side*.078,-.14,z-.002)],.0011,'Steel','head')
+  line('Spectacle bridge',[(-.006,-.251,1.748),(0,-.259,1.75),(.006,-.251,1.748)],.0011,'Steel','head')
   patch('Identity badge',[surface(-.13,1.36),surface(-.08,1.36),surface(-.08,1.29),surface(-.13,1.29)],'White')
  if role=='Courier':
   for side in (-1,1):
    line('Reflective chest band',[surface(side*x,1.32) for x in (.01,.07,.14,.18)],.009,'White')
    line('Backpack strap',[surface(side*.15,z) for z in (1.51,1.4,1.25,1.12)],.015,'Dark')
-  for i in range(65):
-   angle=random.uniform(0,math.tau);r=math.sqrt(random.random())
-   bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1,radius=.013,location=(.073*r*math.cos(angle),-.15+.096*r*math.sin(angle),1.86+.035*(1-r*r)))
-   o=bpy.context.object;bpy.ops.object.transform_apply(location=True,rotation=True,scale=True);finish(o,'Ginger','head')
  # Join/normalize all four influences, preserve the same 21-bone bind skeleton.
  bpy.ops.object.select_all(action='DESELECT')
  for o in parts:o.select_set(True)
@@ -151,7 +170,7 @@ for role in ('Civilian','Police','Medic','Courier'):
  bpy.ops.export_scene.fbx(filepath=str(out/(body.name+'.fbx')),use_selection=True,object_types={'MESH','ARMATURE'},add_leaf_bones=False,bake_anim=False,axis_forward='-Y',axis_up='Z',use_mesh_modifiers=False)
  # Backpack exported independently so it can be hidden during car entry/seating.
  if role=='Courier':
-  before=len(parts);parts=[]
+  parts=[]
   pack=box('Courier backpack',(0,.215,1.29),(.36,.23,.44),'Red','spine_02',.035)
   for z in (1.14,1.44):box('Reflective backpack band',(0,.335,z),(.33,.008,.022),'White','spine_02',.002)
   bpy.ops.object.select_all(action='DESELECT')
@@ -163,4 +182,4 @@ for role in ('Civilian','Police','Medic','Courier'):
  bpy.ops.wm.save_as_mainfile(filepath='/tmp/CityRole_'+role+'.blend')
  records.append(dict(role=role,file=body.name+'.fbx',triangles=sum(len(p.vertices)-2 for p in body.data.polygons),bones=len(arm.data.bones),materials=[m.name for m in body.data.materials],palette=palette))
  print('ROLE_READY',records[-1]['role'],records[-1]['triangles'],flush=True)
-(out/'manifest.json').write_text(json.dumps(dict(version=1,roles=records),indent=2))
+if not args.role:(out/'manifest.json').write_text(json.dumps(dict(version=2,face_revision=2,roles=records),indent=2))

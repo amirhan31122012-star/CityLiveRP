@@ -1,16 +1,19 @@
 {
-  "version": 1,
+  "version": 2,
+  "face_revision": 2,
   "roles": [
     {
       "role": "Civilian",
       "file": "SK_CityCivilian.fbx",
-      "triangles": 37110,
+      "triangles": 44070,
       "bones": 21,
       "materials": [
         "Role_Civilian",
         "Role_Dark",
         "Role_White",
-        "Role_Steel"
+        "Role_Steel",
+        "Role_Face_Civilian",
+        "Role_Eyes"
       ],
       "palette": {
         "Dark": [
@@ -84,7 +87,7 @@
     {
       "role": "Police",
       "file": "SK_CityPolice.fbx",
-      "triangles": 37418,
+      "triangles": 44314,
       "bones": 21,
       "materials": [
         "Role_Police",
@@ -92,7 +95,8 @@
         "Role_Navy",
         "Role_Steel",
         "Role_Gold",
-        "Role_Beard"
+        "Role_Face_Police",
+        "Role_Eyes"
       ],
       "palette": {
         "Dark": [
@@ -166,13 +170,14 @@
     {
       "role": "Medic",
       "file": "SK_CityMedic.fbx",
-      "triangles": 36180,
+      "triangles": 43792,
       "bones": 21,
       "materials": [
         "Role_Medic",
         "Role_White",
         "Role_Steel",
-        "Role_GrayHair"
+        "Role_Face_Medic",
+        "Role_Eyes"
       ],
       "palette": {
         "Dark": [
@@ -246,7 +251,7 @@
     {
       "role": "Courier",
       "file": "SK_CityCourier.fbx",
-      "triangles": 38222,
+      "triangles": 43882,
       "bones": 21,
       "materials": [
         "Role_Courier",
@@ -254,7 +259,8 @@
         "Role_White",
         "Role_Red",
         "Role_Steel",
-        "Role_Ginger"
+        "Role_Face_Courier",
+        "Role_Eyes"
       ],
       "palette": {
         "Dark": [

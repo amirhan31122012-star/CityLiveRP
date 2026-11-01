@@ -1,5 +1,5 @@
 """Install the original wardrobe meshes. Materials are explicit, never depend on FBX texture paths."""
-import unreal,json
+import unreal,json,hashlib
 from pathlib import Path
 project=Path(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()))
 source=project/'Assets/Characters/Roles';manifest=json.loads((source/'manifest.json').read_text())
@@ -51,6 +51,46 @@ for role in ('Civilian','Police','Medic','Courier'):
         edit.recompile_material(material)
     if not library.save_loaded_asset(material,only_if_is_dirty=False):raise RuntimeError('Cannot save role material '+role)
     materials['Role_'+role]=material
+
+def install_texture(name,linear=False):
+    task=unreal.AssetImportTask();task.filename=str(source/(name+'.png'));task.destination_path=root;task.destination_name=name
+    task.automated=True;task.save=True;task.replace_existing=True;tools.import_asset_tasks([task])
+    texture=unreal.load_asset(root+'/'+name)
+    if not isinstance(texture,unreal.Texture2D):raise RuntimeError('Face texture missing: '+name)
+    texture.set_editor_property('srgb',not linear)
+    texture.set_editor_property('max_texture_size',1024)
+    if linear:texture.set_editor_property('compression_settings',unreal.TextureCompressionSettings.TC_MASKS)
+    if not library.save_loaded_asset(texture,only_if_is_dirty=False):raise RuntimeError('Cannot save '+name)
+    return texture
+
+def textured_material(name,colour,roughness,specular):
+    material=unreal.load_asset(root+'/M_'+name)
+    if not material:material=tools.create_asset('M_'+name,root,unreal.Material,unreal.MaterialFactoryNew())
+    edit.delete_all_material_expressions(material)
+    edit.set_material_usage(material,unreal.MaterialUsage.MATUSAGE_SKELETAL_MESH)
+    sample=edit.create_material_expression(material,unreal.MaterialExpressionTextureSample)
+    sample.set_editor_property('texture',colour);sample.set_editor_property('sampler_type',unreal.MaterialSamplerType.SAMPLERTYPE_COLOR)
+    edit.connect_material_property(sample,'RGB',unreal.MaterialProperty.MP_BASE_COLOR)
+    if isinstance(roughness,float):
+        rough=edit.create_material_expression(material,unreal.MaterialExpressionConstant);rough.set_editor_property('r',roughness)
+        channel=''
+    else:
+        rough=edit.create_material_expression(material,unreal.MaterialExpressionTextureSample)
+        rough.set_editor_property('texture',roughness);rough.set_editor_property('sampler_type',unreal.MaterialSamplerType.SAMPLERTYPE_MASKS)
+        channel='R'
+    edit.connect_material_property(rough,channel,unreal.MaterialProperty.MP_ROUGHNESS)
+    if specular is None:
+        edit.connect_material_property(rough,'G',unreal.MaterialProperty.MP_SPECULAR)
+    else:
+        spec=edit.create_material_expression(material,unreal.MaterialExpressionConstant);spec.set_editor_property('r',specular)
+        edit.connect_material_property(spec,'',unreal.MaterialProperty.MP_SPECULAR)
+    edit.recompile_material(material)
+    if not library.save_loaded_asset(material,only_if_is_dirty=False):raise RuntimeError('Cannot save '+name)
+    materials[name]=material
+
+for role in ('Civilian','Police','Medic','Courier'):
+    textured_material('Role_Face_'+role,install_texture('T_Face_'+role),install_texture('T_FaceRough_'+role,linear=True),None)
+textured_material('Role_Eyes',install_texture('T_Role_Eyes'),.26,.30)
 skeleton=None
 for role in ('Civilian','Police','Medic','Courier','CourierPack'):
     name='SK_City'+role
@@ -76,4 +116,6 @@ for role in ('Civilian','Police','Medic','Courier','CourierPack'):
     mesh.set_editor_property('materials',slots)
     if not library.save_loaded_asset(mesh,only_if_is_dirty=False):raise RuntimeError('Cannot save '+name)
 if not library.save_loaded_asset(skeleton,only_if_is_dirty=False):raise RuntimeError('Cannot save role skeleton')
+marker=project/'Saved/RoleCharacters/Installed.json';marker.parent.mkdir(parents=True,exist_ok=True)
+marker.write_text(json.dumps(dict(face_revision=manifest['face_revision'],package_hash=hashlib.sha256((source/'manifest.json').read_bytes()).hexdigest())),encoding='utf-8')
 unreal.log('CITYLIVE_ROLE_CHARACTERS_READY')
