@@ -1,6 +1,10 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"
+#include "Styling/SlateTypes.h"
+#include "Styling/SlateBrush.h"
+#include "UObject/StrongObjectPtr.h"
+#include "Engine/Texture2D.h"
 class ACityLiveRPPlayerController;
 class SEditableTextBox;
 class SVerticalBox;
@@ -14,15 +18,23 @@ public:
         SLATE_ARGUMENT(bool, District)
     SLATE_END_ARGS()
     void Construct(const FArguments& Args);
+    void FocusChatInput();
 private:
     TWeakObjectPtr<ACityLiveRPPlayerController> Controller;
     TSharedPtr<SVerticalBox> Fields;
     TSharedPtr<SEditableTextBox> First, Last, Password, Confirmation;
     FText Title, Message;
+    FButtonStyle ActionStyle;
+    FEditableTextBoxStyle InputStyle;
+    FSlateBrush BackgroundBrush;
+    TStrongObjectPtr<UTexture2D> BackgroundImage;
+    bool bLoginLayout=false;
     bool bNewProfile=false;
     bool bLastSpawn=false;
     bool bCarSelected=false;
     void DistrictPage();
+    void ChatOverlay();
+    void SendChat();
     void QuizPage(FName Organization,int32 Question=0,int32 Score=0);
     void IdentityPage();
     void PasswordPage();

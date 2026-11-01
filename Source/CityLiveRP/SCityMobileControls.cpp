@@ -75,7 +75,7 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
     const FVector2D Position = Geometry.AbsoluteToLocal(Event.GetScreenSpacePosition());
     const FVector2D Interaction(Right.X, Right.Y - Radius * 2.4f);
     const FVector2D ViewSize=Geometry.GetLocalSize();
-    if(Controller.IsValid() && FVector2D::Distance(Position,FVector2D(ViewSize.X*.08f,ViewSize.Y*.12f))<Radius*.65f)
+    if(Controller.IsValid() && Position.X>ViewSize.X*.5f-350 && Position.X<ViewSize.X*.5f+350 && Position.Y>=14 && Position.Y<=129)
     {Controller->DistrictGameplay->OpenChat();return FReply::Handled();}
     if(Controller.IsValid() && Controller->DistrictGameplay->HasInteraction() &&
         FVector2D::Distance(Position,FVector2D(ViewSize.X*.94f,ViewSize.Y*.55f))<Radius*.65f)
@@ -97,6 +97,7 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
     {
         if ((!Vehicle && !Character) || LookPointer != INDEX_NONE) return FReply::Unhandled();
         LookPointer = Event.GetPointerIndex();
+        if(Vehicle)Vehicle->SetCameraLookHeld(true);else if(Character)Character->SetCameraLookHeld(true);
         LastLookPosition = Position;
         return FReply::Handled().CaptureMouse(SharedThis(this));
     };
@@ -182,6 +183,8 @@ bool SCityMobileControls::ReleasePointer(int32 PointerIndex)
     if (PointerIndex == LookPointer)
     {
         LookPointer = INDEX_NONE;
+        if(ACitySedan* Vehicle=GetVehicle())Vehicle->SetCameraLookHeld(false);
+        if(ACityLiveRPCharacter* Person=GetCharacter())Person->SetCameraLookHeld(false);
         return true;
     }
     if (PointerIndex == DriftPointer)
@@ -229,6 +232,8 @@ void SCityMobileControls::OnMouseCaptureLost(const FCaptureLostEvent& Event)
 
 void SCityMobileControls::ResetControls()
 {
+    if(ControlledVehicle.IsValid())ControlledVehicle->SetCameraLookHeld(false);
+    if(ControlledCharacter.IsValid())ControlledCharacter->SetCameraLookHeld(false);
     if (Controller.IsValid() && Controller->IsSedanDriver())
         if (ACitySedan* Vehicle = ControlledVehicle.Get()) Vehicle->ResetInput();
     if (ACityLiveRPCharacter* Character = ControlledCharacter.Get())
@@ -261,6 +266,7 @@ void SCityMobileControls::Tick(const FGeometry& Geometry, double Time, float Del
         ControlledCharacter = Character;
         ControlledVehicle = Vehicle;
     }
+    if(LookPointer!=INDEX_NONE){if(Vehicle)Vehicle->HoldCameraLook();else if(Character)Character->HoldCameraLook();}
     const bool bActiveRun = Vehicle ? Vehicle->IsThrottleHeld() : bRunHeld;
     RunHighlight = FMath::FInterpTo(RunHighlight, bActiveRun ? 1.f : 0.f, DeltaTime, 14.f);
 }
@@ -336,10 +342,6 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
         }
     };
     const FVector2D ViewSize=Geometry.GetLocalSize();
-    const FVector2D ChatCenter(ViewSize.X*.08f,ViewSize.Y*.12f);
-    Circle(ChatCenter,Radius*.5f,FLinearColor::White);
-    FSlateDrawElement::MakeText(Out,Layer+1,Geometry.ToPaintGeometry(FVector2D(90,30),FSlateLayoutTransform(ChatCenter-FVector2D(25,10))),
-        FText::FromString(TEXT("ЧАТ")),FCoreStyle::GetDefaultFontStyle("Bold",14),ESlateDrawEffect::None,FLinearColor::White);
     if(Controller.IsValid() && Controller->DistrictGameplay->HasInteraction())
     {
         const FVector2D Click(ViewSize.X*.94f,ViewSize.Y*.55f);

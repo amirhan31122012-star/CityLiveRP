@@ -130,6 +130,8 @@ void ACityLiveRPCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResu
 {
     // Calculate the final player view from the pawn, not from a possibly
     // overridden Blueprint camera, control rotation, or spring-arm transform.
+    if(CityOrbitCamera::ShouldFollow(static_cast<float>(GetVelocity().Size2D()),bCameraLookHeld,GetWorld()->GetTimeSeconds()-LastCameraLookTime))
+    {const auto View=CityOrbitCamera::Follow(MobileCameraYaw,MobileCameraPitch,-18.43495f,DeltaTime);MobileCameraYaw=View.Yaw;MobileCameraPitch=View.Pitch;}
     FollowCamera->GetCameraView(DeltaTime, OutResult);
     float CrouchCameraOffset = 0.f;
     if (const UCityCrouchMeshComponent* CrouchMesh = Cast<UCityCrouchMeshComponent>(GetMesh()))
@@ -155,8 +157,13 @@ void ACityLiveRPCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResu
     OutResult.FOV = 80.f;
 }
 
+void ACityLiveRPCharacter::SetCameraLookHeld(bool Held){bCameraLookHeld=Held;HoldCameraLook();}
+
+void ACityLiveRPCharacter::HoldCameraLook(){if(GetWorld())LastCameraLookTime=GetWorld()->GetTimeSeconds();}
+
 void ACityLiveRPCharacter::OrbitCamera(float YawDelta, float PitchDelta)
 {
+    HoldCameraLook();
     const CityOrbitCamera::State View = CityOrbitCamera::Advance(MobileCameraYaw, MobileCameraPitch, YawDelta, PitchDelta);
     MobileCameraYaw = View.Yaw;
     MobileCameraPitch = View.Pitch;

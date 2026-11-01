@@ -5,15 +5,24 @@
 #include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Styling/CoreStyle.h"
+#include "Widgets/SOverlay.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/Input/SButton.h"
+#include "Framework/Application/SlateApplication.h"
 
 void SCityV2Menu::DistrictPage()
 {
     Fields->ClearChildren();auto* District=Controller->DistrictGameplay.Get();Title=FText::FromString(TEXT("ГОРОД · ")+District->Context);
     const FString Mode=District->Context;
+    if(Mode==TEXT("Police"))Title=FText::FromString(TEXT("Дежурная часть"));
+    else if(Mode==TEXT("Hospital"))Title=FText::FromString(TEXT("Регистратура"));
+    else if(Mode==TEXT("Courier"))Title=FText::FromString(TEXT("Служба доставки"));
+    else if(Mode.StartsWith(TEXT("Gps")))Title=FText::FromString(TEXT("Навигация"));
     if(Mode==TEXT("Chat"))
     {
         Fields->AddSlot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(District->ChatHistory)).AutoWrapText(true)];
-        Fields->AddSlot().AutoHeight()[SAssignNew(First,SEditableTextBox).HintText(FText::FromString(TEXT("Сообщение или /gps"))).Font(FCoreStyle::GetDefaultFontStyle("Regular",20))];
+        Fields->AddSlot().AutoHeight()[SAssignNew(First,SEditableTextBox).Style(&InputStyle).HintText(FText::FromString(TEXT(""))).Font(FCoreStyle::GetDefaultFontStyle("Regular",20))];
         Button(FText::FromString(TEXT("Отправить")),[this,District](){Message=District->ExecuteChat(First->GetText().ToString());First->SetText(FText::GetEmpty());if(District->Context!=TEXT("Chat"))DistrictPage();return FReply::Handled();});
         Button(FText::FromString(TEXT("GPS")),[this,District](){District->Context=TEXT("Gps");DistrictPage();return FReply::Handled();});
     }
@@ -72,8 +81,45 @@ void SCityV2Menu::QuizPage(FName Organization,int32 Question,int32 Score)
     if(Question>=3){Controller->DistrictGameplay->JoinOrganization(Organization,Score,Message);DistrictPage();return;}
     Fields->ClearChildren();Title=FText::FromString(FString::Printf(TEXT("Вводный опрос · %d/3"),Question+1));
     const FQuiz Item=Organization==TEXT("Police")?Police[Question]:Hospital[Question];
-    Fields->AddSlot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(Item.Prompt)).AutoWrapText(true)];
+    Fields->AddSlot().AutoHeight()[SNew(SBorder).Padding(24).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.025f,.16f,.23f,1))
+        [SNew(STextBlock).Text(FText::FromString(Item.Prompt)).Font(FCoreStyle::GetDefaultFontStyle("Bold",27)).AutoWrapText(true)]];
     const bool Swap=Question%2!=0;
     for(int32 Index=0;Index<2;++Index)
     {const bool Correct=(Index==0)!=Swap;Button(FText::FromString(Correct?Item.Good:Item.Bad),[this,Organization,Question,Score,Correct](){QuizPage(Organization,Question+1,Score+(Correct?1:0));return FReply::Handled();});}
+}
+
+void SCityV2Menu::FocusChatInput()
+{
+    if(First)FSlateApplication::Get().SetKeyboardFocus(First,EFocusCause::SetDirectly);
+}
+void SCityV2Menu::SendChat()
+{
+    auto* District=Controller->DistrictGameplay.Get();
+    const FString Text=First->GetText().ToString().TrimStartAndEnd();
+    if(!Text.IsEmpty())
+    {
+        const FText Response=District->ExecuteChat(Text);
+        if(District->Context==TEXT("Chat") && Response.ToString()!=District->ChatHistory)
+            District->ChatHistory=(District->ChatHistory+TEXT("\n")+Response.ToString()).Right(1200);
+    }
+    Controller->CloseCityMenu();
+    if(District->Context!=TEXT("Chat"))District->OpenCurrentMenu();
+}
+void SCityV2Menu::ChatOverlay()
+{
+    ChildSlot[SNew(SOverlay)
+        +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0,14)
+        [SNew(SBox).WidthOverride(700).HeightOverride(115)
+            [SNew(SBorder).Padding(14).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.015f,.025f,.04f,.55f))
+                [SNew(STextBlock).Text(FText::FromString(Controller->DistrictGameplay->ChatHistory.Right(280))).Font(FCoreStyle::GetDefaultFontStyle("Regular",19)).AutoWrapText(true)]]]
+        +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(FMargin(0,140,0,0))
+        [SNew(SBox).WidthOverride(700)
+            [SNew(SHorizontalBox)
+                +SHorizontalBox::Slot().FillWidth(1)
+                [SAssignNew(First,SEditableTextBox).Style(&InputStyle).Font(FCoreStyle::GetDefaultFontStyle("Regular",24))
+                    .VirtualKeyboardTrigger(EVirtualKeyboardTrigger::OnAllFocusEvents)
+                    .OnTextCommitted_Lambda([this](const FText&,ETextCommit::Type Reason){if(Reason==ETextCommit::OnEnter)SendChat();})]
+                +SHorizontalBox::Slot().AutoWidth().Padding(8,0)
+                [SNew(SButton).ButtonStyle(&ActionStyle).OnClicked_Lambda([this](){SendChat();return FReply::Handled();})
+                    [SNew(STextBlock).Text(FText::FromString(TEXT("→"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",28))]]]]];
 }

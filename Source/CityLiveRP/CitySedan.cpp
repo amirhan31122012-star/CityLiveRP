@@ -288,8 +288,13 @@ void ACitySedan::ResetInput()
     bDriftHeld = false;
 }
 
+void ACitySedan::SetCameraLookHeld(bool Held){bCameraLookHeld=Held;HoldCameraLook();}
+
+void ACitySedan::HoldCameraLook(){if(GetWorld())LastCameraLookTime=GetWorld()->GetTimeSeconds();}
+
 void ACitySedan::OrbitCamera(float YawDelta, float PitchDelta)
 {
+    HoldCameraLook();
     if (EnteringCharacter) return;
     const CityOrbitCamera::State View = CityOrbitCamera::Advance(CameraYawOffset, CameraPitch, YawDelta, PitchDelta);
     CameraYawOffset = View.Yaw;
@@ -814,6 +819,11 @@ void ACitySedan::UpdateEntry(float DeltaTime)
 
 void ACitySedan::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
 {
+    if(!EnteringCharacter && CityOrbitCamera::ShouldFollow(static_cast<float>(GetVelocity().Size2D()),bCameraLookHeld,GetWorld()->GetTimeSeconds()-LastCameraLookTime))
+    {
+        const auto View=CityOrbitCamera::Follow(CameraYawOffset,CameraPitch,-15.f,DeltaTime);
+        CameraYawOffset=View.Yaw;CameraPitch=View.Pitch;CameraArm->SetRelativeRotation(FRotator(CameraPitch,CameraYawOffset,0));
+    }
     VehicleCamera->GetCameraView(DeltaTime, OutResult);
     if (EntryCameraBlend <= .001f) return;
     const FVector Focus = GetActorLocation() + FVector(0, 0, 40);

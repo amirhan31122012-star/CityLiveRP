@@ -22,6 +22,7 @@
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Text/STextBlock.h"
+#include "Widgets/Input/SButton.h"
 #include "Styling/CoreStyle.h"
 #include "Framework/Application/SlateApplication.h"
 #include <initializer_list>
@@ -44,12 +45,20 @@ void ACityLiveRPPlayerController::InitializeV2Session()
     if (UGameViewportClient* Viewport=GetWorld()->GetGameViewport())
     {
         CityHud=SNew(SOverlay)
-            .Visibility_Lambda([this](){return bEnteredCity && !IsCityMenuOpen() ? EVisibility::HitTestInvisible : EVisibility::Hidden;})
+            .Visibility_Lambda([this](){return bEnteredCity && !IsCityMenuOpen() ? EVisibility::SelfHitTestInvisible : EVisibility::Hidden;})
             +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(24)
-            [SNew(SBorder).Padding(14).BorderBackgroundColor(FLinearColor(.02f,.035f,.06f,.8f))
-                [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",20))
-                    .Text_Lambda([this](){return FText::FromString(GetProfileName()+TEXT("\n")+
-                        FText::AsNumber(GetBalance()).ToString()+TEXT(" ₽\n")+DistrictGameplay->NavigationText()+TEXT("\n")+DistrictGameplay->ChatHistory.Right(200));})]]
+            [SNew(SBorder).Padding(FMargin(24,14)).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.008f,.02f,.035f,.75f))
+                [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",30)).ColorAndOpacity(FLinearColor(.32f,1.f,.56f))
+                    .Text_Lambda([this](){return FText::FromString(FText::AsNumber(GetBalance()).ToString()+TEXT(" ₽"));})]]
+            +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(24,86,24,0)
+            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular",16)).Text_Lambda([this](){return FText::FromString(DistrictGameplay->NavigationText());})]
+            +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0,14)
+            [SNew(SBox).WidthOverride(700).HeightOverride(115)
+                [SNew(SButton).ContentPadding(0).ButtonColorAndOpacity(FLinearColor(0,0,0,0))
+                    .OnClicked_Lambda([this](){DistrictGameplay->OpenChat();return FReply::Handled();})
+                [SNew(SBorder).Padding(14).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.015f,.025f,.04f,.55f))
+                    [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular",19)).AutoWrapText(true)
+                        .Text_Lambda([this](){return FText::FromString(DistrictGameplay->ChatHistory.Right(280));})]]]]
             +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,22)
             [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",26))
                 .Visibility_Lambda([this](){return IsSedanDriver() ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})
@@ -84,6 +93,7 @@ void ACityLiveRPPlayerController::OpenCityMenu(bool bGarage,bool bDistrict)
     Mode.SetHideCursorDuringCapture(false);
     SetInputMode(Mode);
     bShowMouseCursor=!ShouldUseTouchControls();
+    if(bDistrict && DistrictGameplay->Context==TEXT("Chat"))CityMenu->FocusChatInput();
 }
 void ACityLiveRPPlayerController::CloseCityMenu()
 {

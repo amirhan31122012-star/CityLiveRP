@@ -113,6 +113,8 @@ public:
     void SetMobileSteering(float Steering, float Forward);
     void ResetMobileSteering();
     void OrbitCamera(float YawDelta, float PitchDelta);
+    void HoldCameraLook();
+    void SetCameraLookHeld(bool Held);
 
     UPROPERTY(EditAnywhere, Category="Mobile Movement", meta=(ClampMin="1", ClampMax="180"))
     float MobileTurnSpeed = 75.f;
@@ -140,6 +142,8 @@ private:
     float MobileForward = 0.f;
     float MobileYawRate = 0.f;
     float MobileCameraYaw = 0.f;
+    float LastCameraLookTime=-10000.f;
+    bool bCameraLookHeld=false;
     float MobileCameraPitch = -18.43495f;
     bool bMobileSteeringActive = false;
 };

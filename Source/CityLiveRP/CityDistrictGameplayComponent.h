@@ -15,6 +15,7 @@ public:
     bool HasInteraction() const;
     void Interact();
     void OpenChat();
+    void OpenCurrentMenu();
     FString Context=TEXT("Chat");
     FString ChatHistory;
     FName CurrentBuilding;

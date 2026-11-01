@@ -44,6 +44,8 @@ public:
     bool IsBrakeHeld() const { return Pedals.Brake; }
     void ResetInput();
     void OrbitCamera(float YawDelta, float PitchDelta);
+    void HoldCameraLook();
+    void SetCameraLookHeld(bool Held);
     bool IsEntering(const APlayerController* Player) const;
     void CancelEntry();
 
@@ -97,6 +99,8 @@ private:
     float EntryTime = 0.f;
     float EntryCameraBlend = 0.f;
     float CameraYawOffset = 0.f;
+    float LastCameraLookTime=-10000.f;
+    bool bCameraLookHeld=false;
     float CameraPitch = -15.f;
     bool bEnteringPassenger = false;
     int32 EntrySeat = -1;

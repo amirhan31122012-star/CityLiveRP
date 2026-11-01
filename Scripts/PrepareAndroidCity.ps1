@@ -23,6 +23,9 @@ try {
     if (-not (Test-Path -LiteralPath (Join-Path $ProjectDir 'Content\CityLiveVehicles\Courier\SM_CityScooter.uasset'))) {
         throw 'Сначала запустите InstallDistrictContent.cmd для установки скутера.'
     }
+    if (-not (Test-Path -LiteralPath (Join-Path $ProjectDir 'Content\CityLiveUI\M_DistrictSurface.uasset'))) {
+        throw 'Выполните InstallDistrictContent.cmd: цветные материалы интерьеров.'
+    }
     $skin = Join-Path $ProjectDir 'Content\CityLiveCharacters\Beige\SK_CityBeige_v3.uasset'
     if (-not (Test-Path -LiteralPath $skin -PathType Leaf)) {
         throw 'Сначала установите персонажа через BuildAndOpen.cmd.'

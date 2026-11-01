@@ -78,6 +78,21 @@ scooter_options.static_mesh_import_data.set_editor_property('auto_generate_colli
 scooter_task.options=scooter_options;tools.import_asset_tasks([scooter_task])
 if not isinstance(unreal.load_asset('/Game/CityLiveVehicles/Courier/SM_CityScooter'),unreal.StaticMesh):
     raise RuntimeError('Courier scooter import failed')
+# A real runtime tint parameter: the engine BasicShapeMaterial has no Color parameter.
+material=unreal.load_asset('/Game/CityLiveUI/M_DistrictSurface')
+if not material:
+    material=tools.create_asset('M_DistrictSurface','/Game/CityLiveUI',unreal.Material,unreal.MaterialFactoryNew())
+    edit=unreal.MaterialEditingLibrary
+    tint=edit.create_material_expression(material,unreal.MaterialExpressionVectorParameter)
+    tint.set_editor_property('parameter_name','BaseTint')
+    tint.set_editor_property('default_value',unreal.LinearColor(.5,.5,.5,1))
+    edit.connect_material_property(tint,'',unreal.MaterialProperty.MP_BASE_COLOR)
+    rough=edit.create_material_expression(material,unreal.MaterialExpressionConstant)
+    rough.set_editor_property('r',.72)
+    edit.connect_material_property(rough,'',unreal.MaterialProperty.MP_ROUGHNESS)
+    edit.recompile_material(material)
+if not material or not unreal.EditorAssetLibrary.save_loaded_asset(material,only_if_is_dirty=False):
+    raise RuntimeError('Cannot save district surface material')
 # Blueprints already use ABP_Unarmed's DefaultSlot. Runtime constructs UAnimMontage
 # instances in that slot and samples them with the same clock as doors/actor/IK.
 folder.mkdir(parents=True,exist_ok=True)

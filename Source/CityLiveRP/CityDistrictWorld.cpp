@@ -14,6 +14,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
+#include <initializer_list>
 namespace
 {
 const FVector Lobby(0,50000,200);
@@ -35,10 +36,10 @@ AActor* Box(UWorld* World,FVector Center,FVector Size,FLinearColor Color)
     Prop->SetRootComponent(Geometry);Prop->AddInstanceComponent(Geometry);
     Geometry->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube")));
     Geometry->SetWorldLocation(Center);Geometry->SetWorldScale3D(Size/100.f);
-    Geometry->SetCollisionProfileName(TEXT("BlockAll"));Geometry->RegisterComponent();
-    if(UMaterialInterface* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial")))
-    {auto* Material=UMaterialInstanceDynamic::Create(Base,Prop);Material->SetVectorParameterValue(TEXT("Color"),Color);Geometry->SetMaterial(0,Material);}
-    return Prop;
+    Geometry->SetCollisionProfileName(TEXT("BlockAll"));
+    if(UMaterialInterface* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CityLiveUI/M_DistrictSurface.M_DistrictSurface")))
+    {auto* Material=UMaterialInstanceDynamic::Create(Base,Prop);Material->SetVectorParameterValue(TEXT("BaseTint"),Color);Geometry->SetMaterial(0,Material);}
+    Geometry->RegisterComponent();return Prop;
 }
 AActor* Label(UWorld* World,FVector Point,const FString& Text,FColor Color=FColor::White,float Size=35)
 {
@@ -87,7 +88,10 @@ void UCityDistrictGameplayComponent::InitializeDistrict()
 void UCityDistrictGameplayComponent::BuildInterior(bool Apartment)
 {
     for(AActor* Prop:InteriorActors)if(IsValid(Prop))Prop->Destroy();InteriorActors.Reset();
-    const FLinearColor Wall(.65f,.68f,.7f),Floor(.32f,.3f,.27f);
+    const bool Police=InteriorKind==TEXT("Police"),Hospital=InteriorKind==TEXT("Hospital");
+    const FLinearColor Wall=Police?FLinearColor(.69f,.64f,.51f):Hospital?FLinearColor(.72f,.84f,.81f):FLinearColor(.64f,.61f,.55f);
+    const FLinearColor Floor=Police?FLinearColor(.18f,.2f,.23f):FLinearColor(.32f,.4f,.4f);
+    const FLinearColor Trim=Police?FLinearColor(.025f,.095f,.2f):FLinearColor(.035f,.38f,.4f);
     auto Add=[&](FVector P,FVector S,FLinearColor C){InteriorActors.Add(Box(GetWorld(),Lobby+P,S,C));};
     Add(FVector(0,0,-15),FVector(1400,1000,30),Floor);
     Add(FVector(0,500,140),FVector(1400,25,280),Wall);Add(FVector(0,-500,140),FVector(1400,25,280),Wall);
@@ -113,9 +117,48 @@ void UCityDistrictGameplayComponent::BuildInterior(bool Apartment)
     }
     else
     {
-        Add(FVector(100,200,45),FVector(350,100,90),Floor);
-        InteriorActors.Add(Npc(GetWorld(),Lobby+FVector(100,320,97),InteriorKind==TEXT("Police")?TEXT("Дежурный"):TEXT("Регистратор")));
-        InteriorActors.Add(Label(GetWorld(),Lobby+FVector(100,320,220),InteriorKind==TEXT("Police")?TEXT("ДЕЖУРНЫЙ"):TEXT("РЕГИСТРАТОР"),FColor::Cyan));
+        // Contrasting lower wall panels and skirting, ceiling coves and floor joints.
+        Add(FVector(0,482,60),FVector(1380,18,120),Trim);
+        Add(FVector(0,-482,60),FVector(1380,18,120),Trim);
+        Add(FVector(-682,0,60),FVector(18,960,120),Trim);Add(FVector(682,0,60),FVector(18,960,120),Trim);
+        for(int32 Line=-6;Line<=6;++Line)Add(FVector(Line*100,0,1),FVector(1,980,1),FLinearColor(.16f,.2f,.22f));
+        for(int32 Line=-4;Line<=4;++Line)Add(FVector(0,Line*100,1),FVector(1380,1,1),FLinearColor(.16f,.2f,.22f));
+        for(int32 Beam=-2;Beam<=2;++Beam)
+        {Add(FVector(Beam*260,0,272),FVector(130,700,12),FLinearColor(.84f,.86f,.8f));Add(FVector(Beam*260,0,281),FVector(150,750,10),Trim);}
+        const FLinearColor Wood=Police?FLinearColor(.25f,.105f,.045f):FLinearColor(.75f,.79f,.74f);
+        Add(FVector(100,210,45),FVector(420,115,90),Wood);
+        Add(FVector(100,210,94),FVector(450,135,10),Trim);
+        Add(FVector(100,143,43),FVector(300,5,45),Trim);
+        Add(FVector(110,220,118),FVector(65,10,43),FLinearColor(.018f,.025f,.035f));
+        Add(FVector(110,210,100),FVector(45,30,5),FLinearColor(.08f,.09f,.1f));
+        Add(FVector(-30,205,104),FVector(35,25,7),FLinearColor(.85f,.86f,.8f));
+        for(int32 Seat=0;Seat<3;++Seat)
+        {
+            const float X=-450+Seat*120.f;
+            Add(FVector(X,-100,42),FVector(90,80,12),Trim);
+            Add(FVector(X,-135,82),FVector(90,10,70),Trim);
+            for(float Side:{-30.f,30.f})Add(FVector(X+Side,-100,20),FVector(5,60,40),FLinearColor(.19f,.21f,.23f));
+        }
+        Add(FVector(550,250,100),FVector(180,60,200),Wood);
+        for(int32 Shelf=0;Shelf<4;++Shelf)
+        {Add(FVector(550,215,45+Shelf*45),FVector(170,5,7),Trim);for(int32 Folder=0;Folder<7;++Folder)Add(FVector(480+Folder*22,212,60+Shelf*45),FVector(13,25,25),FLinearColor(.2f,.3f+Folder*.05f,.33f));}
+        Add(FVector(-475,480,170),FVector(220,10,100),Trim);
+        InteriorActors.Add(Label(GetWorld(),Lobby+FVector(-475,465,190),Police?TEXT("ДЕЖУРНАЯ ЧАСТЬ\nПРИЁМ ГРАЖДАН"):TEXT("РЕГИСТРАТУРА\nЗАПИСЬ НА ПРИЁМ"),FColor::White,22));
+        if(Police)
+        {
+            Add(FVector(0,475,193),FVector(210,8,65),Trim);
+            InteriorActors.Add(Label(GetWorld(),Lobby+FVector(0,462,210),TEXT("ПОЛИЦИЯ"),FColor(230,195,105),34));
+            for(int32 Bar=0;Bar<3;++Bar)Add(FVector(-300,478,220-Bar*18),FVector(95,6,18),Bar==0?FLinearColor(.9f,.9f,.85f):Bar==1?FLinearColor(.04f,.18f,.65f):FLinearColor(.65f,.025f,.025f));
+        }
+        else
+        {
+            Add(FVector(0,477,200),FVector(22,8,95),FLinearColor(.72f,.035f,.05f));Add(FVector(0,477,200),FVector(80,8,22),FLinearColor(.72f,.035f,.05f));
+            Add(FVector(500,-280,40),FVector(160,80,16),FLinearColor(.16f,.52f,.52f));
+            for(float Leg:{450.f,550.f})Add(FVector(Leg,-280,18),FVector(6,65,36),Trim);
+            Add(FVector(-610,280,58),FVector(55,55,116),FLinearColor(.8f,.82f,.8f));Add(FVector(-610,280,135),FVector(38,38,38),FLinearColor(.1f,.4f,.6f));
+        }
+        InteriorActors.Add(Npc(GetWorld(),Lobby+FVector(100,320,97),Police?TEXT("Дежурный"):TEXT("Регистратор")));
+        InteriorActors.Add(Label(GetWorld(),Lobby+FVector(100,320,220),Police?TEXT("ДЕЖУРНЫЙ"):TEXT("РЕГИСТРАТОР"),FColor::Cyan));
     }
     AActor* Lamp=GetWorld()->SpawnActor<AActor>();auto* Light=NewObject<UPointLightComponent>(Lamp);
     Lamp->SetRootComponent(Light);Lamp->AddInstanceComponent(Light);Light->SetWorldLocation(Lobby+FVector(0,0,240));
@@ -239,3 +282,6 @@ bool UCityDistrictGameplayComponent::SpawnWorkScooter(FText& Error)
     }
     Error=FText::FromString(TEXT("Нет свободного места для скутера."));return false;
 }
+
+void UCityDistrictGameplayComponent::OpenCurrentMenu()
+{auto* Player=Cast<ACityLiveRPPlayerController>(GetOwner());if(Player&&Player->IsProfileActive()&&!Player->IsCityMenuOpen())Player->OpenCityMenu(false,true);}
