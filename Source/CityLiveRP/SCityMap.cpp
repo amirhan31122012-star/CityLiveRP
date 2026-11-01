@@ -161,7 +161,6 @@ int32 SCityMap::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRect&,F
     {
         TArray<FVector2D> Rim;for(int I=0;I<=72;++I){double A=I*2*PI/72;Rim.Add(FVector2D(Mid.X+std::cos(A)*Radius,Mid.Y+std::sin(A)*Radius));}
         FSlateDrawElement::MakeLines(Out,Layer+2,G.ToPaintGeometry(),Rim,ESlateDrawEffect::None,FLinearColor(.7f,.73f,.78f),true,1.5);
-        FSlateDrawElement::MakeText(Out,Layer+2,G.ToPaintGeometry(FVector2D(20,20),FSlateLayoutTransform(FVector2D(Mid.X-5,Mid.Y-Radius+5))),TEXT("N"),FCoreStyle::GetDefaultFontStyle("Bold",11),ESlateDrawEffect::None,FLinearColor::White);
     }
     return Layer+2;
 }

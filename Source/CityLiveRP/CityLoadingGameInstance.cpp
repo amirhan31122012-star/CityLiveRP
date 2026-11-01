@@ -60,6 +60,13 @@ void UCityLoadingGameInstance::OnStart()
     const FString WorldPath = CityMapPath + TEXT(".CityLive_ModernCity");
     TArray<FSoftObjectPath> Assets { FSoftObjectPath(WorldPath),
         FSoftObjectPath(TEXT("/Game/CityLiveUI/T_LoginCity.T_LoginCity")),
+        FSoftObjectPath(TEXT("/Game/CityLiveUI/T_AccountCity.T_AccountCity")),
+        FSoftObjectPath(TEXT("/Game/CityLiveUI/T_SpawnOrganization.T_SpawnOrganization")),
+        FSoftObjectPath(TEXT("/Game/CityLiveUI/T_SpawnStart.T_SpawnStart")),
+        FSoftObjectPath(TEXT("/Game/CityLiveUI/T_SpawnLast.T_SpawnLast")),
+        FSoftObjectPath(TEXT("/Game/CityLiveUI/T_SpawnParking.T_SpawnParking")),
+        FSoftObjectPath(TEXT("/Game/CityLiveUI/T_SpawnHome.T_SpawnHome")),
+        FSoftObjectPath(TEXT("/Game/CityLiveVehicles/Courier/SM_CityScooter.SM_CityScooter")),
         FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Roles/SK_CityCivilian.SK_CityCivilian")),
         FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Roles/SK_CityPolice.SK_CityPolice")),
         FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Roles/SK_CityMedic.SK_CityMedic")),

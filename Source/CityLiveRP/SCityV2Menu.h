@@ -35,9 +35,11 @@ private:
     FScrollBarStyle ScrollStyle;
     FSlateBrush BackgroundBrush;
     TStrongObjectPtr<UTexture2D> BackgroundImage;
+    FSlateBrush AccountBrush,SpawnBrushes[5];
+    TStrongObjectPtr<UTexture2D> AccountImage,SpawnImages[5];
     bool bLoginLayout=false;
     bool bNewProfile=false;
-    bool bLastSpawn=false;
+    FName SelectedSpawn=TEXT("Start");
     bool bCarSelected=false;
     bool bPasswordVisible=false,bChatLayout=false,bRussian=false,bShift=false,bSymbols=false;
     FString LoginName,SelectedGps,ChatDraft;

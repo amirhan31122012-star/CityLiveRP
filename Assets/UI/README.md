@@ -15,9 +15,13 @@ positions follow the existing runtime component. `RoutePreview.jsonl` is emitted
 by `Tests/CityMapRouteTest.cpp --dump`; regenerate it before
 `python Scripts/BuildInterfacePreview.py` after changing navigation.
 
-The login background `../Branding/CityLiveLoginCity.png` was generated for this
+The full-screen backgrounds `../Branding/CityLiveLoginCity.png` and
+`../Branding/CityLiveAccountCity.png` were generated for this
 project with OpenAI image generation. Map geometry is authored CityLive RP data.
 The city render used behind the HUD mock-up is an actual Blender district render;
 the overlaid UI preview remains a design mock-up, not proof of UE compilation.
 
 See `Docs/OrangeInterface.md` for installation, implementation and test limits.
+
+`Spawn/*.png` are camera renders of our district. `RenderSpawnCards.py` generates
+them in Blender; the UI uses five wide cards in one row, without scrolling.

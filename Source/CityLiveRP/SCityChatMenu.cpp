@@ -58,20 +58,20 @@ void SCityV2Menu::ChatOverlay()
 {
     bChatLayout=true;auto* District=Controller->DistrictGameplay.Get();ChatDraft=District->ChatUnsentDraft;
     ChatChannel=District->ChatChannel;HistoryIndex=District->SentMessages.Num();
-    ChildSlot[SNew(SScaleBox).Stretch(EStretch::ScaleToFit)[SNew(SBox).WidthOverride(1280).HeightOverride(720)
+    ChildSlot[SNew(SScaleBox).Stretch(EStretch::ScaleToFit)[SNew(SBox).WidthOverride_Lambda([this](){return FOptionalSize(CityUi::CanvasWidth(GetCachedGeometry().GetLocalSize()));}).HeightOverride(720)
         [SNew(SOverlay)
-            +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(24,24,0,0)
-            [SNew(SBox).WidthOverride(184).HeightOverride(184).Visibility(EVisibility::HitTestInvisible)[SNew(SCityMap).Controller(Controller.Get()).Mini(true)]]
-            +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(226,24,0,0)
-            [SNew(SBox).WidthOverride(720).HeightOverride(180).Clipping(EWidgetClipping::ClipToBounds)
+            +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,18,22,0)
+            [SNew(SBox).WidthOverride(218).HeightOverride(218).Visibility(EVisibility::HitTestInvisible)[SNew(SCityMap).Controller(Controller.Get()).Mini(true)]]
+            +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(26,22,0,0)
+            [SNew(SBox).WidthOverride(850).HeightOverride(218).Clipping(EWidgetClipping::ClipToBounds)
                 [SNew(SBorder).BorderImage(&FrameBrush).Padding(14)
-                    [SNew(SCityChatLog).District(District).Lines(6).FontSize(18)]]]
-            +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,24,28,0)
+                    [SNew(SCityChatLog).District(District).Lines(8).FontSize(18)]]]
+            +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,244,32,0)
+            [SNew(STextBlock).Text_Lambda([this](){return FText::FromString(CityUi::Money(Controller->GetBalance(),false));})
+                .Font(FCoreStyle::GetDefaultFontStyle("BoldItalic",30)).ShadowOffset(FVector2D(2,2)).ShadowColorAndOpacity(FLinearColor(0,0,0,.8f))]
+            +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(900,22,0,0)
             [SNew(SButton).IsFocusable(false).ButtonStyle(&SecondaryStyle).OnClicked_Lambda([this](){Controller->CloseCityMenu();return FReply::Handled();})[SNew(STextBlock).Text(FText::FromString(TEXT("×"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",27))]]
-            +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,85,32,0)
-            [SNew(SBorder).BorderImage(&FrameBrush).Padding(FMargin(22,10))
-                [SNew(STextBlock).Text_Lambda([this](){return FText::FromString(CityUi::Money(Controller->GetBalance()));}).Font(FCoreStyle::GetDefaultFontStyle("Bold",28))]]
-            +SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Bottom).Padding(32,0,32,394)
+            +SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Bottom).Padding(16,0,300,418)
             [SNew(SHorizontalBox)
                 +SHorizontalBox::Slot().FillWidth(1)[SNew(SHorizontalBox)
                     +SHorizontalBox::Slot().AutoWidth()[SNew(SButton).IsFocusable(false).ButtonStyle(&RowStyle).ButtonColorAndOpacity_Lambda([this](){return ChatChannel==0?CityUi::Orange():CityUi::Panel();}).OnClicked_Lambda([this,District](){ChatChannel=District->ChatChannel=0;return FReply::Handled();})[SNew(STextBlock).Text(FText::FromString(TEXT("RP чат"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",16))]]
@@ -80,11 +80,11 @@ void SCityV2Menu::ChatOverlay()
                     +SHorizontalBox::Slot().AutoWidth().Padding(8,0)[SNew(SButton).IsFocusable(false).ButtonStyle(&RowStyle).ButtonColorAndOpacity_Lambda([this](){return ChatChannel==3?CityUi::Orange():CityUi::Panel();}).OnClicked_Lambda([this,District](){ChatChannel=District->ChatChannel=3;return FReply::Handled();})[SNew(STextBlock).Text(FText::FromString(TEXT("Действие"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",16))]]]
                 +SHorizontalBox::Slot().AutoWidth().Padding(4,0)[SNew(SButton).IsFocusable(false).ButtonStyle(&SecondaryStyle).OnClicked_Lambda([this,District](){if(HistoryIndex>0)ChatDraft=District->SentMessages[--HistoryIndex];District->ChatUnsentDraft=ChatDraft;return FReply::Handled();})[SNew(STextBlock).Text(FText::FromString(TEXT("↑"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",18))]]
                 +SHorizontalBox::Slot().AutoWidth().Padding(4,0)[SNew(SButton).IsFocusable(false).ButtonStyle(&SecondaryStyle).OnClicked_Lambda([this,District](){HistoryIndex=FMath::Min(HistoryIndex+1,District->SentMessages.Num());ChatDraft=HistoryIndex<District->SentMessages.Num()?District->SentMessages[HistoryIndex]:FString();District->ChatUnsentDraft=ChatDraft;return FReply::Handled();})[SNew(STextBlock).Text(FText::FromString(TEXT("↓"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",18))]]]
-            +SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Bottom).Padding(32,0,32,316)
+            +SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Bottom).Padding(12,0,12,340)
             [SNew(SBox).HeightOverride(66)[SNew(SBorder).BorderImage(&FrameBrush).Padding(FMargin(20,14))
                 [SNew(STextBlock).Text_Lambda([this](){return FText::FromString(ChatDraft+TEXT("│"));}).Font(FCoreStyle::GetDefaultFontStyle("Regular",27))]]]
-            +SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Bottom).Padding(20,0,20,14)
-            [SNew(SBox).HeightOverride(292)[SNew(SBorder).BorderImage(&FrameBrush).Padding(10)[SAssignNew(KeyboardHost,SVerticalBox)]]]
+            +SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Bottom).Padding(0,0,0,0)
+            [SNew(SBox).HeightOverride(330)[SNew(SBorder).BorderImage(&FrameBrush).Padding(10)[SAssignNew(KeyboardHost,SVerticalBox)]]]
         ]]];
     KeyboardPage();
 }

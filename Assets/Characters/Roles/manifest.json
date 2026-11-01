@@ -1,11 +1,12 @@
 {
-  "version": 2,
+  "version": 3,
   "face_revision": 2,
+  "wardrobe_revision": 3,
   "roles": [
     {
       "role": "Civilian",
       "file": "SK_CityCivilian.fbx",
-      "triangles": 44070,
+      "triangles": 44341,
       "bones": 21,
       "materials": [
         "Role_Civilian",
@@ -87,7 +88,7 @@
     {
       "role": "Police",
       "file": "SK_CityPolice.fbx",
-      "triangles": 44314,
+      "triangles": 47714,
       "bones": 21,
       "materials": [
         "Role_Police",
@@ -170,12 +171,14 @@
     {
       "role": "Medic",
       "file": "SK_CityMedic.fbx",
-      "triangles": 43792,
+      "triangles": 44392,
       "bones": 21,
       "materials": [
         "Role_Medic",
+        "Role_Dark",
         "Role_White",
         "Role_Steel",
+        "Role_GrayHair",
         "Role_Face_Medic",
         "Role_Eyes"
       ],
@@ -251,7 +254,7 @@
     {
       "role": "Courier",
       "file": "SK_CityCourier.fbx",
-      "triangles": 43882,
+      "triangles": 44162,
       "bones": 21,
       "materials": [
         "Role_Courier",
@@ -331,5 +334,33 @@
         ]
       }
     }
-  ]
+  ],
+  "asset_hashes": {
+    "SK_CityCivilian.fbx": "a301009714f4eae54ab6882e87f3f59373d7d54689db3656a2d8eec11cb4904b",
+    "SK_CityCourier.fbx": "c694ded059916546c770b29a6420e4e5aeaff3e68a56ad19f5413d47ab7da0b6",
+    "SK_CityCourierPack.fbx": "edcff53af03538431fee5ae9e35ca4f2a7a89cd6085a1137b3545bc38c32a5ab",
+    "SK_CityMedic.fbx": "733d1a48f9bb1034d4a6d9c2fe981d0eff70f4e620560366a7ffca95ae438309",
+    "SK_CityPolice.fbx": "8ceaae8f403d2907f9ebc64da4471dfbaa0bac36d4f9e53f2b5570e2fa70ed0a",
+    "T_FaceRough_Civilian.png": "0169b7e8dda7daa2cbcf456de9198d8daf9a6afe78fa59e6f708f4a2123982ac",
+    "T_FaceRough_Courier.png": "4d7a15d82d037332ffcf01d24fa27439ddb3032c23713d54e1d80602d3a69073",
+    "T_FaceRough_Medic.png": "30811e5bb1496575cfc0af4b017c07a60b9e4070cb3a5cef4c9ae1053341b27a",
+    "T_FaceRough_Police.png": "d3901dbabf2521bc0f96e0fcac6dc387b78601c75d4aca6a57654e1d28d81b73",
+    "T_Face_Civilian.png": "b16b4972c24935087383726e1aad097ee1006675081f5e8383e38e4555bc5be4",
+    "T_Face_Courier.png": "9b4218ab0464e6bc92b13598cbf0cad50c207f4c53ba705772fc39ce257fdab5",
+    "T_Face_Medic.png": "55f329346b786ad1ce8d3e0cb0f70965f6cef7fd4b8cce455114fdb2d8546df6",
+    "T_Face_Police.png": "06de9e6889df91e5ed12c0c75ff9c3a02884a9319cfd216f5d1617ac57ffe58b",
+    "T_RoleNormal_Civilian.png": "30a45c7b5b0e3d48bac3a606d0f5c9e3f59d0852cb3872ed9a4a3c23dec7c88e",
+    "T_RoleNormal_Courier.png": "a9dae183a0859ac53bd05436abdc88c9f380b920ac012ee8983e4ecc97c06089",
+    "T_RoleNormal_Medic.png": "2080849d9a4c4f75f3d84d9035139f5c0625a211cdf1b1e741200af15de65d0d",
+    "T_RoleNormal_Police.png": "9b179b87b1e86fff70c4e9301ac9decdfd56d5c4d747427dd34c2a44f748e91d",
+    "T_RoleSurface_Civilian.png": "6b122127e38f18ed86b168930f224af7708e83b801d81dbe2002dc522f91e0c2",
+    "T_RoleSurface_Courier.png": "aedfe49e61c87f3e211c3afa88a9853cab93b6d8c92349a5fc67f2e244cb2358",
+    "T_RoleSurface_Medic.png": "d31804eef617a00828a39202e0d0dde68ce8b39b009a2f1b6d1694ceac3c9193",
+    "T_RoleSurface_Police.png": "89913b1d4287822b23155f94ef27a11c718e249443cc1c06b330109d6ff711e6",
+    "T_Role_Civilian.png": "90d130823266d1b007a2976ba26581cf3d7f228e9c398ffacd549fd68a4534da",
+    "T_Role_Courier.png": "9ae7c0daad670d5c5154b5c36067ad11ab4fc72fb1b201eb061c547cfce175dd",
+    "T_Role_Eyes.png": "cd2504e59b1f32edd9df5bdab5746fa67e6d2df99a980eb1aaf9e4d4d20272c5",
+    "T_Role_Medic.png": "55f8561a76a16e69ef2c542f95d5205ce3be106bfd73e33e592fe134cf3e3c60",
+    "T_Role_Police.png": "acd87775e6b679bd8cf6c40fd46e47ecb1945a720fb1989057bb887b576b60e6"
+  }
 }

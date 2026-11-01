@@ -38,16 +38,41 @@ try {
         throw 'Выполните InstallDistrictContent.cmd: установка нового интерфейса.'
     }
     $interface = Get-Content -LiteralPath $interfaceMarker -Raw -Encoding UTF8 | ConvertFrom-Json
-    $artHash = (Get-FileHash -LiteralPath (Join-Path $ProjectDir 'Assets\Branding\CityLiveLoginCity.png') -Algorithm SHA256).Hash
-    if ($interface.revision -ne 1 -or $interface.art_sha256 -ne $artHash) {
+    if ($interface.revision -ne 2) {
         throw 'Интерфейс обновился. Повторите InstallDistrictContent.cmd.'
+    }
+    $uiAssets = @{
+        'T_LoginCity' = 'Assets/Branding/CityLiveLoginCity.png'
+        'T_AccountCity' = 'Assets/Branding/CityLiveAccountCity.png'
+        'T_SpawnOrganization' = 'Assets/UI/Spawn/Organization.png'
+        'T_SpawnStart' = 'Assets/UI/Spawn/Start.png'
+        'T_SpawnLast' = 'Assets/UI/Spawn/Last.png'
+        'T_SpawnParking' = 'Assets/UI/Spawn/Parking.png'
+        'T_SpawnHome' = 'Assets/UI/Spawn/Home.png'
+    }
+    foreach ($entry in $uiAssets.GetEnumerator()) {
+        $artHash = (Get-FileHash -LiteralPath (Join-Path $ProjectDir $entry.Value) -Algorithm SHA256).Hash
+        $savedHash = $interface.assets.PSObject.Properties[$entry.Value].Value
+        if ($savedHash -ne $artHash -or
+            -not (Test-Path -LiteralPath (Join-Path $ProjectDir ('Content/CityLiveUI/' + $entry.Key + '.uasset')))) {
+            throw 'Фоны и карточки обновились. Повторите InstallDistrictContent.cmd.'
+        }
+    }
+    $scooterMarker = Join-Path $ProjectDir 'Saved/CourierScooter.json'
+    if (-not (Test-Path -LiteralPath $scooterMarker)) {
+        throw 'Выполните InstallDistrictContent.cmd: установка цветного скутера.'
+    }
+    $scooter = Get-Content -LiteralPath $scooterMarker -Raw -Encoding UTF8 | ConvertFrom-Json
+    $scooterHash = (Get-FileHash -LiteralPath (Join-Path $ProjectDir 'Assets/Vehicles/Courier/SM_CityScooter.fbx') -Algorithm SHA256).Hash
+    if ($scooter.revision -ne 2 -or $scooter.mesh_sha256 -ne $scooterHash) {
+        throw 'Скутер обновился. Повторите InstallDistrictContent.cmd.'
     }
     if (-not (Test-Path -LiteralPath $rolesMarker -PathType Leaf)) {
         throw 'Выполните InstallDistrictContent.cmd: установка подробных лиц персонажей.'
     }
     $roles = Get-Content -LiteralPath $rolesMarker -Raw -Encoding UTF8 | ConvertFrom-Json
     $rolesHash = (Get-FileHash -LiteralPath (Join-Path $ProjectDir 'Assets\Characters\Roles\manifest.json') -Algorithm SHA256).Hash
-    if ($roles.face_revision -ne 2 -or $roles.package_hash -ne $rolesHash) {
+    if ($roles.face_revision -ne 2 -or $roles.wardrobe_revision -ne 3 -or $roles.package_hash -ne $rolesHash) {
         throw 'Персонажи обновились. Повторите InstallDistrictContent.cmd перед сборкой APK.'
     }
     $skin = Join-Path $ProjectDir 'Content\CityLiveCharacters\Beige\SK_CityBeige_v3.uasset'

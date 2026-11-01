@@ -2,6 +2,7 @@
 #include "CityLiveRPCharacter.h"
 #include "CityPlayerProfile.h"
 #include "CityDistrictGameplayComponent.h"
+#include "CityDistrictMapData.h"
 #include "CityParkingMarker.h"
 #include "CitySedan.h"
 #include "SCityMobileControls.h"
@@ -155,17 +156,48 @@ bool ACityLiveRPPlayerController::SafeWalkingPosition(const FVector& Near,FVecto
     return false;
 }
 bool ACityLiveRPPlayerController::EnterCity(bool bLastPosition,FText& Error)
+{return EnterCityAt(bLastPosition?FName(TEXT("Last")):FName(TEXT("Start")),Error);}
+bool ACityLiveRPPlayerController::ResolveSpawnPlace(FName SpawnPlace,FVector& Out) const
+{
+    if(!ActiveProfile)return false;
+    if(SpawnPlace==TEXT("Start")){Out=InitialSpawn.GetLocation();return bHasInitialSpawn;}
+    if(SpawnPlace==TEXT("Last")){Out=ActiveProfile->LastPosition;return HasSavedPosition();}
+    FName Target;
+    if(SpawnPlace==TEXT("Parking"))Target=TEXT("Parking");
+    else if(SpawnPlace==TEXT("Organization"))
+    {
+        if(ActiveProfile->Organization==TEXT("Police"))Target=TEXT("Police");
+        else if(ActiveProfile->Organization==TEXT("Hospital"))Target=TEXT("Hospital");
+        else if(ActiveProfile->bCourierEmployed)Target=TEXT("Courier");
+    }
+    else if(SpawnPlace==TEXT("Home")&&!ActiveProfile->Apartments.IsEmpty())
+    {
+        FString Building,Unit;
+        if(ActiveProfile->Apartments[0].Split(TEXT(":"),&Building,&Unit))Target=FName(*Building);
+    }
+    if(Target.IsNone())return false;
+    for(const auto& Place:CityDistrictMapData::Places())if(Target==FName(UTF8_TO_TCHAR(Place.Id)))
+    {Out=FVector(Place.Position.X*100,Place.Position.Y*100,100);return true;}
+    return false;
+}
+bool ACityLiveRPPlayerController::CanSpawnAt(FName SpawnPlace) const
+{FVector Position;return ResolveSpawnPlace(SpawnPlace,Position);}
+bool ACityLiveRPPlayerController::EnterCityAt(FName SpawnPlace,FText& Error)
 {
     ACityLiveRPCharacter* PlayerCharacter=Cast<ACityLiveRPCharacter>(GetPawn());
     if (!ActiveProfile || !PlayerCharacter || !bHasInitialSpawn)
     { Error=FText::FromString(TEXT("Город ещё запускается. Нажмите ещё раз через секунду."));return false; }
-    FVector Target=InitialSpawn.GetLocation();
+    FVector Target;
+    if(!ResolveSpawnPlace(SpawnPlace,Target))
+    {Error=FText::FromString(TEXT("Это место пока недоступно."));return false;}
     float Yaw=InitialSpawn.Rotator().Yaw;
-    if(bLastPosition)
+    if(SpawnPlace!=TEXT("Start"))
     {
-        if(!HasSavedPosition() || !SafeWalkingPosition(ActiveProfile->LastPosition,Target,true))
-        { Error=FText::FromString(TEXT("Место выхода недоступно. Выберите начальное место спавна."));return false; }
-        Yaw=ActiveProfile->LastYaw;
+        FVector Safe;
+        if(!SafeWalkingPosition(Target,Safe,true))
+        {Error=FText::FromString(TEXT("Место занято. Выберите другую карточку."));return false;}
+        Target=Safe;
+        if(SpawnPlace==TEXT("Last"))Yaw=ActiveProfile->LastYaw;
     }
     if (!PlayerCharacter->TeleportTo(Target,FRotator(0,Yaw,0)))
     { Error=FText::FromString(TEXT("Место занято. Выберите другое место спавна."));return false; }

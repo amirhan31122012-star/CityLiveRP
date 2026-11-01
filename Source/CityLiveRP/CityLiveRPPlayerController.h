@@ -39,6 +39,8 @@ public:
     bool SelectIdentity(FString First, FString Last, bool& bNew, FText& Error);
     bool Authenticate(const FString& Password, FText& Error);
     bool HasSavedPosition() const;
+    bool CanSpawnAt(FName SpawnPlace) const;
+    bool EnterCityAt(FName SpawnPlace,FText& Error);
     bool EnterCity(bool bLastPosition, FText& Error);
     bool SpawnParkingCar(FText& Error);
     void CloseCityMenu();
@@ -96,6 +98,7 @@ protected:
     void CheckParking();
     FString CurrentMapId() const;
     bool SafeWalkingPosition(const FVector& Near, FVector& Out, bool bSearch) const;
+    bool ResolveSpawnPlace(FName SpawnPlace,FVector& Out) const;
 
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void OnPossess(APawn* InPawn) override;

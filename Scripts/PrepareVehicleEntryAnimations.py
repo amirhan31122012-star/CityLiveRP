@@ -64,20 +64,7 @@ for clip in ('Enter','Exit','EnterRight','ExitRight','DriverIdle','ScooterMount'
     if not unreal.EditorAssetLibrary.save_loaded_asset(sequence,only_if_is_dirty=False):
         raise RuntimeError('Cannot save '+name)
     unreal.log('CITYLIVE_ENTRY_CLIP_READY '+sequence.get_path_name())
-# Import the original low-poly courier scooter, already built in the repository.
-scooter_task=unreal.AssetImportTask()
-scooter_task.filename=str(project/'Assets/Vehicles/Courier/SM_CityScooter.fbx')
-scooter_task.destination_path='/Game/CityLiveVehicles/Courier';scooter_task.destination_name='SM_CityScooter'
-scooter_task.automated=True;scooter_task.save=True;scooter_task.replace_existing=True;scooter_task.factory=unreal.FbxFactory()
-scooter_options=unreal.FbxImportUI();scooter_options.automated_import_should_detect_type=False
-scooter_options.mesh_type_to_import=unreal.FBXImportType.FBXIT_STATIC_MESH
-scooter_options.import_as_skeletal=False;scooter_options.import_materials=True;scooter_options.import_textures=False
-scooter_options.static_mesh_import_data.set_editor_property('combine_meshes',True)
-scooter_options.static_mesh_import_data.set_editor_property('convert_scene_unit',True)
-scooter_options.static_mesh_import_data.set_editor_property('auto_generate_collision',False)
-scooter_task.options=scooter_options;tools.import_asset_tasks([scooter_task])
-if not isinstance(unreal.load_asset('/Game/CityLiveVehicles/Courier/SM_CityScooter'),unreal.StaticMesh):
-    raise RuntimeError('Courier scooter import failed')
+import ImportCourierScooter
 # A real runtime tint parameter: the engine BasicShapeMaterial has no Color parameter.
 material=unreal.load_asset('/Game/CityLiveUI/M_DistrictSurface')
 if not material:

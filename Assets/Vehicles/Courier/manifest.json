@@ -1,0 +1,116 @@
+{
+  "revision": 2,
+  "triangles": 34232,
+  "dimensions_m": [
+    1.9068875312805176,
+    0.8339999914169312,
+    1.46565580368042
+  ],
+  "materials": {
+    "Paint": {
+      "color": [
+        0.62,
+        0.013,
+        0.006,
+        1
+      ],
+      "roughness": 0.24,
+      "metallic": 0.32
+    },
+    "Ivory": {
+      "color": [
+        0.78,
+        0.74,
+        0.64,
+        1
+      ],
+      "roughness": 0.32,
+      "metallic": 0.12
+    },
+    "Trim": {
+      "color": [
+        0.012,
+        0.015,
+        0.02,
+        1
+      ],
+      "roughness": 0.42,
+      "metallic": 0.12
+    },
+    "Rubber": {
+      "color": [
+        0.006,
+        0.007,
+        0.009,
+        1
+      ],
+      "roughness": 0.88,
+      "metallic": 0
+    },
+    "Seat": {
+      "color": [
+        0.018,
+        0.014,
+        0.013,
+        1
+      ],
+      "roughness": 0.67,
+      "metallic": 0
+    },
+    "Metal": {
+      "color": [
+        0.4,
+        0.44,
+        0.48,
+        1
+      ],
+      "roughness": 0.26,
+      "metallic": 0.9
+    },
+    "Glass": {
+      "color": [
+        0.085,
+        0.15,
+        0.18,
+        1
+      ],
+      "roughness": 0.13,
+      "metallic": 0.65
+    },
+    "LED": {
+      "color": [
+        0.88,
+        0.95,
+        1,
+        1
+      ],
+      "roughness": 0.18,
+      "metallic": 0.1,
+      "emission": 0.35
+    },
+    "Amber": {
+      "color": [
+        1,
+        0.24,
+        0.006,
+        1
+      ],
+      "roughness": 0.24,
+      "metallic": 0.1
+    },
+    "Tail": {
+      "color": [
+        0.45,
+        0.002,
+        0.004,
+        1
+      ],
+      "roughness": 0.2,
+      "metallic": 0.2
+    }
+  },
+  "mesh_sha256": "1bd6b074a33c0aa60a7a6298441a1b6012969b60705908849ed6e094d2228833",
+  "author": "Original CityLive project model",
+  "wheelbase_m": 1.31,
+  "seat_height_m": 0.72
+}

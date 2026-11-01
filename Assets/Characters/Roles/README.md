@@ -1,8 +1,9 @@
 # Role character test meshes
 
 These are actual rigged FBX meshes, not the generated concept illustration.
-`ActualModels.png` shows a Blender render of these meshes. Clothing remains
-simpler than the approved concept. Face revision 2 uses new
+`ActualModels.png` shows a Blender render of these meshes. Wardrobe revision 3 adds tailored collar and pocket geometry, cap and tie,
+open coat, stethoscope, backpack details and separate fabric surface/normal maps.
+The underlying photographed folds remain. Face revision 2 uses new
 generated face textures, distinct jaw/cheek shapes, embedded curved eye caps,
 a shorter hair silhouette and correctly positioned medical glasses.
 `Faces_Actual.png` shows actual close-up renders. They are not exact recreations of the reference
@@ -35,10 +36,12 @@ No assets were extracted from Black Russia.
 - `SK_CityCourier.fbx`: red/black clothing and ginger hair.
 - `SK_CityCourierPack.fbx`: separately rigged delivery backpack.
 - `T_Role_<role>.png`: 2048px clothing UV colour textures; FBX texture paths are not required.
+- `T_RoleNormal_*.png`: 1K tangent normals, OpenGL source; UE import flips green.
+- `T_RoleSurface_*.png`: 1K linear masks, R=roughness, G=specular.
 - `T_Face_*.png`: separate 1024px facial colour maps.
 - `T_FaceRough_*.png`: linear data maps, R=roughness, G=specular, B=unused.
 - `T_Role_Eyes.png`: shared eye atlas sampled from the matching facial textures.
-- `manifest.json`: actual exported triangle counts and material palette.
+- `manifest.json`: actual exported triangle counts, palette and runtime source-file hashes.
 - `Validation.json`: Blender FBX reimport checks; not an Unreal test report.
 
 Run `blender -b -P Scripts/CreateRoleCharacters.py` from the project. The generator

@@ -20,30 +20,23 @@ void SCityHud::Construct(const FArguments& Args)
     Controller=Args._Controller;SmallStyle=CityUi::Button();SmallStyle.SetNormalPadding(FMargin(16,9));SmallStyle.SetPressedPadding(FMargin(16,11,16,7));
     ChatStyle=SmallStyle;ChatStyle.SetNormalPadding(FMargin(12));ChatStyle.SetPressedPadding(FMargin(12));
     ChatStyle.SetNormal(FSlateRoundedBoxBrush(FLinearColor(.008f,.009f,.014f,.42f),10));
-    auto Text=[](const TCHAR* Value,int Size){return SNew(STextBlock).Text(FText::FromString(Value)).Font(FCoreStyle::GetDefaultFontStyle("Bold",Size));};
     ChildSlot[SNew(SScaleBox).Visibility(EVisibility::SelfHitTestInvisible).Stretch(EStretch::ScaleToFit)
-        [SNew(SBox).Visibility(EVisibility::SelfHitTestInvisible).WidthOverride(1280).HeightOverride(720)
+        [SNew(SBox).Visibility(EVisibility::SelfHitTestInvisible).WidthOverride_Lambda([this](){return FOptionalSize(CityUi::CanvasWidth(GetCachedGeometry().GetLocalSize()));}).HeightOverride(720)
             [SNew(SOverlay).Visibility(EVisibility::SelfHitTestInvisible)
-                +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(24,24,0,0)
-                [SNew(SBox).WidthOverride(184).HeightOverride(184)[SNew(SCityMap).Controller(Controller.Get()).Mini(true)]]
-                +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(226,24,0,0)
-                [SNew(SBox).WidthOverride(690).HeightOverride(126).Clipping(EWidgetClipping::ClipToBounds)
+                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,18,22,0)
+                [SNew(SBox).WidthOverride(218).HeightOverride(218)[SNew(SCityMap).Controller(Controller.Get()).Mini(true)]]
+                +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(26,22,0,0)
+                [SNew(SBox).WidthOverride(850).HeightOverride(218).Clipping(EWidgetClipping::ClipToBounds)
                     [SNew(SButton).ButtonStyle(&ChatStyle).HAlign(HAlign_Left).VAlign(VAlign_Top)
                         .OnClicked_Lambda([this](){Controller->DistrictGameplay->OpenChat();return FReply::Handled();})
-                        [SNew(SCityChatLog).District(Controller->DistrictGameplay.Get()).Lines(4)]]]
-                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,24,28,0)
-                [SNew(SHorizontalBox).Visibility_Lambda([this](){return Controller->IsCityMenuOpen()?EVisibility::Collapsed:EVisibility::Visible;})
-                    +SHorizontalBox::Slot().AutoWidth().Padding(4,0)[SNew(SButton).ButtonStyle(&SmallStyle).OnClicked_Lambda([this](){Controller->DistrictGameplay->OpenGps();return FReply::Handled();})[Text(TEXT("GPS"),17)]]
-                    +SHorizontalBox::Slot().AutoWidth().Padding(4,0)[SNew(SButton).ButtonStyle(&SmallStyle).OnClicked_Lambda([this](){Controller->DistrictGameplay->OpenMap();return FReply::Handled();})[Text(TEXT("КАРТА"),17)]]]
-                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,85,32,0)
-                [SNew(SBorder).Visibility(EVisibility::HitTestInvisible).Padding(FMargin(22,10)).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(CityUi::Panel())
-                    [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",28)).ColorAndOpacity(FLinearColor::White)
-                        .Text_Lambda([this](){return FText::FromString(CityUi::Money(Controller->GetBalance()));})]]
-                +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(32,220,0,0)
-                [SNew(SBox).WidthOverride(210)[SNew(STextBlock).Visibility(EVisibility::HitTestInvisible).AutoWrapText(true).ColorAndOpacity(CityUi::Orange()).Font(FCoreStyle::GetDefaultFontStyle("Bold",15))
-                    .Text_Lambda([this](){const auto Value=Controller->DistrictGameplay->NavigationText();return FText::FromString(Value.IsEmpty()?TEXT("ПОЛИЦЕЙСКИЙ РАЙОН"):Value);})]]
-                +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Bottom).Padding(32,0,0,24)
-                [SNew(STextBlock).Visibility(EVisibility::HitTestInvisible).Text(FText::FromString(TEXT("CITYLIVE  RP"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",20)).ColorAndOpacity(CityUi::Orange())]
+                        [SNew(SCityChatLog).District(Controller->DistrictGameplay.Get()).Lines(8).FontSize(18)]]]
+                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,247,35,0)
+                [SNew(STextBlock).Visibility(EVisibility::HitTestInvisible).Font(FCoreStyle::GetDefaultFontStyle("BoldItalic",30))
+                    .ColorAndOpacity(FLinearColor::White).ShadowOffset(FVector2D(2,2)).ShadowColorAndOpacity(FLinearColor(0,0,0,.8f))
+                    .Text_Lambda([this](){return FText::FromString(CityUi::Money(Controller->GetBalance(),false));})]
+                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,291,30,0)
+                [SNew(SBox).WidthOverride(225)[SNew(STextBlock).Visibility(EVisibility::HitTestInvisible).AutoWrapText(true).ColorAndOpacity(CityUi::Orange()).Font(FCoreStyle::GetDefaultFontStyle("Bold",16))
+                    .Text_Lambda([this](){return FText::FromString(Controller->DistrictGameplay->NavigationText());})]]
                 +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,24)
                 [SNew(SBorder).Visibility_Lambda([this](){return Controller->IsSedanDriver()?EVisibility::HitTestInvisible:EVisibility::Collapsed;})
                     .Padding(FMargin(24,8)).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(CityUi::Panel())

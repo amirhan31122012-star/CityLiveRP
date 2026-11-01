@@ -26,7 +26,6 @@ void SCityV2Menu::GpsPage()
             {TEXT("Магазины"),TEXT("GpsShops")},{TEXT("Жилые дома"),TEXT("GpsHomes")},{TEXT("Ближайшие места"),TEXT("GpsNearest")}};
         int Number=0;for(const auto& Group:Groups)
         {const FString Context=Group.Value;Button(FText::FromString(FString::Printf(TEXT("%d.  %s"),++Number,Group.Key)),[this,District,Context](){District->Context=Context;SelectedGps.Empty();GpsPage();return FReply::Handled();});}
-        Button(FText::FromString(TEXT("Открыть карту района")),[this,District](){District->Context=TEXT("Map");MapPage();return FReply::Handled();},true);
     }
     else
     {
@@ -56,7 +55,7 @@ void SCityV2Menu::GpsPage()
 }
 void SCityV2Menu::MapPage()
 {
-    bChatLayout=false;bMapSelection=false;auto* District=Controller->DistrictGameplay.Get();MapLabel=TEXT("Выберите место на карте");
+    bChatLayout=false;bMapSelection=false;auto* District=Controller->DistrictGameplay.Get();MapLabel.Empty();
     FVector Existing;FString Name;if(District->NavigationTarget(Existing,Name)){MapSelection=Existing;MapLabel=Name;}
     ChildSlot[SNew(SOverlay)
         +SOverlay::Slot()[SAssignNew(DistrictMap,SCityMap).Controller(Controller.Get()).OnSelection_Lambda([this](FVector Point,FString Label){MapSelection=Point;MapLabel=Label;bMapSelection=true;DistrictMap->SetPendingPoint(Point);})]
@@ -72,21 +71,19 @@ void SCityV2Menu::MapPage()
                 +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Bottom).Padding(28,0,0,28)
                 [SNew(SBorder).Visibility_Lambda([this](){return bLegendOpen?EVisibility::HitTestInvisible:EVisibility::Collapsed;}).Padding(18).BorderImage(&FrameBrush).BorderBackgroundColor(FLinearColor::White)
                     [SNew(STextBlock).Text(FText::FromString(TEXT("ЛЕГЕНДА\nПолиция · синяя метка\nБольница · красная метка\nКурьер · оранжевая метка\nДома · зелёная метка\nP · парковка    Сумка · магазины\nОранжевая линия — маршрут\nПунктир — подход к точке"))).Font(FCoreStyle::GetDefaultFontStyle("Regular",15)).ColorAndOpacity(FLinearColor(.75f,.78f,.82f))]]
-                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Center).Padding(0,0,30,0)
-                [SNew(SVerticalBox)
-                    +SVerticalBox::Slot().AutoHeight().Padding(0,5)[SNew(SButton).ButtonStyle(&SecondaryStyle).OnClicked_Lambda([this](){DistrictMap->ZoomBy(1.3);return FReply::Handled();})[SNew(STextBlock).Text(FText::FromString(TEXT("+"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",26))]]
-                    +SVerticalBox::Slot().AutoHeight().Padding(0,5)[SNew(SButton).ButtonStyle(&SecondaryStyle).OnClicked_Lambda([this](){DistrictMap->ZoomBy(1/1.3);return FReply::Handled();})[SNew(STextBlock).Text(FText::FromString(TEXT("−"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",26))]]
-                    +SVerticalBox::Slot().AutoHeight().Padding(0,5)[SNew(SButton).ButtonStyle(&SecondaryStyle).OnClicked_Lambda([this](){DistrictMap->CentreOnPlayer();return FReply::Handled();})[SNew(STextBlock).Text(FText::FromString(TEXT("Я"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",20))]]]
+                +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(30,142,0,0)
+                [SNew(SButton).ButtonStyle(&SecondaryStyle).OnClicked_Lambda([this,District](){District->Context=TEXT("Gps");GpsPage();return FReply::Handled();})
+                    [SNew(STextBlock).Text(FText::FromString(TEXT("GPS"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",20))]]
                 +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Bottom).Padding(0,0,28,28)
-                [SNew(SBox).WidthOverride(345)[SNew(SBorder).BorderImage(&FrameBrush).Padding(18)
+                [SNew(SBox).WidthOverride(370).Visibility_Lambda([this,District](){FVector Point;FString Label;return bMapSelection||District->NavigationTarget(Point,Label)?EVisibility::Visible:EVisibility::Collapsed;})[SNew(SBorder).BorderImage(&FrameBrush).Padding(18)
                     [SNew(SVerticalBox)
                         +SVerticalBox::Slot().AutoHeight().Padding(0,0,0,8)[SNew(STextBlock).Text_Lambda([this](){return FText::FromString(MapLabel);}).Font(FCoreStyle::GetDefaultFontStyle("Bold",22)).AutoWrapText(true)]
                         +SVerticalBox::Slot().AutoHeight().Padding(0,0,0,12)[SNew(STextBlock).Text_Lambda([this,District](){
                             if(bMapSelection)return FText::FromString(FString::Printf(TEXT("До точки: %.0f м"),FVector::Dist2D(MapSelection,District->MapPosition())/100));
                             return FText::FromString(District->MapRoute().Valid?FString::Printf(TEXT("Маршрут: %.0f м"),District->MapRoute().Metres):District->NavigationText());
                         }).Font(FCoreStyle::GetDefaultFontStyle("Regular",16)).AutoWrapText(true).ColorAndOpacity(CityUi::Orange())]
-                        +SVerticalBox::Slot().AutoHeight()[SNew(SButton).ButtonStyle(&ActionStyle).OnClicked_Lambda([this,District](){if(bMapSelection){District->SetMapDestination(MapSelection,MapLabel);bMapSelection=false;DistrictMap->ClearPendingPoint();}else{FVector Point;FString Label;if(District->NavigationTarget(Point,Label)){District->ClearGps();MapLabel=TEXT("Выберите место на карте");}}return FReply::Handled();})
-                            [SNew(STextBlock).Text_Lambda([this,District](){FVector Point;FString Label;return FText::FromString(bMapSelection?TEXT("ОТСЛЕЖИВАТЬ"):District->NavigationTarget(Point,Label)?TEXT("УБРАТЬ МАРШРУТ"):TEXT("ВЫБЕРИТЕ ТОЧКУ"));}).Font(FCoreStyle::GetDefaultFontStyle("Bold",18))]]
+                        +SVerticalBox::Slot().AutoHeight()[SNew(SButton).ButtonStyle(&ActionStyle).OnClicked_Lambda([this,District](){if(bMapSelection){District->SetMapDestination(MapSelection,MapLabel);bMapSelection=false;DistrictMap->ClearPendingPoint();}else{FVector Point;FString Label;if(District->NavigationTarget(Point,Label)){District->ClearGps();MapLabel.Empty();}}return FReply::Handled();})
+                            [SNew(STextBlock).Text_Lambda([this,District](){FVector Point;FString Label;return FText::FromString(bMapSelection?TEXT("ПОСТРОИТЬ МАРШРУТ"):District->NavigationTarget(Point,Label)?TEXT("УБРАТЬ МАРШРУТ"):TEXT(""));}).Font(FCoreStyle::GetDefaultFontStyle("Bold",18))]]
                     ]]]
             ]]]];
 }

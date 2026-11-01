@@ -1,7 +1,7 @@
 """Build four rigged role variants from the credited CC BY character.
 Run Blender -b -P Scripts/CreateRoleCharacters.py. No downloaded game assets.
 """
-import bpy,bmesh,math,json,sys,argparse,numpy as np
+import bpy,bmesh,math,json,sys,argparse,hashlib,numpy as np
 from pathlib import Path
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
@@ -9,6 +9,7 @@ from mathutils.kdtree import KDTree
 root=Path(__file__).resolve().parents[1];out=root/'Assets/Characters/Roles'
 sys.path.insert(0,str(root/'Scripts'))
 from CityRoleTexture import bake
+from CityRoleTailoring import add as tailor
 from CityRoleFace import shape,bake_face,make_eyes,eyes_material,skin_tone
 out.mkdir(parents=True,exist_ok=True)
 records=[]
@@ -62,6 +63,10 @@ for role in ([args.role] if args.role else ('Civilian','Police','Medic','Courier
  bpy.ops.object.mode_set(mode='OBJECT')
  texture=bake(body,role,palette,root/'Assets/Characters/Beige/Image_1.png',out/('T_Role_'+role+'.png'),original_uv,skin_tone=skin_tone(root,role))
  original.name='Role_'+role;tex.image=texture
+ normal_tex=nodes.new('ShaderNodeTexImage');normal_tex.image=bpy.data.images.load(str(out/('T_RoleNormal_'+role+'.png')));normal_tex.image.colorspace_settings.name='Non-Color'
+ normal=nodes.new('ShaderNodeNormalMap');original.node_tree.links.new(normal_tex.outputs['Color'],normal.inputs['Color']);original.node_tree.links.new(normal.outputs[0],bs.inputs['Normal'])
+ mask=nodes.new('ShaderNodeTexImage');mask.image=bpy.data.images.load(str(out/('T_RoleSurface_'+role+'.png')));mask.image.colorspace_settings.name='Non-Color'
+ separate=nodes.new('ShaderNodeSeparateRGB');original.node_tree.links.new(mask.outputs['Color'],separate.inputs[0]);original.node_tree.links.new(separate.outputs['R'],bs.inputs['Roughness']);original.node_tree.links.new(separate.outputs['G'],bs.inputs['Specular IOR Level'])
  for p in body.data.polygons:p.material_index=0;p.use_smooth=True
  # A separate 1K face atlas gives eyebrows, lips and skin their own texel budget.
  face_indices=set()
@@ -111,10 +116,8 @@ for role in ([args.role] if args.role else ('Civilian','Police','Medic','Courier
  def patch(name,points,mat,bone=None):
   mesh=bpy.data.meshes.new(name);mesh.from_pydata(points,[],[list(range(len(points)))]);o=bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(o);finish(o,mat,bone);return o
  if role in ('Civilian','Courier'):
-  bpy.ops.mesh.primitive_torus_add(major_radius=.12,minor_radius=.028,major_segments=28,minor_segments=8,location=(0,.085,1.54),rotation=(math.pi/2,0,0))
-  o=bpy.context.object;o.name='Folded hood';bpy.ops.object.transform_apply(location=True,rotation=True,scale=True);finish(o,'Dark' if role=='Civilian' else 'Red','spine_03')
   line('Zip',[surface(0,z) for z in (1.0,1.1,1.2,1.3,1.4,1.5)],.002,'Steel')
-  for side in (-1,1):box('Cargo pocket',(side*.17,-.025,.67),(.085,.035,.16),'Dark','thigh_l' if side>0 else 'thigh_r')
+  for side in (-1,1):box('Cargo pocket',surface(side*.17,.67),(.085,.028,.14),'Dark','thigh_l' if side>0 else 'thigh_r',.012)
  if role=='Civilian':
   line('Shoulder strap',[surface(-.14,1.5),surface(-.06,1.34),surface(.05,1.17),(.14,-.23,1.06)],.018,'Dark')
   box('Crossbody bag',(.11,-.235,1.075),(.25,.055,.19),'Dark','spine_01',.025)
@@ -137,9 +140,6 @@ for role in ([args.role] if args.role else ('Civilian','Police','Medic','Courier
   patch('Chest badge',[surface(.11,1.4),surface(.13,1.37),surface(.11,1.345),surface(.09,1.37)],'Gold')
  if role=='Medic':
   for side in (-1,1):
-   for row in range(3):
-    za=.89+row*.05;zb=za+.05
-    patch('Coat front',[surface(side*.085,za),surface(side*.18,za),surface(side*.18,zb),surface(side*.085,zb)],'White')
    x=side*.035;z=1.745
    points=[(x+.029*math.cos(a),-.251,z+.015*math.sin(a)) for a in [i*math.tau/24 for i in range(25)]]
    line('Spectacle rim',points,.0011,'Steel','head')
@@ -150,6 +150,7 @@ for role in ([args.role] if args.role else ('Civilian','Police','Medic','Courier
   for side in (-1,1):
    line('Reflective chest band',[surface(side*x,1.32) for x in (.01,.07,.14,.18)],.009,'White')
    line('Backpack strap',[surface(side*.15,z) for z in (1.51,1.4,1.25,1.12)],.015,'Dark')
+ tailor(role,body,arm,parts,mats,bvh,box,line,surface,patch,finish)
  # Join/normalize all four influences, preserve the same 21-bone bind skeleton.
  bpy.ops.object.select_all(action='DESELECT')
  for o in parts:o.select_set(True)
@@ -173,6 +174,11 @@ for role in ([args.role] if args.role else ('Civilian','Police','Medic','Courier
   parts=[]
   pack=box('Courier backpack',(0,.215,1.29),(.36,.23,.44),'Red','spine_02',.035)
   for z in (1.14,1.44):box('Reflective backpack band',(0,.335,z),(.33,.008,.022),'White','spine_02',.002)
+  box('Pack lid',(0,.22,1.523),(.36,.232,.045),'Dark','spine_02',.018)
+  box('Insulated front pocket',(0,.343,1.29),(.26,.025,.19),'Red','spine_02',.02)
+  for x in (-.15,.15):line('Pack stitched seam',[(x,.349,1.1),(x,.349,1.47)],.002,'Dark','spine_02')
+  line('Backpack zip',[(-.13,.361,1.38),(.13,.361,1.38)],.002,'Steel','spine_02')
+  line('Carry handle',[(-.06,.22,1.54),(-.05,.22,1.59),(.05,.22,1.59),(.06,.22,1.54)],.009,'Dark','spine_02')
   bpy.ops.object.select_all(action='DESELECT')
   for o in parts:o.select_set(True)
   bpy.context.view_layer.objects.active=pack;bpy.ops.object.join();pack=bpy.context.object;pack.name='SK_CityCourierPack'
@@ -182,4 +188,6 @@ for role in ([args.role] if args.role else ('Civilian','Police','Medic','Courier
  bpy.ops.wm.save_as_mainfile(filepath='/tmp/CityRole_'+role+'.blend')
  records.append(dict(role=role,file=body.name+'.fbx',triangles=sum(len(p.vertices)-2 for p in body.data.polygons),bones=len(arm.data.bones),materials=[m.name for m in body.data.materials],palette=palette))
  print('ROLE_READY',records[-1]['role'],records[-1]['triangles'],flush=True)
-if not args.role:(out/'manifest.json').write_text(json.dumps(dict(version=2,face_revision=2,roles=records),indent=2))
+if not args.role:
+ hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(out.iterdir()) if p.name.startswith(('SK_City','T_')) and p.suffix in ('.fbx','.png')}
+ (out/'manifest.json').write_text(json.dumps(dict(version=3,face_revision=2,wardrobe_revision=3,roles=records,asset_hashes=hashes),indent=2))

@@ -1,8 +1,11 @@
 """Validate exported FBX files, not only generator objects. Run in Blender."""
-import bpy,json,math
+import bpy,json,math,hashlib
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 source=root/'Assets/Characters/Roles'
+manifest=json.loads((source/'manifest.json').read_text())
+if 'asset_hashes' in manifest:
+ for name,digest in manifest['asset_hashes'].items():assert hashlib.sha256((source/name).read_bytes()).hexdigest()==digest,name
 def load(path):
  bpy.ops.wm.read_factory_settings(use_empty=True);bpy.ops.import_scene.fbx(filepath=str(path))
  return next(o for o in bpy.data.objects if o.type=='ARMATURE'),next(o for o in bpy.data.objects if o.type=='MESH')
@@ -26,7 +29,7 @@ for name in ('Civilian','Police','Medic','Courier','CourierPack'):
   assert all(-1e-5<=axis<=1.00001 for loop in mesh.data.uv_layers.active.data for axis in loop.uv),(name,'UV outside repacked atlas')
   texture=bpy.data.images.load(str(source/('T_Role_'+name+'.png')))
   assert tuple(texture.size)==(2048,2048),(name,texture.size)
-  for prefix in ('T_Face_','T_FaceRough_'):
+  for prefix in ('T_Face_','T_FaceRough_','T_RoleNormal_','T_RoleSurface_'):
    detail=bpy.data.images.load(str(source/(prefix+name+'.png')))
    assert tuple(detail.size)==(1024,1024),(name,prefix,detail.size)
   face_slots={i for i,m in enumerate(mesh.data.materials) if m and m.name=='Role_Face_'+name}

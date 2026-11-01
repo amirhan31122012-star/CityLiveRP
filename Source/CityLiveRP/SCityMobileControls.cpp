@@ -77,7 +77,7 @@ FReply SCityMobileControls::OnTouchStarted(const FGeometry& Geometry, const FPoi
     const FVector2D Interaction(Right.X, Right.Y - Radius * 2.4f);
     const FVector2D ViewSize=Geometry.GetLocalSize();
     if(Controller.IsValid() && Controller->DistrictGameplay->HasInteraction() &&
-        FVector2D::Distance(Position,FVector2D(ViewSize.X*.76f,ViewSize.Y*.84f))<Radius*.65f)
+        FVector2D::Distance(Position,FVector2D(ViewSize.X*.76f,ViewSize.Y*.84f))<Radius*.48f)
     {Controller->DistrictGameplay->Interact();return FReply::Handled();}
 
     if (Controller.IsValid() && Controller->CanUsePassengerDoor() &&
@@ -289,7 +289,7 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
         FSlateDrawElement::MakeBox(Out, Layer,
             Geometry.ToPaintGeometry(Diameter, FSlateLayoutTransform(Center - FVector2D(R, R))),
             &Face, ESlateDrawEffect::None,
-            FMath::Lerp(FLinearColor(.018f,.02f,.026f,.55f),FLinearColor(.5f,.07f,.005f,.4f),Activation));
+            FMath::Lerp(FLinearColor(.018f,.02f,.026f,.55f),FLinearColor(.65f,.012f,.003f,.88f),Activation));
         TArray<FVector2D> Points;
         for (int32 i = 0; i <= 96; ++i)
         {
@@ -344,7 +344,7 @@ int32 SCityMobileControls::OnPaint(const FPaintArgs&, const FGeometry& Geometry,
     if(Controller.IsValid() && Controller->DistrictGameplay->HasInteraction())
     {
         const FVector2D Click(ViewSize.X*.76f,ViewSize.Y*.84f);
-        Circle(Click,Radius*.6f,CityUi::Orange());
+        Circle(Click,Radius*.43f,CityUi::Red());
         Stroke(Click,{{-.19f,.28f},{-.3f,.02f},{-.23f,-.03f},{-.08f,.09f},{-.08f,-.32f},{.02f,-.36f},{.09f,-.3f},{.09f,-.03f},{.23f,.01f},{.28f,.17f},{.18f,.37f},{-.08f,.4f},{-.19f,.28f}},.035f);
     }
     const FVector2D DoorCenter(Right.X, Right.Y - Radius * 2.4f);

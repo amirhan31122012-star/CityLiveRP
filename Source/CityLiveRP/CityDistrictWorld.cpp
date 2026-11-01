@@ -79,7 +79,7 @@ int32 UCityDistrictGameplayComponent::ApartmentPrice() const
 void UCityDistrictGameplayComponent::InitializeDistrict()
 {
     if(bInitialized)return;bInitialized=true;PrimaryComponentTick.bCanEverTick=true;SetComponentTickEnabled(true);
-    if(ChatHistory.IsEmpty())ChatHistory=TEXT("Добро пожаловать в CityLive RP!\nПолицейский район · город готов к игре");
+    if(ChatHistory.IsEmpty())ChatHistory=TEXT("Добро пожаловать!\nНажмите на чат, чтобы написать сообщение.");
     for(const auto& Entry:Entries())DistrictActors.Add(Label(GetWorld(),Entry.Position+FVector(0,0,75),FString(Entry.Id)+TEXT("\nВХОД"),FColor::Cyan,28));
     DistrictActors.Add(Label(GetWorld(),PoliceDoor+FVector(0,0,100),TEXT("ДЕЖУРНАЯ ЧАСТЬ"),FColor::Cyan));
     const FLinearColor Wall(.7f,.73f,.7f),Glass(.15f,.35f,.5f);
