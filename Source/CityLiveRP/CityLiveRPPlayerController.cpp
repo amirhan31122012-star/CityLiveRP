@@ -92,6 +92,7 @@ void ACityLiveRPPlayerController::OnPossess(APawn* InPawn)
     if (IsLocalController() && Cast<ACityLiveRPCharacter>(InPawn))
     {
         SetViewTarget(InPawn);
+        RefreshAppearance();
         if (!bHasInitialSpawn)
         {
             InitialSpawn = InPawn->GetActorTransform();
@@ -182,4 +183,12 @@ void ACityLiveRPPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReas
         CityMobileControls.Reset();
     }
     Super::EndPlay(EndPlayReason);
+}
+
+void ACityLiveRPPlayerController::RefreshAppearance()
+{
+    ACityLiveRPCharacter* Person=Cast<ACityLiveRPCharacter>(GetPawn());if(!Person||!ActiveProfile)return;
+    const FName Role=ActiveProfile->bCourierEmployed ? FName(TEXT("Courier")) : ActiveProfile->Organization==TEXT("Police") ?
+        FName(TEXT("Police")) : ActiveProfile->Organization==TEXT("Hospital") ? FName(TEXT("Medic")) : FName(TEXT("Civilian"));
+    if(Person->AppearanceRole!=Role)Person->SetAppearanceRole(Role);
 }

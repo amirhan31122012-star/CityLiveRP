@@ -13,6 +13,7 @@ class UCameraComponent;
 class UInputAction;
 class UCityCharacterSkinComponent;
 class UAnimMontage;
+class USkeletalMeshComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -21,7 +22,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
  *  A simple player-controllable third person character
  *  Keeps the camera behind the character throughout turns
  */
-UCLASS(abstract)
+UCLASS(abstract,config=Game)
 class ACityLiveRPCharacter : public ACharacter
 {
 	GENERATED_BODY()
@@ -57,6 +58,9 @@ public:
 	/** Constructor */
     UPROPERTY(EditDefaultsOnly, Category="CityLive|Appearance")
     bool bUseCitySkin = true;
+    UPROPERTY(Config,EditAnywhere,Category="CityLive|Appearance") bool bUseRoleWardrobe=true;
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="CityLive|Appearance") FName AppearanceRole=TEXT("Civilian");
+    UFUNCTION(BlueprintCallable,Category="CityLive|Appearance") bool SetAppearanceRole(FName Role);
 
 	ACityLiveRPCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
@@ -136,6 +140,8 @@ public:
 
 private:
     UPROPERTY() TObjectPtr<UCityCharacterSkinComponent> CharacterSkin;
+    UPROPERTY() TObjectPtr<USkeletalMeshComponent> CourierBag;
+    void UpdateCourierBag(bool bInVehiclePose);
     UPROPERTY() TObjectPtr<UAnimMontage> VehicleMontage;
     float StandingCapsuleHalfHeight = 96.f;
     float MobileSteering = 0.f;

@@ -77,6 +77,7 @@ float ACityLiveRPCharacter::BodyAnkleHeight() const
 void ACityLiveRPCharacter::SetVehicleBodyPose(const FCityVehicleBodyPose& Pose)
 {
     if(CharacterSkin)CharacterSkin->SetVehicleBodyPose(Pose);
+    UpdateCourierBag(Pose.bActive);
     if(UCityCrouchMeshComponent* PoseMesh=Cast<UCityCrouchMeshComponent>(GetMesh()))
     {
         FCityVehicleBodyPose Source=Pose;

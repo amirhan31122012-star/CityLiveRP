@@ -1,6 +1,7 @@
 #include "CityDistrictGameplayComponent.h"
 #include "CityLiveRPPlayerController.h"
 #include "CityPlayerProfile.h"
+#include "CityLiveRPCharacter.h"
 #include "CityDistrictRules.h"
 #include "CityCourierScooter.h"
 #include "Engine/World.h"
@@ -54,8 +55,12 @@ AActor* Label(UWorld* World,FVector Point,const FString& Text,FColor Color=FColo
 AActor* Npc(UWorld* World,FVector Point,const FString& Name)
 {
     UClass* Class=LoadClass<ACharacter>(nullptr,TEXT("/Game/ThirdPerson/Blueprints/BP_ThirdPersonCharacter.BP_ThirdPersonCharacter_C"));
-    FActorSpawnParameters Params;Params.SpawnCollisionHandlingOverride=ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-    ACharacter* Person=Class?World->SpawnActor<ACharacter>(Class,Point,FRotator(0,-90,0),Params):nullptr;
+    ACityLiveRPCharacter* Person=Class?World->SpawnActorDeferred<ACityLiveRPCharacter>(Class,FTransform(FRotator(0,-90,0),Point),nullptr,nullptr,ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn):nullptr;
+    if(Person)
+    {
+        Person->AppearanceRole=Name==TEXT("Дежурный")?FName(TEXT("Police")):Name==TEXT("Регистратор")?FName(TEXT("Medic")):FName(TEXT("Courier"));
+        UGameplayStatics::FinishSpawningActor(Person,FTransform(FRotator(0,-90,0),Point));
+    }
     if(Person){Person->Tags.Add(TEXT("CityDistrictNPC"));Person->GetCharacterMovement()->DisableMovement();
         TInlineComponentArray<UPrimitiveComponent*> Geometry(Person);for(auto* Part:Geometry)Part->SetCullDistance(2500);}
     return Person;
@@ -250,13 +255,14 @@ bool UCityDistrictGameplayComponent::JoinOrganization(FName Organization,int32 C
     if(Correct<3){Error=FText::FromString(TEXT("Экзамен не пройден. Можно попробовать ещё раз."));return false;}
     const FString Previous=Player->ActiveProfile->Organization;Player->ActiveProfile->Organization=Organization.ToString();
     if(!UGameplayStatics::SaveGameToSlot(Player->ActiveProfile,UCityPlayerProfile::Slot(Player->ActiveProfile->FirstName,Player->ActiveProfile->Surname),0))
-    {Player->ActiveProfile->Organization=Previous;return false;}Error=FText::FromString(TEXT("Вы приняты на начальную должность."));return true;
+    {Player->ActiveProfile->Organization=Previous;return false;}Player->RefreshAppearance();Error=FText::FromString(TEXT("Вы приняты на начальную должность."));return true;
 }
 FText UCityDistrictGameplayComponent::ExecuteChat(FString Text)
 {
     Text.TrimStartAndEndInline();auto* Player=Cast<ACityLiveRPPlayerController>(GetOwner());if(!Player || !Player->ActiveProfile || !Player->bEnteredCity)return FText::GetEmpty();
     if(Text==TEXT("/gps")){Context=TEXT("Gps");return FText::FromString(TEXT("Выберите раздел GPS."));}
-    if(Text==TEXT("/help"))return FText::FromString(TEXT("/gps /me /do /try /b /stats /time /job /quitjob"));
+    if(Text==TEXT("/credits"))return FText::FromString(TEXT("Основа персонажей: Casual Beige Knit Look — restore50, CC BY 4.0. Изменения, одежда и риг: CityLive RP. sketchfab.com/3d-models/casual-beige-knit-look-e92cefa2b26e47dc953cfdd16dbc076b · creativecommons.org/licenses/by/4.0/"));
+    if(Text==TEXT("/help"))return FText::FromString(TEXT("/gps /me /do /try /b /stats /time /job /quitjob /credits"));
     if(Text==TEXT("/stats"))return FText::FromString(Player->GetProfileName()+FString::Printf(TEXT(" · %d ₽ · доставок %d"),Player->GetBalance(),Player->ActiveProfile->CompletedDeliveries));
     if(Text==TEXT("/time"))return FText::FromString(FDateTime::Now().ToString(TEXT("%H:%M")));
     if(Text==TEXT("/job")){Context=TEXT("Courier");return FText::FromString(TEXT("Подойдите к NPC курьера для трудоустройства."));}

@@ -188,6 +188,7 @@ bool ACityLiveRPPlayerController::EnterCity(bool bLastPosition,FText& Error)
     { Error=FText::FromString(TEXT("Место занято. Выберите другое место спавна."));return false; }
     PlayerCharacter->GetCharacterMovement()->StopMovementImmediately();
     SetControlRotation(FRotator(0,Yaw,0)); SetViewTarget(PlayerCharacter);
+    RefreshAppearance();
     bEnteredCity=true;
     CloseCityMenu(); SaveProfile();
     return true;

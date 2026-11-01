@@ -14,7 +14,7 @@ class UCityCharacterSkinComponent : public UPoseableMeshComponent
     GENERATED_BODY()
 public:
     UCityCharacterSkinComponent();
-    bool InitializeSkin(USkeletalMeshComponent* Source);
+    bool InitializeSkin(USkeletalMeshComponent* Source,FName Role=NAME_None);
     void SetVehicleBodyPose(const FCityVehicleBodyPose& Pose) { VehicleBodyPose=Pose; }
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction) override;
 private:

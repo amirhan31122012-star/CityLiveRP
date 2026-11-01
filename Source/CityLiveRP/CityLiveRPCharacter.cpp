@@ -28,6 +28,10 @@ ACityLiveRPCharacter::ACityLiveRPCharacter(const FObjectInitializer& ObjectIniti
     PrimaryActorTick.bCanEverTick = true;
     CharacterSkin = CreateDefaultSubobject<UCityCharacterSkinComponent>(TEXT("CityCharacterSkin"));
     CharacterSkin->SetupAttachment(GetMesh());
+    CourierBag=CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CourierBag"));
+    CourierBag->SetupAttachment(CharacterSkin);
+    CourierBag->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    CourierBag->SetVisibility(false);
     GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
     // Поворот персонажа
@@ -123,7 +127,7 @@ void ACityLiveRPCharacter::BeginPlay()
     GetMesh()->SetVisibility(true);
     // Do not interpolate a cached, already-deformed pose back into this overlay.
     GetMesh()->bEnableUpdateRateOptimizations = false;
-    if (bUseCitySkin) CharacterSkin->InitializeSkin(GetMesh());
+    if (bUseCitySkin) SetAppearanceRole(AppearanceRole);
 }
 
 void ACityLiveRPCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)

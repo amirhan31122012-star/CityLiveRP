@@ -1,0 +1,57 @@
+[
+  {
+    "role": "Civilian",
+    "triangles": 37110,
+    "bones": 21,
+    "max_influences": 4,
+    "scale": [
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "role": "Police",
+    "triangles": 37418,
+    "bones": 21,
+    "max_influences": 4,
+    "scale": [
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "role": "Medic",
+    "triangles": 36180,
+    "bones": 21,
+    "max_influences": 4,
+    "scale": [
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "role": "Courier",
+    "triangles": 38222,
+    "bones": 21,
+    "max_influences": 4,
+    "scale": [
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "role": "CourierPack",
+    "triangles": 324,
+    "bones": 21,
+    "max_influences": 4,
+    "scale": [
+      1,
+      1,
+      1
+    ]
+  }
+]

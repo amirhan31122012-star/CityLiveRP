@@ -20,10 +20,10 @@ if not exist "%UE_ROOT%\Engine\Build\BatchFiles\Build.bat" (
 )
 set "CITYLIVE_ENTRY_LOG=%PROJECT_DIR%Saved\VehicleEntry\%RANDOM%_%RANDOM%_%RANDOM%"
 mkdir "%CITYLIVE_ENTRY_LOG%"
-echo 1/2. Сборка кода посадки без изменения размера персонажа.
+echo 1/2. Сборка кода персонажей и взаимодействий.
 call "%UE_ROOT%\Engine\Build\BatchFiles\Build.bat" CityLiveRPEditor Win64 Development "-Project=%PROJECT_DIR%CityLiveRP.uproject" -WaitMutex -NoHotReloadFromIDE > "%CITYLIVE_ENTRY_LOG%\Build.log" 2>&1
 if errorlevel 1 goto failure
-echo 2/2. Подготовка полноразмерных анимаций посадки и выхода.
+echo 2/2. Установка персонажей, материалов и полноразмерных анимаций.
 "%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%PROJECT_DIR%CityLiveRP.uproject" /Engine/Maps/Entry "-ExecutePythonScript=%PROJECT_DIR%Scripts\PrepareVehicleEntryAnimations.py" "-abslog=%CITYLIVE_ENTRY_LOG%\Animation.log" -unattended -nosplash
 if errorlevel 1 goto failure
 if not exist "%CITYLIVE_ENTRY_LOG%\complete.ok" goto failure

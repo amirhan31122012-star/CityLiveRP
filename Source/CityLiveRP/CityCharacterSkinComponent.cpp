@@ -14,9 +14,12 @@ UCityCharacterSkinComponent::UCityCharacterSkinComponent()
     SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-bool UCityCharacterSkinComponent::InitializeSkin(USkeletalMeshComponent* Source)
+bool UCityCharacterSkinComponent::InitializeSkin(USkeletalMeshComponent* Source,FName Role)
 {
-    USkeletalMesh* Skin = LoadObject<USkeletalMesh>(nullptr,
+    const FString RoleName=Role.IsNone()?TEXT("Civilian"):Role.ToString();
+    const FString RolePath=TEXT("/Game/CityLiveCharacters/Roles/SK_City")+RoleName;
+    USkeletalMesh* RoleAsset=Role==TEXT("Legacy")?nullptr:LoadObject<USkeletalMesh>(nullptr,*(RolePath+TEXT(".SK_City")+RoleName));
+    USkeletalMesh* Skin = RoleAsset?RoleAsset:LoadObject<USkeletalMesh>(nullptr,
         TEXT("/Game/CityLiveCharacters/Beige/SK_CityBeige_v3.SK_CityBeige_v3"));
     if (!Source || !Source->GetSkeletalMeshAsset() || !Skin || !Skin->GetSkeleton()) return false;
     const FReferenceSkeleton& SourceRef = Source->GetSkeletalMeshAsset()->GetRefSkeleton();
@@ -24,14 +27,18 @@ bool UCityCharacterSkinComponent::InitializeSkin(USkeletalMeshComponent* Source)
     for (const TCHAR* Required : {TEXT("pelvis"), TEXT("head"), TEXT("hand_l"), TEXT("hand_r"), TEXT("foot_l"), TEXT("foot_r")})
         if (TargetRef.FindBoneIndex(FName(Required)) == INDEX_NONE || SourceRef.FindBoneIndex(FName(Required)) == INDEX_NONE) return false;
     AnimationSource = Source;
+    EmptyOverrideMaterials();
     SetSkinnedAssetAndUpdate(Skin);
     const FBoxSphereBounds SourceBounds = Source->GetSkeletalMeshAsset()->GetBounds();
     const FBoxSphereBounds SkinBounds = Skin->GetBounds();
     SetRelativeLocation(FVector(0, 0, (SourceBounds.Origin.Z - SourceBounds.BoxExtent.Z) -
         (SkinBounds.Origin.Z - SkinBounds.BoxExtent.Z)));
-    if (UMaterialInterface* SkinMaterial = LoadObject<UMaterialInterface>(nullptr,
-        TEXT("/Game/CityLiveCharacters/Beige/M_CityBeige_v3.M_CityBeige_v3")))
-        for (int32 Slot = 0; Slot < Skin->GetMaterials().Num(); ++Slot) SetMaterial(Slot, SkinMaterial);
+    if (!RoleAsset)
+    {
+        if (UMaterialInterface* SkinMaterial = LoadObject<UMaterialInterface>(nullptr,
+            TEXT("/Game/CityLiveCharacters/Beige/M_CityBeige_v3.M_CityBeige_v3")))
+            for (int32 Slot = 0; Slot < Skin->GetMaterials().Num(); ++Slot) SetMaterial(Slot, SkinMaterial);
+    }
     auto BuildReference = [](const FReferenceSkeleton& Ref, TArray<FTransform>& Result)
     {
         Result = Ref.GetRefBonePose();

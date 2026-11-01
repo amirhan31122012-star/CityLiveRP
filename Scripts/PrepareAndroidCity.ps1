@@ -26,6 +26,11 @@ try {
     if (-not (Test-Path -LiteralPath (Join-Path $ProjectDir 'Content\CityLiveUI\M_DistrictSurface.uasset'))) {
         throw 'Выполните InstallDistrictContent.cmd: цветные материалы интерьеров.'
     }
+    foreach ($role in @('Civilian', 'Police', 'Medic', 'Courier', 'CourierPack')) {
+        if (-not (Test-Path -LiteralPath (Join-Path $ProjectDir ("Content\CityLiveCharacters\Roles\SK_City" + $role + '.uasset')))) {
+            throw 'Выполните InstallDistrictContent.cmd: установка новых персонажей.'
+        }
+    }
     $skin = Join-Path $ProjectDir 'Content\CityLiveCharacters\Beige\SK_CityBeige_v3.uasset'
     if (-not (Test-Path -LiteralPath $skin -PathType Leaf)) {
         throw 'Сначала установите персонажа через BuildAndOpen.cmd.'

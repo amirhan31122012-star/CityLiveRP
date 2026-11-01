@@ -32,6 +32,7 @@ public:
     bool IsCityMenuOpen() const { return CityMenu.IsValid(); }
     bool IsProfileActive() const { return ActiveProfile != nullptr; }
     int32 GetBalance() const;
+    void RefreshAppearance();
     FString GetProfileName() const;
     FString RememberedFirst, RememberedLast;
     bool SelectIdentity(FString First, FString Last, bool& bNew, FText& Error);

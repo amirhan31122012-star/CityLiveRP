@@ -54,6 +54,7 @@ bool UCityDistrictGameplayComponent::SetCourierEmployment(bool Employed,FText& E
     if(Employed && Nearby!=TEXT("Courier")){Error=FText::FromString(TEXT("Подойдите к NPC курьера."));return false;}
     const bool Previous=Profile->bCourierEmployed;Profile->bCourierEmployed=Employed;
     if(!Persist(Profile)){Profile->bCourierEmployed=Previous;Error=FText::FromString(TEXT("Не удалось сохранить трудоустройство."));return false;}
+    Player->RefreshAppearance();
     if(!Employed)bDeliveryActive=false;
     return true;
 }
