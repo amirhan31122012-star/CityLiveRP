@@ -21,3 +21,11 @@ Regenerate with Blender, then run `Tests/ValidateCourierScooterBlender.py` and
 `Scripts/PreviewCourierScooter.py`. UE import, riding pose, night lighting and
 Android FPS still require editor/device verification. Global renderer settings
 were not changed.
+
+The detailed material layout installs as `/Game/CityLiveVehicles/Courier/SM_CityScooter_v2`.
+UE's atomic reimport keeps legacy material slots (the earlier model used `light`,
+`paint`, etc.), so revision 2 has a separate mesh asset. Runtime and async loading
+both use this versioned path. The old asset is not deleted or renamed. Repeated
+installs validate all ten current slots before assigning or saving the mesh.
+A failed install clears `Saved/CourierScooter.json`; Android preparation requires
+import revision 3, the versioned asset and the matching mesh hash.

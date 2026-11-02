@@ -66,7 +66,7 @@ void UCityLoadingGameInstance::OnStart()
         FSoftObjectPath(TEXT("/Game/CityLiveUI/T_SpawnLast.T_SpawnLast")),
         FSoftObjectPath(TEXT("/Game/CityLiveUI/T_SpawnParking.T_SpawnParking")),
         FSoftObjectPath(TEXT("/Game/CityLiveUI/T_SpawnHome.T_SpawnHome")),
-        FSoftObjectPath(TEXT("/Game/CityLiveVehicles/Courier/SM_CityScooter.SM_CityScooter")),
+        FSoftObjectPath(TEXT("/Game/CityLiveVehicles/Courier/SM_CityScooter_v2.SM_CityScooter_v2")),
         FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Roles/SK_CityCivilian.SK_CityCivilian")),
         FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Roles/SK_CityPolice.SK_CityPolice")),
         FSoftObjectPath(TEXT("/Game/CityLiveCharacters/Roles/SK_CityMedic.SK_CityMedic")),

@@ -20,7 +20,7 @@ try {
             throw 'Сначала выполните InstallVehicleEntryAnimations.cmd: анимации посадки без уменьшения персонажа.'
         }
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $ProjectDir 'Content\CityLiveVehicles\Courier\SM_CityScooter.uasset'))) {
+    if (-not (Test-Path -LiteralPath (Join-Path $ProjectDir 'Content\CityLiveVehicles\Courier\SM_CityScooter_v2.uasset'))) {
         throw 'Сначала запустите InstallDistrictContent.cmd для установки скутера.'
     }
     if (-not (Test-Path -LiteralPath (Join-Path $ProjectDir 'Content\CityLiveUI\M_DistrictSurface.uasset'))) {
@@ -64,7 +64,9 @@ try {
     }
     $scooter = Get-Content -LiteralPath $scooterMarker -Raw -Encoding UTF8 | ConvertFrom-Json
     $scooterHash = (Get-FileHash -LiteralPath (Join-Path $ProjectDir 'Assets/Vehicles/Courier/SM_CityScooter.fbx') -Algorithm SHA256).Hash
-    if ($scooter.revision -ne 2 -or $scooter.mesh_sha256 -ne $scooterHash) {
+    if ($scooter.revision -ne 2 -or $scooter.import_revision -ne 3 -or
+        $scooter.asset_path -ne '/Game/CityLiveVehicles/Courier/SM_CityScooter_v2' -or
+        $scooter.mesh_sha256 -ne $scooterHash) {
         throw 'Скутер обновился. Повторите InstallDistrictContent.cmd.'
     }
     if (-not (Test-Path -LiteralPath $rolesMarker -PathType Leaf)) {

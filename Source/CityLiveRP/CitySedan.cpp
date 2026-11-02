@@ -165,7 +165,7 @@ void ACitySedan::BeginPlay()
         for(UStaticMeshComponent* Wheel:Wheels)Wheel->SetVisibility(false);
         UStaticMeshComponent* Visual=NewObject<UStaticMeshComponent>(this);
         AddInstanceComponent(Visual);Visual->SetupAttachment(CollisionBox);
-        Visual->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/CityLiveVehicles/Courier/SM_CityScooter.SM_CityScooter")));
+        Visual->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/CityLiveVehicles/Courier/SM_CityScooter_v2.SM_CityScooter_v2")));
         Visual->SetRelativeLocation(FVector(0,0,-60));Visual->SetCollisionEnabled(ECollisionEnabled::NoCollision);Visual->RegisterComponent();
         return;
     }
