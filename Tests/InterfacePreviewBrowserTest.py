@@ -31,11 +31,12 @@ async def main():
   await page.locator('[data-spawn=Last]').click();assert await page.evaluate('chosenSpawn')=='Last'
   await page.locator('.spawnenter').click();assert await page.evaluate('scene')=='hud'
   assert await page.locator('.balance').inner_text()=='20 000'
-  assert await page.locator('.balance').evaluate("e=>getComputedStyle(e).backgroundColor")=='rgba(0, 0, 0, 0)'
+  assert await page.locator('.balance').evaluate("e=>getComputedStyle(e).backgroundColor")!='rgba(0, 0, 0, 0)'
   assert not await page.get_by_role('button',name='GPS',exact=True).count()
   assert 'CITYLIVE' not in await page.locator('#screen').inner_text()
   mini=await page.locator('.mini').bounding_box();chat=await page.locator('.chatbox').bounding_box()
-  assert mini['x']>chat['x']+chat['width'] and chat['height']==218 and mini['width']==218
+  assert mini['x']==mini['y']==0 and chat['height']==218 and mini['width']==218
+  assert abs(chat['x']+chat['width']/2-640)<1
   await page.locator('.mini').click()
   assert not await page.locator('.mapinfo').count()
   assert 'ВЫБЕРИТЕ ТОЧКУ' not in await page.locator('#screen').inner_text()
@@ -63,6 +64,6 @@ async def main():
   assert abs(rect['x'])<1 and abs(rect['width']-1600)<1 and abs(rect['y']+rect['height']-720)<1,rect
   await page.screenshot(path=str(out/'Preview_WideKeyboard.png'))
   assert not errors,errors
-  print('PASS: separate fields, full-screen password scene, five spawn cards, plain balance, right mini-map, map/GPS routing, full-width RU/EN keyboard; 10 review images')
+  print('PASS: separate fields, full-screen password scene, five spawn cards, compact balance, corner mini-map, map/GPS routing, full-width RU/EN keyboard; 10 review images')
   await browser.close()
 asyncio.run(main())

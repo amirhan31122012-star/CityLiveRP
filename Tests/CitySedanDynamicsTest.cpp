@@ -9,7 +9,7 @@ int main()
     for (float Speed : {0.f, 100.f, 350.f, 1000.f, 2000.f, 3000.f, -400.f})
     {
         const float Rate = CityLiveDriving::YawRateRadians(1.f, Speed);
-        assert(std::abs(Rate * Speed) <= 680.01f);
+        assert(std::abs(Rate * Speed) <= 1400.01f);
         assert(std::abs(Rate + CityLiveDriving::YawRateRadians(-1.f, Speed)) < .0001f);
         assert(CityLiveDriving::YawRateRadians(0.f, Speed) == 0.f);
         assert(Rate * Speed >= 0.f);
@@ -20,6 +20,15 @@ int main()
     for (float Speed : {-400.f,350.f,1000.f,3000.f})
         assert(std::abs(CityLiveDriving::YawRateRadians(.1f,Speed) -
             .1f*CityLiveDriving::YawRateRadians(1.f,Speed)) < .00001f);
+    // At 36 km/h the commanded full-lock radius is now about 7.1 m,
+    // compared with the previous 14.7 m. Both turn directions and reverse agree.
+    for(float Speed:{-1000.f,1000.f,1500.f})
+    {
+        const float Radius=std::abs(Speed/CityLiveDriving::YawRateRadians(1.f,Speed));
+        const float PreviousRadius=Speed*Speed/680.f;
+        assert(Radius<PreviousRadius*.55f);
+    }
+    assert(CityLiveDriving::YawRateRadians(1.f,0.f)==0.f);
     float SlowFps = 0.f, FastFps = 0.f;
     for (int I = 0; I < 60; ++I) SlowFps = AdvanceSpeed(SlowFps, true, true, false, 1.f / 30.f);
     for (int I = 0; I < 240; ++I) FastFps = AdvanceSpeed(FastFps, true, true, false, 1.f / 120.f);

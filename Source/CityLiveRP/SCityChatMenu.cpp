@@ -5,6 +5,7 @@
 #include "CityDistrictGameplayComponent.h"
 #include "CityChatInput.h"
 #include "CityUiTheme.h"
+#include "SCityBalance.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBox.h"
@@ -60,16 +61,15 @@ void SCityV2Menu::ChatOverlay()
     ChatChannel=District->ChatChannel;HistoryIndex=District->SentMessages.Num();
     ChildSlot[SNew(SScaleBox).Stretch(EStretch::ScaleToFit)[SNew(SBox).WidthOverride_Lambda([this](){return FOptionalSize(CityUi::CanvasWidth(GetCachedGeometry().GetLocalSize()));}).HeightOverride(720)
         [SNew(SOverlay)
-            +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,18,22,0)
+            +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(0,0,0,0)
             [SNew(SBox).WidthOverride(218).HeightOverride(218).Visibility(EVisibility::HitTestInvisible)[SNew(SCityMap).Controller(Controller.Get()).Mini(true)]]
-            +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(26,22,0,0)
-            [SNew(SBox).WidthOverride(850).HeightOverride(218).Clipping(EWidgetClipping::ClipToBounds)
+            +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0,18,0,0)
+            [SNew(SBox).WidthOverride(740).HeightOverride(218).Clipping(EWidgetClipping::ClipToBounds)
                 [SNew(SBorder).BorderImage(&FrameBrush).Padding(14)
                     [SNew(SCityChatLog).District(District).Lines(8).FontSize(18)]]]
-            +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,244,32,0)
-            [SNew(STextBlock).Text_Lambda([this](){return FText::FromString(CityUi::Money(Controller->GetBalance(),false));})
-                .Font(FCoreStyle::GetDefaultFontStyle("BoldItalic",30)).ShadowOffset(FVector2D(2,2)).ShadowColorAndOpacity(FLinearColor(0,0,0,.8f))]
-            +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(900,22,0,0)
+                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,32,28,0)
+                [SNew(SCityBalance).Controller(Controller.Get())]
+                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,122,28,0)
             [SNew(SButton).IsFocusable(false).ButtonStyle(&SecondaryStyle).OnClicked_Lambda([this](){Controller->CloseCityMenu();return FReply::Handled();})[SNew(STextBlock).Text(FText::FromString(TEXT("×"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",27))]]
             +SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Bottom).Padding(16,0,300,418)
             [SNew(SHorizontalBox)

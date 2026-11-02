@@ -5,6 +5,7 @@
 #include "CityDistrictGameplayComponent.h"
 #include "CitySedan.h"
 #include "CityUiTheme.h"
+#include "SCityBalance.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Layout/SBox.h"
@@ -23,18 +24,16 @@ void SCityHud::Construct(const FArguments& Args)
     ChildSlot[SNew(SScaleBox).Visibility(EVisibility::SelfHitTestInvisible).Stretch(EStretch::ScaleToFit)
         [SNew(SBox).Visibility(EVisibility::SelfHitTestInvisible).WidthOverride_Lambda([this](){return FOptionalSize(CityUi::CanvasWidth(GetCachedGeometry().GetLocalSize()));}).HeightOverride(720)
             [SNew(SOverlay).Visibility(EVisibility::SelfHitTestInvisible)
-                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,18,22,0)
+                +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(0,0,0,0)
                 [SNew(SBox).WidthOverride(218).HeightOverride(218)[SNew(SCityMap).Controller(Controller.Get()).Mini(true)]]
-                +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(26,22,0,0)
-                [SNew(SBox).WidthOverride(850).HeightOverride(218).Clipping(EWidgetClipping::ClipToBounds)
+                +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0,18,0,0)
+                [SNew(SBox).WidthOverride(740).HeightOverride(218).Clipping(EWidgetClipping::ClipToBounds)
                     [SNew(SButton).ButtonStyle(&ChatStyle).HAlign(HAlign_Left).VAlign(VAlign_Top)
                         .OnClicked_Lambda([this](){Controller->DistrictGameplay->OpenChat();return FReply::Handled();})
                         [SNew(SCityChatLog).District(Controller->DistrictGameplay.Get()).Lines(8).FontSize(18)]]]
-                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,247,35,0)
-                [SNew(STextBlock).Visibility(EVisibility::HitTestInvisible).Font(FCoreStyle::GetDefaultFontStyle("BoldItalic",30))
-                    .ColorAndOpacity(FLinearColor::White).ShadowOffset(FVector2D(2,2)).ShadowColorAndOpacity(FLinearColor(0,0,0,.8f))
-                    .Text_Lambda([this](){return FText::FromString(CityUi::Money(Controller->GetBalance(),false));})]
-                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,291,30,0)
+                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,32,28,0)
+                [SNew(SCityBalance).Controller(Controller.Get())]
+                +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0,110,30,0)
                 [SNew(SBox).WidthOverride(225)[SNew(STextBlock).Visibility(EVisibility::HitTestInvisible).AutoWrapText(true).ColorAndOpacity(CityUi::Orange()).Font(FCoreStyle::GetDefaultFontStyle("Bold",16))
                     .Text_Lambda([this](){return FText::FromString(Controller->DistrictGameplay->NavigationText());})]]
                 +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,24)

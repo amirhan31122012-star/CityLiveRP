@@ -553,7 +553,7 @@ void ACitySedan::UpdateSeatedPose(ACityLiveRPCharacter* Occupant,int32 Seat)
 void ACitySedan::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
-    EntryCameraBlend = FMath::FInterpTo(EntryCameraBlend, EnteringCharacter ? 1.f : 0.f, DeltaTime, 5.f);
+    EntryCameraBlend = FMath::FInterpTo(EntryCameraBlend, EnteringCharacter ? 1.f : 0.f, DeltaTime, 7.f);
     if (EnteringCharacter)
     {
         UpdateSeatedPose(Driver, -1);
@@ -571,10 +571,10 @@ void ACitySedan::Tick(float DeltaTime)
         KeyboardSteering += DrivingPlayer->IsInputKeyDown(EKeys::D) ? 1.f : 0.f;
         KeyboardSteering -= DrivingPlayer->IsInputKeyDown(EKeys::A) ? 1.f : 0.f;
     }
-    SmoothedSteering = FMath::FInterpTo(SmoothedSteering, FMath::Clamp(Steering + KeyboardSteering, -1.f, 1.f), DeltaTime, 5.f);
+    SmoothedSteering = FMath::FInterpTo(SmoothedSteering, FMath::Clamp(Steering + KeyboardSteering, -1.f, 1.f), DeltaTime, 7.f);
     const bool bDrift = Driver && (bDriftHeld || (DrivingPlayer && DrivingPlayer->IsInputKeyDown(EKeys::SpaceBar)));
     const float DriftTarget = bDrift ? CityLiveDriving::DriftStrength(Speed) : 0.f;
-    DriftAmount = FMath::FInterpTo(DriftAmount, DriftTarget, DeltaTime, 5.f);
+    DriftAmount = FMath::FInterpTo(DriftAmount, DriftTarget, DeltaTime, 7.f);
     TickVehiclePhysics(DeltaTime, Pedals.Throttle || KeyboardGas, Pedals.Brake || KeyboardBrake);
     for (UStaticMeshComponent* Wheel : Wheels)
         Wheel->AddLocalRotation(FRotator(0, -FMath::RadiansToDegrees(Speed * DeltaTime / 32.f), 0));
