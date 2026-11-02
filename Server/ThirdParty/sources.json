@@ -1,0 +1,32 @@
+[
+  {
+    "name": "samp-cpp",
+    "url": "https://github.com/Rexrn/samp-cpp",
+    "commit": "06445f8c7fd6c045bc252276b97da491dc69f12e"
+  },
+  {
+    "name": "quickmaffs",
+    "url": "https://github.com/PoetaKodu/quickmaffs",
+    "commit": "d74d514ff817f70a435609c95b5dec11feeff60e"
+  },
+  {
+    "name": "sampgdk",
+    "url": "https://github.com/samp-forks/sampgdk",
+    "commit": "90519bd648bde7fd28234c909495d9698b98afdc"
+  },
+  {
+    "name": "samp-sdk",
+    "url": "https://github.com/udan11/samp-plugin-sdk",
+    "commit": "29d33b235198c2ac8e4721df2e550eaa4a336c4e"
+  },
+  {
+    "name": "mariadb-connector",
+    "url": "https://github.com/mariadb-corporation/mariadb-connector-c",
+    "commit": "18d442587eb1aa43389b51117a08228aa58b5a6d"
+  },
+  {
+    "name": "pawn-compiler",
+    "url": "https://github.com/pawn-lang/compiler",
+    "commit": "134ad7a836c581546665340aedb59efd4636e269"
+  }
+]

@@ -1,0 +1,7 @@
+# Apply these to the existing server.cfg, preserving its port, bind and rcon_password.
+# Keep other existing plugin names; append citylive.so once.
+gamemode0 citylive 1
+plugins citylive.so
+hostname CityLive RP
+language Russian
+maxplayers 100

@@ -1,0 +1,7 @@
+build*
+dist
+Packages
+tests/runtime*
+*.log
+config/database.ini
+__pycache__

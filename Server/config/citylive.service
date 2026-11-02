@@ -1,0 +1,18 @@
+[Unit]
+Description=CityLive RP SA-MP C++ server
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=simple
+User=citylive
+WorkingDirectory=/opt/citylive
+ExecStart=/bin/sh /opt/citylive/start-vps.sh
+KillSignal=SIGTERM
+KillMode=mixed
+TimeoutStopSec=45
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+UMask=0077
+[Install]
+WantedBy=multi-user.target

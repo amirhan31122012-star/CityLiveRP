@@ -1,0 +1,2 @@
+# Preserve the formatting of pinned upstream snapshots.
+ThirdParty/** -whitespace

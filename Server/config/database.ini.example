@@ -1,0 +1,10 @@
+# Copy to scriptfiles/citylive/database.ini. Do not share credentials.
+# No spaces around '='. Password may contain '='.
+host=127.0.0.1
+port=3306
+user=CHANGE_ME
+password=CHANGE_ME
+database=CHANGE_ME
+# Remote database connections require certificate-verified TLS.
+# For a local database on 127.0.0.1/localhost no TLS is required.
+tls_ca=/etc/ssl/certs/ca-certificates.crt

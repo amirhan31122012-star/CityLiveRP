@@ -1,0 +1,18 @@
+{
+  "version": "0.1.0",
+  "artifact": "Android launcher only; external SA-MP game client required",
+  "minSdk": 26,
+  "targetSdk": 35,
+  "build": "debug",
+  "gradle": "8.9",
+  "androidGradlePlugin": "8.7.3",
+  "checks": [
+    "assembleDebug",
+    "lintDebug: no issues",
+    "SA-MP info decoder test",
+    "APK signature v2 verified"
+  ],
+  "sha256": {
+    "CityLiveLauncher-0.1.0-debug.apk": "175ea26bf554195b53fa737932562143355065d06c0a00ccd9668cd702d9b0a9"
+  }
+}

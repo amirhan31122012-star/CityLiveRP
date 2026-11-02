@@ -1,0 +1,10 @@
+build*/
+dist/
+*.log
+config/database.ini
+__pycache__/
+tests/runtime/
+tests/runtime-openmp/
+core
+ThirdParty/sampgdk/scripts/cidl_parser.out
+ThirdParty/sampgdk/scripts/cidl_parsetab.py
