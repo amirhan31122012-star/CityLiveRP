@@ -12,7 +12,9 @@ docker build -t citylive-relink relink-source
 docker run --rm -v "$PWD/rebuilt:/out" citylive-relink
 ```
 
-Сборочная среда использует Ubuntu 22.04, GCC 11, системные OpenSSL и zlib. Их
+Сборочная среда использует Ubuntu 18.04 (только ABI-база), GCC 8 и CMake 3.31.6.
+OpenSSL 3.5.9 LTS собирается из официального архива с проверкой SHA256; zlib — из
+пакета старой сборочной среды. Их
 уведомления лежат в `licenses/`, версии исходных зависимостей — в `manifest.json`
 и `relink-source/ThirdParty/sources.json`. Сборка не требует исходников Unreal,
 закрытых GTA-файлов, доступа к RideHost или настоящей базе данных.

@@ -13,7 +13,10 @@ executables are distributed in our deployment ZIPs.
   CMake/Docker build allows replacing and relinking that library.
 - Pawn compiler: pawn-lang/compiler; see `pawn-compiler/license.txt`. Only used to
   compile the tiny bootstrap AMX; it contains no gameplay.
-- OpenSSL, zlib and GCC runtime: linked from the Ubuntu build toolchain; see the
+- OpenSSL 3.5.9 LTS: built as a static i386 library from the official source archive
+  pinned by URL/SHA256 in sources.json. Apache-2.0; see OpenSSL-COPYRIGHT.txt and
+  OpenSSL-NOTICE.txt (upstream AUTHORS.md). The Dockerfile contains its verified download/build recipe.
+- zlib and GCC 8 runtime: linked from the Ubuntu 18.04 build toolchain; see the
   additional copyright files included in the deployment archive and build recipe.
 
 CityLive changes to upstream samp-cpp:
